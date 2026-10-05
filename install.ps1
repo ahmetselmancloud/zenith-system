@@ -89,11 +89,12 @@ try {
     $Shortcut = $WshShell.CreateShortcut($DesktopLnk)
     $Shortcut.TargetPath = $TargetBat
     $Shortcut.WorkingDirectory = $InstallDir
-    $Shortcut.Description = "Zenith System - Next-Gen Hardware Monitor"
+    $Shortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Z)"
+    $Shortcut.Hotkey = "CTRL+ALT+Z"
     $Shortcut.WindowStyle = 7 # Minimized
     $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,15"
     $Shortcut.Save()
-    Write-Host "      [OK] Desktop shortcut created: $DesktopLnk" -ForegroundColor Green
+    Write-Host "      [OK] Desktop shortcut created (Hotkey: Ctrl+Alt+Z): $DesktopLnk" -ForegroundColor Green
 
     # Start Menu Shortcut
     $StartMenuPrograms = [System.Environment]::GetFolderPath('Programs')
@@ -102,11 +103,12 @@ try {
         $SMShortcut = $WshShell.CreateShortcut($StartMenuLnk)
         $SMShortcut.TargetPath = $TargetBat
         $SMShortcut.WorkingDirectory = $InstallDir
-        $SMShortcut.Description = "Zenith System - Next-Gen Hardware Monitor"
+        $SMShortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Z)"
+        $SMShortcut.Hotkey = "CTRL+ALT+Z"
         $SMShortcut.WindowStyle = 7
         $SMShortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,15"
         $SMShortcut.Save()
-        Write-Host "      [OK] Start Menu shortcut created: $StartMenuLnk" -ForegroundColor Green
+        Write-Host "      [OK] Start Menu shortcut created (Hotkey: Ctrl+Alt+Z): $StartMenuLnk" -ForegroundColor Green
     }
 } catch {
     Write-Warning "Could not create desktop shortcuts automatically: $_"

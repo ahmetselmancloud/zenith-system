@@ -399,10 +399,14 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 def start_server():
-    psutil.cpu_percent(interval=None)
-    with socketserver.TCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
-        print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
-        httpd.serve_forever()
+    try:
+        psutil.cpu_percent(interval=None)
+        with socketserver.TCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
+            print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
+            httpd.serve_forever()
+    except OSError:
+        # Server is already running on this port
+        sys.exit(0)
 
 if __name__ == "__main__":
     start_server()

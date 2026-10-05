@@ -2,21 +2,22 @@
 title Zenith System
 cd /d "%~dp0"
 
-:: Run native hardware probe once if cache doesn't exist
-if not exist "hardware_cache.json" (
-    echo [Zenith] Initializing hardware probe...
-    if exist "bin\zenith_probe.exe" (
-        "bin\zenith_probe.exe" > nul
+:: Check if server is already running on port 49152
+netstat -ano | findstr 127.0.0.1:49152 | findstr LISTENING > nul
+if errorlevel 1 (
+    :: Run initial hardware probe if cache does not exist
+    if not exist "hardware_cache.json" (
+        if exist "bin\zenith_probe.exe" (
+            "bin\zenith_probe.exe" > nul
+        )
     )
+    :: Start python backend server silently
+    start /b "" python "src\zenith_server.py"
+    :: Brief delay for port bind
+    powershell -nop -c "Start-Sleep -Milliseconds 400"
 )
 
-:: Start python backend server in background
-start /b "" python "src\zenith_server.py"
-
-:: Wait 1 second for port 49152 to bind
-timeout /t 1 /nobreak > nul
-
-:: Open dedicated frameless app window using available Chromium browser
+:: Focus or launch dedicated frameless app window using available Chromium browser
 set APP_URL=http://127.0.0.1:49152
 set APP_FLAGS=--app=%APP_URL% --window-size=1240,820
 
@@ -36,4 +37,4 @@ if exist "%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe" (
     start %APP_URL%
 )
 
-echo [Zenith] System active at %APP_URL%
+echo [Zenith] Window activated at %APP_URL%
