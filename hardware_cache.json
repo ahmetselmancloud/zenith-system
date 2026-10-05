@@ -1,0 +1,60 @@
+{
+  "engine": "Zenith Native Hardware Probe V1.0",
+  "execution_time_ms": 379.433,
+  "cpu": {
+    "model": "Intel(R) Core(TM) Ultra 7 255HX",
+    "total_cores": 20,
+    "total_threads": 20,
+    "p_cores": 8,
+    "e_cores": 12
+  },
+  "npu": {
+    "detected": true,
+    "name": "Intel(R) AI Boost",
+    "status": "Ready (ComputeAccelerator)"
+  },
+  "memory": {
+    "total_gb": 31.6645,
+    "used_gb": 16.183,
+    "usage_percent": 51
+  },
+  "displays": [
+    {
+      "adapter": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+      "resolution": "1920x1200",
+      "refresh_rate_hz": 144,
+      "bpp": 32
+    },
+    {
+      "adapter": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+      "resolution": "2560x1440",
+      "refresh_rate_hz": 144,
+      "bpp": 32
+    }
+  ],
+  "storage": [
+    {
+      "drive_index": 0,
+      "model": "KIOXIA-EXCERIA PLUS G3 SSD",
+      "bus_type": "NVMe (PCIe)",
+      "size_gb": 1000.2
+    },
+    {
+      "drive_index": 1,
+      "model": "SAMSUNG MZVL81T0HFLB-00BTW",
+      "bus_type": "NVMe (PCIe)",
+      "size_gb": 1024.21
+    }
+  ],
+  "battery": {
+    "has_battery": true,
+    "device_name": "BIF0_9",
+    "design_capacity_mwh": 87395,
+    "cycle_count": 0,
+    "is_charging": false,
+    "is_discharging": false,
+    "rate_mw": 0,
+    "remaining_mwh": 67221,
+    "voltage_mv": 16482
+  }
+}
