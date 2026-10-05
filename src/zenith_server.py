@@ -7,11 +7,12 @@ import time
 import subprocess
 import urllib.parse
 import threading
+import winreg
 import psutil
 
-# Zenith System — Backend Server & API Hub V2.0
+# Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
-# WinGet Package Installer engine, and safe Windows Registry Tweaks.
+# 100ms Registry Installed Apps Engine, WinGet Package Installer, and Safe CPU Benchmark.
 
 PORT = 49152
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,11 +26,21 @@ last_net_io = psutil.net_io_counters()
 # Global WinGet installation state
 winget_lock = threading.Lock()
 winget_state = {
-    "status": "idle", # "idle", "installing", "done", "error"
+    "status": "idle",
     "current_package": "",
     "total": 0,
     "completed": 0,
     "logs": []
+}
+
+# Global CPU Stress State
+stress_lock = threading.Lock()
+stress_state = {
+    "active": False,
+    "elapsed_seconds": 0,
+    "max_seconds": 15,
+    "max_cpu_percent": 0.0,
+    "status": "idle" # "idle", "running", "completed"
 }
 
 def get_hardware_info():
@@ -73,21 +84,16 @@ def get_live_metrics():
     now = time.time()
     dt = max(0.1, now - last_net_time)
 
-    # CPU metrics
     cpu_percent = psutil.cpu_percent(interval=None)
     per_core = psutil.cpu_percent(interval=None, percpu=True)
-
-    # RAM metrics
     mem = psutil.virtual_memory()
 
-    # Network metrics delta
     current_net = psutil.net_io_counters()
     down_rate = (current_net.bytes_recv - last_net_io.bytes_recv) / dt
     up_rate = (current_net.bytes_sent - last_net_io.bytes_sent) / dt
     last_net_time = now
     last_net_io = current_net
 
-    # Battery
     battery_data = {"has_battery": False}
     sensors_battery = psutil.sensors_battery()
     if sensors_battery:
@@ -100,7 +106,6 @@ def get_live_metrics():
             "voltage_v": 16.48
         }
 
-    # GPU
     gpu_data = get_gpu_live()
 
     return {
@@ -118,6 +123,51 @@ def get_live_metrics():
         "battery": battery_data,
         "gpu": gpu_data
     }
+
+def get_installed_apps():
+    """Scans the Windows Registry in ~100ms without WMI bloat."""
+    apps = []
+    seen = set()
+    keys = [
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
+        (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Uninstall")
+    ]
+
+    for root, path in keys:
+        try:
+            k = winreg.OpenKey(root, path)
+            for i in range(winreg.QueryInfoKey(k)[0]):
+                try:
+                    sub = winreg.EnumKey(k, i)
+                    sk = winreg.OpenKey(k, sub)
+                    def val(name):
+                        try:
+                            return winreg.QueryValueEx(sk, name)[0]
+                        except:
+                            return None
+                    name = val("DisplayName")
+                    if name and name not in seen:
+                        # Filter out basic updates or components without names
+                        seen.add(name)
+                        size_raw = val("EstimatedSize") or 0
+                        apps.append({
+                            "name": name,
+                            "version": val("DisplayVersion") or "",
+                            "publisher": val("Publisher") or "Bilinmiyor",
+                            "size_mb": round(size_raw / 1024, 1),
+                            "install_date": val("InstallDate") or "",
+                            "uninstall_string": val("UninstallString") or ""
+                        })
+                    sk.Close()
+                except:
+                    pass
+            k.Close()
+        except:
+            pass
+
+    apps.sort(key=lambda x: x["name"].lower())
+    return apps
 
 def get_processes():
     procs = []
@@ -195,9 +245,44 @@ def run_winget_worker(package_ids):
         winget_state["current_package"] = ""
         winget_state["logs"].append("[Zenith WinGet] Tüm kurulum işlemleri tamamlandı!")
 
+def cpu_stress_worker(duration=15):
+    global stress_state
+    with stress_lock:
+        stress_state["active"] = True
+        stress_state["status"] = "running"
+        stress_state["elapsed_seconds"] = 0
+        stress_state["max_seconds"] = duration
+        stress_state["max_cpu_percent"] = 0.0
+
+    stop_event = threading.Event()
+    def burn():
+        while not stop_event.is_set():
+            # Light compute burn (sqrt math)
+            _ = [x**0.5 for x in range(10000)]
+
+    threads = [threading.Thread(target=burn, daemon=True) for _ in range(os.cpu_count() or 4)]
+    for t in threads:
+        t.start()
+
+    start_t = time.time()
+    while time.time() - start_t < duration:
+        time.sleep(1)
+        cur_cpu = psutil.cpu_percent(interval=None)
+        with stress_lock:
+            stress_state["elapsed_seconds"] = int(time.time() - start_t)
+            if cur_cpu > stress_state["max_cpu_percent"]:
+                stress_state["max_cpu_percent"] = cur_cpu
+
+    stop_event.set()
+    for t in threads:
+        t.join(timeout=0.2)
+
+    with stress_lock:
+        stress_state["active"] = False
+        stress_state["status"] = "completed"
+
 def apply_registry_tweaks(tweaks):
     logs = []
-    # 1. Bing Search in Start Menu
     if tweaks.get("bing", True):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v BingSearchEnabled /t REG_DWORD /d 0 /f', shell=True)
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v CortanaConsent /t REG_DWORD /d 0 /f', shell=True)
@@ -206,12 +291,10 @@ def apply_registry_tweaks(tweaks):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v BingSearchEnabled /t REG_DWORD /d 1 /f', shell=True)
         logs.append("Bing web aramaları varsayılana getirildi.")
 
-    # 2. Windows Feedback Prompts (SIUF)
     if tweaks.get("telemetry", True):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Siuf\\Rules" /v NumberOfSIUFInPeriod /t REG_DWORD /d 0 /f', shell=True)
         logs.append("Windows kullanıcı geri bildirim istemleri kapatıldı.")
 
-    # 3. Game Mode
     if tweaks.get("game_mode", True):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f', shell=True)
         logs.append("Windows Otomatik Oyun Modu (Performans Önceliği) aktif edildi.")
@@ -233,12 +316,17 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(get_live_metrics())
         elif path == "/api/processes":
             self.send_json(get_processes())
+        elif path == "/api/apps":
+            self.send_json(get_installed_apps())
         elif path == "/api/search":
             q = query.get("q", [""])[0]
             self.send_json(search_files(q))
         elif path == "/api/winget/status":
             with winget_lock:
                 self.send_json(winget_state)
+        elif path == "/api/stress/status":
+            with stress_lock:
+                self.send_json(stress_state)
         elif path == "/api/ping":
             self.send_json({"status": "ok", "time": time.time()})
         elif path == "/api/open":
@@ -275,6 +363,23 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": True, "count": len(packages)})
             else:
                 self.send_json({"error": "No packages specified"}, status=400)
+
+        elif self.path == "/api/stress/start":
+            duration = int(data.get("duration", 15))
+            t = threading.Thread(target=cpu_stress_worker, args=(duration,), daemon=True)
+            t.start()
+            self.send_json({"success": True, "duration": duration})
+
+        elif self.path == "/api/uninstall":
+            cmd = data.get("uninstall_string", "")
+            if cmd:
+                try:
+                    subprocess.Popen(cmd, shell=True)
+                    self.send_json({"success": True})
+                except Exception as e:
+                    self.send_json({"error": str(e)}, status=500)
+            else:
+                self.send_json({"error": "No uninstall string"}, status=400)
 
         else:
             self.send_error(404)

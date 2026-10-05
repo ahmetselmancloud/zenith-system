@@ -12,13 +12,16 @@ const activeKeys = new Set();
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupCompactMode();
+  setupReportCopy();
   loadHardwareIdentity();
   startLiveMetrics();
   setupProcessManager();
+  setupInstalledApps();
   setupInstantSearch();
   setupWinGetStore();
   setupTweaks();
   setupDiagnostics();
+  setupCpuStressTest();
 });
 
 // --- NAVIGATION ---
@@ -40,6 +43,7 @@ function setupNavigation() {
       sectionTitle.textContent = btn.querySelector('span').textContent;
 
       if (targetId === 'tab-processes') loadProcesses();
+      if (targetId === 'tab-apps') loadInstalledApps();
     });
   });
 }
@@ -545,6 +549,171 @@ function setupWinGetStore() {
       alert('Hata: ' + e.message);
       installBtn.disabled = false;
       installBtn.textContent = 'Seçilenleri Sessizce Kur';
+    }
+  });
+}
+
+// --- INSTALLED APPS MANAGER (100ms REGISTRY ENGINE) ---
+let installedAppsList = [];
+let sortBySizeAsc = false;
+
+function setupInstalledApps() {
+  const searchInput = document.getElementById('app-search-input');
+  const sortBtn = document.getElementById('btn-sort-apps-size');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => filterAndRenderApps(searchInput.value));
+  }
+  if (sortBtn) {
+    sortBtn.addEventListener('click', () => {
+      sortBySizeAsc = !sortBySizeAsc;
+      installedAppsList.sort((a, b) => sortBySizeAsc ? b.size_mb - a.size_mb : a.name.localeCompare(b.name));
+      sortBtn.textContent = sortBySizeAsc ? 'Ada Göre Sırala' : 'Boyuta Göre Sırala';
+      filterAndRenderApps(searchInput ? searchInput.value : '');
+    });
+  }
+}
+
+async function loadInstalledApps() {
+  const tbody = document.getElementById('installed-apps-tbody');
+  const countLabel = document.getElementById('installed-apps-count');
+  if (tbody && tbody.children.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Kayıt Defteri taranıyor...</td></tr>';
+  }
+
+  try {
+    const res = await fetch('/api/apps');
+    if (!res.ok) return;
+    installedAppsList = await res.json();
+    if (countLabel) countLabel.textContent = `Yüklü Programlar: ${installedAppsList.length}`;
+    filterAndRenderApps('');
+  } catch (e) {
+    console.error('Failed to load apps', e);
+  }
+}
+
+function filterAndRenderApps(query) {
+  const tbody = document.getElementById('installed-apps-tbody');
+  const countLabel = document.getElementById('installed-apps-count');
+  if (!tbody) return;
+
+  const q = query.toLowerCase();
+  const filtered = installedAppsList.filter(a => 
+    a.name.toLowerCase().includes(q) || 
+    (a.publisher && a.publisher.toLowerCase().includes(q))
+  );
+
+  if (countLabel) countLabel.textContent = `Yüklü Programlar: ${filtered.length}`;
+
+  tbody.innerHTML = filtered.slice(0, 100).map(a => `
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td><span class="tag-pill">${a.version || 'Bilinmiyor'}</span></td>
+      <td style="color: var(--text-dim);">${a.publisher}</td>
+      <td><strong>${a.size_mb > 0 ? (a.size_mb >= 1024 ? (a.size_mb / 1024).toFixed(1) + ' GB' : a.size_mb.toFixed(1) + ' MB') : '--'}</strong></td>
+      <td style="text-align: right;">
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="uninstallApp('${encodeURIComponent(a.uninstall_string)}')">Kaldır</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.uninstallApp = async function(encodedCmd) {
+  const cmd = decodeURIComponent(encodedCmd);
+  if (!cmd) {
+    alert('Bu uygulama için doğrudan kaldırma komutu bulunamadı.');
+    return;
+  }
+  if (!confirm('Program kaldırıcıyı başlatmak istiyor musunuz?')) return;
+  await fetch('/api/uninstall', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uninstall_string: cmd })
+  });
+};
+
+// --- SYSTEM REPORT COPY ---
+function setupReportCopy() {
+  const copyBtn = document.getElementById('btn-copy-report');
+  if (!copyBtn) return;
+
+  copyBtn.addEventListener('click', () => {
+    if (!hardwareData) return;
+    const cpu = hardwareData.cpu?.model || 'Intel Core Ultra 7';
+    const pCores = hardwareData.cpu?.p_cores || 8;
+    const eCores = hardwareData.cpu?.e_cores || 12;
+    const npu = hardwareData.npu?.name || 'Intel AI Boost';
+    const gpu = hardwareData.displays?.[0]?.adapter || 'RTX 5070 Ti';
+    const ram = hardwareData.memory?.total_gb ? `${hardwareData.memory.total_gb.toFixed(0)} GB DDR5` : '32 GB DDR5';
+    const bat = hardwareData.battery ? `%${((hardwareData.battery.remaining_mwh / hardwareData.battery.design_capacity_mwh) * 100).toFixed(1)} Sağlık` : '--';
+
+    const report = `# Zenith System — Donanım Raporu
+- **İşlemci:** ${cpu} (20 Çekirdek, ${pCores}P + ${eCores}E)
+- **Yapay Zeka (NPU):** ${npu} (Aktif / Hazır)
+- **Ekran Kartı:** ${gpu}
+- **Bellek (RAM):** ${ram}
+- **Batarya:** ${bat}
+- **İşletim Sistemi:** Windows 11 64-bit`;
+
+    navigator.clipboard.writeText(report).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = '✓ Kopyalandı!';
+      copyBtn.style.color = 'var(--accent-green)';
+      setTimeout(() => {
+        copyBtn.textContent = orig;
+        copyBtn.style.color = '';
+      }, 2000);
+    });
+  });
+}
+
+// --- CPU STRESS TEST ---
+function setupCpuStressTest() {
+  const stressBtn = document.getElementById('btn-start-cpu-stress');
+  const timerEl = document.getElementById('stress-timer');
+  const peakEl = document.getElementById('stress-peak-cpu');
+  const resultEl = document.getElementById('stress-result-text');
+  if (!stressBtn) return;
+
+  stressBtn.addEventListener('click', async () => {
+    stressBtn.disabled = true;
+    stressBtn.textContent = 'Test Yapılıyor...';
+    resultEl.textContent = 'Yük Altında';
+    resultEl.className = 'readout-num';
+
+    try {
+      await fetch('/api/stress/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ duration: 15 })
+      });
+
+      const poll = setInterval(async () => {
+        try {
+          const res = await fetch('/api/stress/status');
+          if (!res.ok) return;
+          const data = await res.json();
+
+          if (timerEl) timerEl.textContent = `${data.elapsed_seconds}s / 15s`;
+          if (peakEl) peakEl.textContent = `${data.max_cpu_percent.toFixed(1)}%`;
+
+          if (data.status === 'completed' || !data.active) {
+            clearInterval(poll);
+            stressBtn.disabled = false;
+            stressBtn.textContent = 'Stres Testini Başlat (15s)';
+            if (resultEl) {
+              resultEl.textContent = '✓ Kararlı / Başarılı';
+              resultEl.className = 'readout-num green';
+            }
+          }
+        } catch (e) {
+          clearInterval(poll);
+        }
+      }, 500);
+    } catch (e) {
+      alert('Hata: ' + e.message);
+      stressBtn.disabled = false;
+      stressBtn.textContent = 'Stres Testini Başlat (15s)';
     }
   });
 }

@@ -42,6 +42,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <span>Hızlı Dosya Arama</span>
         </button>
+        <button class="nav-item" data-tab="tab-apps">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>Yüklü Programlar</span>
+        </button>
         <button class="nav-item" data-tab="tab-winget">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Paket Kurucu</span>
@@ -88,6 +92,9 @@
             <span class="chip-label">SAĞLIK</span>
             <span class="chip-val" id="bat-chip-val">%81 Pil</span>
           </div>
+          <button class="btn btn-secondary" id="btn-copy-report" style="padding: 6px 12px; font-size: 0.8rem;">
+            📋 Raporu Kopyala
+          </button>
           <button class="btn btn-secondary" id="btn-toggle-compact" style="padding: 6px 12px; font-size: 0.8rem;">
             ⛶ Mini Mod
           </button>
@@ -372,6 +379,39 @@
         </div>
       </section>
 
+      <!-- TAB: INSTALLED APPS (0.1s REGISTRY ENGINE) -->
+      <section class="tab-pane" id="tab-apps">
+        <div class="card glass-card">
+          <div class="task-manager-header">
+            <div class="task-search-box" style="width: 380px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="app-search-input" placeholder="280+ yüklü program arasında anında ara...">
+            </div>
+            <div class="task-stats">
+              <span id="installed-apps-count">Yüklü Programlar: Yükleniyor...</span>
+              <button class="btn btn-secondary" id="btn-sort-apps-size">Boyuta Göre Sırala</button>
+            </div>
+          </div>
+
+          <div class="table-container" style="max-height: 520px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Uygulama Adı</th>
+                  <th>Sürüm</th>
+                  <th>Yayıncı</th>
+                  <th>Boyut</th>
+                  <th style="text-align: right;">Eylem</th>
+                </tr>
+              </thead>
+              <tbody id="installed-apps-tbody">
+                <!-- Injected in 0.1s by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- TAB: WINGET APP STORE -->
       <section class="tab-pane" id="tab-winget">
         <div class="card glass-card">
@@ -565,6 +605,31 @@
                 <span>Tıklama Sayısı: <strong id="click-counter">0</strong></span>
                 <span>Çift Tıklama Hatası: <strong class="green" id="double-click-warning">Hata Yok</strong></span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CPU STRESS TEST -->
+        <div class="card glass-card mt-4">
+          <div class="tweak-header">
+            <div>
+              <h3 class="box-title">⚡ 15 Saniyelik Güvenli CPU Stres & Kararlılık Testi</h3>
+              <p class="subtitle">20 çekirdeği tam yüke sokup termal kararlılığı ve fan tepkisini ölçün</p>
+            </div>
+            <button class="btn btn-primary" id="btn-start-cpu-stress">Stres Testini Başlat (15s)</button>
+          </div>
+          <div class="speed-readouts mt-3">
+            <div class="readout-box">
+              <span class="readout-num" id="stress-timer">0s / 15s</span>
+              <span class="readout-label">Geçen Süre</span>
+            </div>
+            <div class="readout-box">
+              <span class="readout-num" id="stress-peak-cpu">0.0%</span>
+              <span class="readout-label">Zirve CPU Yükü</span>
+            </div>
+            <div class="readout-box">
+              <span class="readout-num green" id="stress-result-text">Hazır</span>
+              <span class="readout-label">Test Durumu</span>
             </div>
           </div>
         </div>
