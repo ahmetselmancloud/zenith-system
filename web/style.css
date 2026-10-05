@@ -272,6 +272,12 @@ body {
 }
 
 /* GRIDS */
+.grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
 .grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -829,4 +835,76 @@ input:checked + .slider:before { transform: translateX(20px); }
   color: #38bdf8;
   max-height: 250px;
   overflow-y: auto;
+}
+
+/* WINGET APP STORE */
+.category-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--text-main);
+}
+
+.package-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pkg-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pkg-checkbox:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent-cyan);
+}
+
+.pkg-checkbox input {
+  accent-color: var(--accent-cyan);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.winget-terminal {
+  background: #040609;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  min-height: 140px;
+  max-height: 220px;
+  overflow-y: auto;
+  color: #a7f3d0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* COMPACT MODE */
+body.compact-mode .sidebar {
+  display: none !important;
+}
+
+body.compact-mode .main-content {
+  padding: 16px 20px;
+}
+
+body.compact-mode .top-header .subtitle {
+  display: none;
+}
+
+body.compact-mode .grid-5 {
+  grid-template-columns: repeat(3, 1fr);
 }

@@ -42,6 +42,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <span>Hızlı Dosya Arama</span>
         </button>
+        <button class="nav-item" data-tab="tab-winget">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Paket Kurucu</span>
+        </button>
         <button class="nav-item" data-tab="tab-tweaks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           <span>Windows Tweak</span>
@@ -84,17 +88,20 @@
             <span class="chip-label">SAĞLIK</span>
             <span class="chip-val" id="bat-chip-val">%81 Pil</span>
           </div>
+          <button class="btn btn-secondary" id="btn-toggle-compact" style="padding: 6px 12px; font-size: 0.8rem;">
+            ⛶ Mini Mod
+          </button>
         </div>
       </header>
 
       <!-- TAB 1: DASHBOARD -->
       <section class="tab-pane active" id="tab-dashboard">
         <!-- TOP GAUGES GRID -->
-        <div class="grid-4">
+        <div class="grid-5">
           <!-- CPU GAUGE -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">İşlemci Yükü (CPU)</span>
+              <span class="card-title">İşlemci (CPU)</span>
               <span class="tag-pill" id="cpu-temp-tag">Intel Ultra 7</span>
             </div>
             <div class="gauge-wrapper">
@@ -111,6 +118,36 @@
             </div>
             <div class="core-bars-container" id="cores-grid">
               <!-- Per-core mini bars dynamically injected -->
+            </div>
+          </div>
+
+          <!-- GPU GAUGE -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Ekran Kartı (GPU)</span>
+              <span class="tag-pill purple" id="gpu-temp-badge">56 °C</span>
+            </div>
+            <div class="gauge-wrapper">
+              <div class="circle-progress">
+                <svg viewBox="0 0 100 100">
+                  <circle class="bg" cx="50" cy="50" r="42"></circle>
+                  <circle class="meter gpu-meter" cx="50" cy="50" r="42" style="stroke: #8b5cf6;"></circle>
+                </svg>
+                <div class="gauge-value">
+                  <span class="big-num" id="gpu-percent">1%</span>
+                  <span class="label" id="gpu-power-val">15.8 W</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer-stats">
+              <div class="stat-col">
+                <span class="stat-label">VRAM</span>
+                <span class="stat-val purple" id="gpu-vram-text">2.2 / 12 GB</span>
+              </div>
+              <div class="stat-col">
+                <span class="stat-label">Sıcaklık</span>
+                <span class="stat-val" id="gpu-temp-text">56 °C</span>
+              </div>
             </div>
           </div>
 
@@ -330,6 +367,76 @@
           <div class="search-results-container" id="search-results-box">
             <div class="empty-state">
               <span>Aramak istediğiniz dosya adını yazmaya başlayın.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: WINGET APP STORE -->
+      <section class="tab-pane" id="tab-winget">
+        <div class="card glass-card">
+          <div class="tweak-header">
+            <div>
+              <h3>WinGet Toplu Paket & Program Kurucu</h3>
+              <p class="subtitle">Windows'un resmi paket yöneticisiyle arka planda reklamsız ve sessiz toplu kurulum</p>
+            </div>
+            <button class="btn btn-primary" id="btn-install-winget-pkgs">Seçilenleri Sessizce Kur</button>
+          </div>
+
+          <!-- PACKAGE CATEGORIES -->
+          <div class="grid-3">
+            <div class="card glass-card">
+              <h4 class="category-title">🌐 Web Tarayıcıları</h4>
+              <div class="package-list">
+                <label class="pkg-checkbox"><input type="checkbox" value="Brave.Brave"> <span>Brave Browser</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Google.Chrome"> <span>Google Chrome</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Mozilla.Firefox"> <span>Mozilla Firefox</span></label>
+              </div>
+            </div>
+
+            <div class="card glass-card">
+              <h4 class="category-title">💻 Geliştirici & Kod</h4>
+              <div class="package-list">
+                <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.VisualStudioCode"> <span>VS Code</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Git.Git"> <span>Git CLI</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="OpenJS.NodeJS"> <span>Node.js (LTS)</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Python.Python.3.12"> <span>Python 3.12</span></label>
+              </div>
+            </div>
+
+            <div class="card glass-card">
+              <h4 class="category-title">🛠️ Sistem & Araçlar</h4>
+              <div class="package-list">
+                <label class="pkg-checkbox"><input type="checkbox" value="7zip.7zip"> <span>7-Zip</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="voidtools.Everything"> <span>Everything (Dosya Arama)</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Notepad++.Notepad++"> <span>Notepad++</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.PowerToys"> <span>PowerToys</span></label>
+              </div>
+            </div>
+
+            <div class="card glass-card">
+              <h4 class="category-title">🎬 Medya & İletişim</h4>
+              <div class="package-list">
+                <label class="pkg-checkbox"><input type="checkbox" value="VideoLAN.VLC"> <span>VLC Media Player</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Discord.Discord"> <span>Discord</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Spotify.Spotify"> <span>Spotify</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="OBSProject.OBSStudio"> <span>OBS Studio</span></label>
+              </div>
+            </div>
+
+            <div class="card glass-card">
+              <h4 class="category-title">🎮 Oyun & Başlatıcılar</h4>
+              <div class="package-list">
+                <label class="pkg-checkbox"><input type="checkbox" value="Valve.Steam"> <span>Steam</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="EpicGames.EpicGamesLauncher"> <span>Epic Games</span></label>
+              </div>
+            </div>
+
+            <div class="card glass-card">
+              <h4 class="category-title">📋 Kurulum Terminali</h4>
+              <div class="winget-terminal" id="winget-log-box">
+                <div class="terminal-line text-dim">Henüz kurulum başlatılmadı. Paketleri seçip 'Kur' butonuna basın.</div>
+              </div>
             </div>
           </div>
         </div>

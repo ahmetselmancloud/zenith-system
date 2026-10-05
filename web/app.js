@@ -11,10 +11,12 @@ const activeKeys = new Set();
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
+  setupCompactMode();
   loadHardwareIdentity();
   startLiveMetrics();
   setupProcessManager();
   setupInstantSearch();
+  setupWinGetStore();
   setupTweaks();
   setupDiagnostics();
 });
@@ -152,6 +154,27 @@ function renderLiveStats(stats) {
     stats.cores.forEach((val, idx) => {
       if (fills[idx]) fills[idx].style.height = `${Math.min(100, Math.max(5, val))}%`;
     });
+  }
+
+  // 1.5 GPU GAUGE
+  if (stats.gpu && stats.gpu.available) {
+    const gpuPercent = Math.round(stats.gpu.usage_percent || 0);
+    const gpuEl = document.getElementById('gpu-percent');
+    if (gpuEl) gpuEl.textContent = `${gpuPercent}%`;
+    setGaugeProgress('.gpu-meter', gpuPercent);
+
+    const gpuTempBadge = document.getElementById('gpu-temp-badge');
+    const gpuTempText = document.getElementById('gpu-temp-text');
+    if (gpuTempBadge) gpuTempBadge.textContent = `${stats.gpu.temp_c} °C`;
+    if (gpuTempText) gpuTempText.textContent = `${stats.gpu.temp_c} °C`;
+
+    const gpuPower = document.getElementById('gpu-power-val');
+    if (gpuPower) gpuPower.textContent = `${stats.gpu.power_w.toFixed(1)} W`;
+
+    const gpuVram = document.getElementById('gpu-vram-text');
+    if (gpuVram && stats.gpu.vram_total_mb) {
+      gpuVram.textContent = `${(stats.gpu.vram_used_mb / 1024).toFixed(1)} / ${(stats.gpu.vram_total_mb / 1024).toFixed(0)} GB`;
+    }
   }
 
   // 2. RAM GAUGE
@@ -462,3 +485,67 @@ function setupDiagnostics() {
     });
   }
 }
+
+// --- COMPACT MINI MODE ---
+function setupCompactMode() {
+  const btn = document.getElementById('btn-toggle-compact');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      document.body.classList.toggle('compact-mode');
+      const isCompact = document.body.classList.contains('compact-mode');
+      btn.textContent = isCompact ? '⛶ Normal Mod' : '⛶ Mini Mod';
+    });
+  }
+}
+
+// --- WINGET APP STORE ---
+function setupWinGetStore() {
+  const installBtn = document.getElementById('btn-install-winget-pkgs');
+  const logBox = document.getElementById('winget-log-box');
+  if (!installBtn) return;
+
+  installBtn.addEventListener('click', async () => {
+    const checked = Array.from(document.querySelectorAll('.pkg-checkbox input:checked')).map(cb => cb.value);
+    if (checked.length === 0) {
+      alert('Lütfen en az bir paket seçin.');
+      return;
+    }
+
+    installBtn.disabled = true;
+    installBtn.textContent = 'Kuruluyor...';
+    if (logBox) logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">Kurulum kuyruğa alındı, arka plan işçisi başlatılıyor...</div>';
+
+    try {
+      const res = await fetch('/api/winget/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packages: checked })
+      });
+      if (!res.ok) throw new Error('API isteği başarısız oldu.');
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const sRes = await fetch('/api/winget/status');
+          if (!sRes.ok) return;
+          const statusData = await sRes.json();
+          if (logBox && statusData.logs) {
+            logBox.innerHTML = statusData.logs.map(l => `<div class="terminal-line">${l}</div>`).join('');
+            logBox.scrollTop = logBox.scrollHeight;
+          }
+          if (statusData.status === 'done' || statusData.status === 'error') {
+            clearInterval(pollInterval);
+            installBtn.disabled = false;
+            installBtn.textContent = 'Seçilenleri Sessizce Kur';
+          }
+        } catch (err) {
+          clearInterval(pollInterval);
+        }
+      }, 1000);
+    } catch (e) {
+      alert('Hata: ' + e.message);
+      installBtn.disabled = false;
+      installBtn.textContent = 'Seçilenleri Sessizce Kur';
+    }
+  });
+}
+
