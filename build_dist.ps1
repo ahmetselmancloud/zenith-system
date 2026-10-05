@@ -22,7 +22,14 @@ $ProbeCpp = Join-Path $ProjectRoot "src\zenith_probe.cpp"
 $ProbeExe = Join-Path $ProjectRoot "bin\zenith_probe.exe"
 if (Get-Command "g++" -ErrorAction SilentlyContinue) {
     & g++ -O3 -std=c++17 $ProbeCpp -o $ProbeExe -lsetupapi
-    Write-Host "    [OK] Compiled with g++ -O3" -ForegroundColor Green
+    Write-Host "    [OK] Compiled zenith_probe.exe with g++ -O3" -ForegroundColor Green
+}
+
+Write-Host ">>> Compiling native GUI launcher with embedded icon (Zenith.exe)..." -ForegroundColor Cyan
+if ((Get-Command "windres" -ErrorAction SilentlyContinue) -and (Get-Command "g++" -ErrorAction SilentlyContinue)) {
+    & windres src/zenith.rc -O coff -o src/zenith.res
+    & g++ -O3 -mwindows src/zenith_launcher.cpp src/zenith.res -o Zenith.exe -lws2_32
+    Write-Host "    [OK] Compiled Zenith.exe with embedded icon" -ForegroundColor Green
 }
 
 Write-Host ">>> Staging files into release directory..." -ForegroundColor Cyan
@@ -30,9 +37,12 @@ Write-Host ">>> Staging files into release directory..." -ForegroundColor Cyan
 Copy-Item -Path (Join-Path $ProjectRoot "bin") -Destination $StagingDir -Recurse -Force
 Copy-Item -Path (Join-Path $ProjectRoot "src") -Destination $StagingDir -Recurse -Force
 Copy-Item -Path (Join-Path $ProjectRoot "web") -Destination $StagingDir -Recurse -Force
+if (Test-Path (Join-Path $ProjectRoot "assets")) {
+    Copy-Item -Path (Join-Path $ProjectRoot "assets") -Destination $StagingDir -Recurse -Force
+}
 
 # Copy root files
-$RootFiles = @("start_zenith.bat", "install.ps1", "README.md", "hardware_cache.json")
+$RootFiles = @("Zenith.exe", "start_zenith.bat", "install.ps1", "README.md", "LICENSE", "hardware_cache.json")
 foreach ($rf in $RootFiles) {
     $srcPath = Join-Path $ProjectRoot $rf
     if (Test-Path $srcPath) {

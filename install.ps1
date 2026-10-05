@@ -81,18 +81,20 @@ Write-Host "      [OK] Files deployed successfully." -ForegroundColor Green
 Write-Host "[4/5] Creating Windows Shortcuts..." -ForegroundColor Yellow
 try {
     $WshShell = New-Object -ComObject WScript.Shell
-    $TargetBat = Join-Path $InstallDir "start_zenith.bat"
+    $TargetExe = Join-Path $InstallDir "Zenith.exe"
+    $TargetApp = if (Test-Path $TargetExe) { $TargetExe } else { Join-Path $InstallDir "start_zenith.bat" }
+    $IconPath = if (Test-Path $TargetExe) { "$TargetExe,0" } elseif (Test-Path (Join-Path $InstallDir "assets\zenith.ico")) { Join-Path $InstallDir "assets\zenith.ico" } else { "$env:SystemRoot\System32\shell32.dll,15" }
     
     # Desktop Shortcut
     $DesktopFolder = [System.Environment]::GetFolderPath('Desktop')
     $DesktopLnk = Join-Path $DesktopFolder "Zenith System.lnk"
     $Shortcut = $WshShell.CreateShortcut($DesktopLnk)
-    $Shortcut.TargetPath = $TargetBat
+    $Shortcut.TargetPath = $TargetApp
     $Shortcut.WorkingDirectory = $InstallDir
     $Shortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Z)"
     $Shortcut.Hotkey = "CTRL+ALT+Z"
-    $Shortcut.WindowStyle = 7 # Minimized
-    $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,15"
+    $Shortcut.WindowStyle = 1
+    $Shortcut.IconLocation = $IconPath
     $Shortcut.Save()
     Write-Host "      [OK] Desktop shortcut created (Hotkey: Ctrl+Alt+Z): $DesktopLnk" -ForegroundColor Green
 
@@ -101,12 +103,12 @@ try {
     if (Test-Path $StartMenuPrograms) {
         $StartMenuLnk = Join-Path $StartMenuPrograms "Zenith System.lnk"
         $SMShortcut = $WshShell.CreateShortcut($StartMenuLnk)
-        $SMShortcut.TargetPath = $TargetBat
+        $SMShortcut.TargetPath = $TargetApp
         $SMShortcut.WorkingDirectory = $InstallDir
         $SMShortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Z)"
         $SMShortcut.Hotkey = "CTRL+ALT+Z"
-        $SMShortcut.WindowStyle = 7
-        $SMShortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,15"
+        $SMShortcut.WindowStyle = 1
+        $SMShortcut.IconLocation = $IconPath
         $SMShortcut.Save()
         Write-Host "      [OK] Start Menu shortcut created (Hotkey: Ctrl+Alt+Z): $StartMenuLnk" -ForegroundColor Green
     }

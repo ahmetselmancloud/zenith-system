@@ -1,0 +1,25 @@
+1 ICON "assets/zenith.ico"
+
+1 VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "ahmetselmancloud"
+      VALUE "FileDescription", "Zenith System — Next-Gen Hardware Monitor"
+      VALUE "FileVersion", "1.0.0"
+      VALUE "InternalName", "Zenith"
+      VALUE "LegalCopyright", "Copyright (c) 2026 Selman"
+      VALUE "OriginalFilename", "Zenith.exe"
+      VALUE "ProductName", "Zenith System"
+      VALUE "ProductVersion", "1.0.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END
