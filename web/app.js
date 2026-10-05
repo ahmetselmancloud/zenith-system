@@ -66,22 +66,22 @@ function renderHardwareStatic(data) {
   // Top chips
   if (data.cpu?.model) {
     document.getElementById('cpu-chip-val').textContent = data.cpu.model.replace('Intel(R) Core(TM) ', '').replace(' Processor', '');
-    document.getElementById('cpu-temp-tag').textContent = `${data.cpu.p_cores}P + ${data.cpu.e_cores}E Çekirdek`;
+    document.getElementById('cpu-temp-tag').textContent = `${data.cpu.p_cores}P + ${data.cpu.e_cores}E Cores`;
   }
   if (data.displays?.[0]?.adapter) {
     document.getElementById('gpu-chip-val').textContent = data.displays[0].adapter.replace('NVIDIA GeForce ', '').replace(' Laptop GPU', '');
   }
   if (data.battery?.design_capacity_mwh && data.battery?.remaining_mwh) {
     const health = ((data.battery.remaining_mwh / data.battery.design_capacity_mwh) * 100).toFixed(1);
-    document.getElementById('bat-chip-val').textContent = `%${health} Pil`;
-    document.getElementById('bat-health-val').textContent = `%${health}`;
+    document.getElementById('bat-chip-val').textContent = `${health}% Battery`;
+    document.getElementById('bat-health-val').textContent = `${health}%`;
     document.getElementById('bat-design-val').textContent = `${(data.battery.design_capacity_mwh / 1000).toFixed(1)} Wh`;
   }
 
   // NPU Card
   if (data.npu) {
     document.getElementById('npu-model-name').textContent = data.npu.name || 'Intel AI Boost';
-    document.getElementById('npu-status-val').textContent = data.npu.status || 'Hazır';
+    document.getElementById('npu-status-val').textContent = data.npu.status || 'Ready';
   }
 
   // Displays Card
@@ -89,7 +89,7 @@ function renderHardwareStatic(data) {
   if (displaysContainer && data.displays) {
     displaysContainer.innerHTML = data.displays.map((disp, i) => `
       <div class="hardware-spec-row">
-        <span class="spec-name">Ekran ${i + 1} (${disp.resolution})</span>
+        <span class="spec-name">Display ${i + 1} (${disp.resolution})</span>
         <span class="spec-value purple">${disp.refresh_rate_hz} Hz</span>
       </div>
     `).join('');
@@ -115,10 +115,10 @@ function renderHardwareStatic(data) {
   if (cpuTable && data.cpu) {
     cpuTable.innerHTML = `
       <div class="hardware-spec-row"><span class="spec-name">Model</span><span class="spec-value">${data.cpu.model}</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Toplam Fiziksel Çekirdek</span><span class="spec-value">${data.cpu.total_cores}</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Performans (P-Core)</span><span class="spec-value">${data.cpu.p_cores} Çekirdek</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Verimlilik (E-Core)</span><span class="spec-value">${data.cpu.e_cores} Çekirdek</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Toplam İş Parçacığı (Threads)</span><span class="spec-value">${data.cpu.total_threads}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Total Physical Cores</span><span class="spec-value">${data.cpu.total_cores}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Performance Cores (P-Core)</span><span class="spec-value">${data.cpu.p_cores} Cores</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Efficiency Cores (E-Core)</span><span class="spec-value">${data.cpu.e_cores} Cores</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Total Hardware Threads</span><span class="spec-value">${data.cpu.total_threads}</span></div>
     `;
   }
 }
@@ -201,10 +201,10 @@ function renderLiveStats(stats) {
     }
     const statusBadge = document.getElementById('bat-status-badge');
     if (stats.battery.is_discharging) {
-      statusBadge.textContent = `Deşarj: ${(stats.battery.rate_w || 0).toFixed(1)} W`;
+      statusBadge.textContent = `Discharging: ${(stats.battery.rate_w || 0).toFixed(1)} W`;
       statusBadge.className = 'tag-pill purple';
     } else {
-      statusBadge.textContent = 'Prize Takılı';
+      statusBadge.textContent = 'Plugged In';
       statusBadge.className = 'tag-pill green';
     }
   }
@@ -265,7 +265,7 @@ function filterAndRenderProcesses(query) {
   const q = query.toLowerCase();
   const filtered = processList.filter(p => p.name.toLowerCase().includes(q) || p.pid.toString().includes(q));
 
-  if (countLabel) countLabel.textContent = `Aktif İşlemler: ${filtered.length}`;
+  if (countLabel) countLabel.textContent = `Active Processes: ${filtered.length}`;
 
   tbody.innerHTML = filtered.slice(0, 30).map(p => `
     <tr>
@@ -274,14 +274,14 @@ function filterAndRenderProcesses(query) {
       <td>${p.cpu_percent ? p.cpu_percent.toFixed(1) + '%' : '0.0%'}</td>
       <td>${(p.ram_mb || 0).toFixed(1)} MB</td>
       <td style="text-align: right;">
-        <button class="btn-kill" onclick="killProcess(${p.pid}, '${p.name}')">Sonlandır</button>
+        <button class="btn-kill" onclick="killProcess(${p.pid}, '${p.name}')">End Task</button>
       </td>
     </tr>
   `).join('');
 }
 
 window.killProcess = async function(pid, name) {
-  if (!confirm(`${name} (PID: ${pid}) işlemini zorla sonlandırmak istediğinizden emin misiniz?`)) return;
+  if (!confirm(`Are you sure you want to terminate ${name} (PID: ${pid})?`)) return;
   try {
     const res = await fetch('/api/kill', {
       method: 'POST',
@@ -291,10 +291,10 @@ window.killProcess = async function(pid, name) {
     if (res.ok) {
       loadProcesses();
     } else {
-      alert('İşlem sonlandırılamadı (Yönetici yetkisi gerekebilir).');
+      alert('Failed to terminate process (Administrator privileges may be required).');
     }
   } catch (e) {
-    alert('Hata: ' + e.message);
+    alert('Error: ' + e.message);
   }
 };
 
@@ -309,7 +309,7 @@ function setupInstantSearch() {
       clearTimeout(searchDebounce);
       const query = input.value.trim();
       if (!query) {
-        resultsBox.innerHTML = '<div class="empty-state"><span>Aramak istediğiniz dosya adını yazın.</span></div>';
+        resultsBox.innerHTML = '<div class="empty-state"><span>Type a file name or extension to search.</span></div>';
         return;
       }
       searchDebounce = setTimeout(async () => {
@@ -318,7 +318,7 @@ function setupInstantSearch() {
           if (!res.ok) return;
           const files = await res.json();
           if (files.length === 0) {
-            resultsBox.innerHTML = '<div class="empty-state"><span>Eşleşen dosya bulunamadı.</span></div>';
+            resultsBox.innerHTML = '<div class="empty-state"><span>No matching files found.</span></div>';
             return;
           }
           resultsBox.innerHTML = files.map(f => `
@@ -348,7 +348,7 @@ function setupTweaks() {
   if (applyBtn) {
     applyBtn.addEventListener('click', async () => {
       applyBtn.disabled = true;
-      applyBtn.textContent = 'Uygulanıyor...';
+      applyBtn.textContent = 'Applying optimizations...';
       try {
         const payload = {
           telemetry: document.getElementById('twk-telemetry').checked,
@@ -362,13 +362,13 @@ function setupTweaks() {
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          alert('Seçilen ayarlar Windows Kayıt Defteri\'ne başarıyla uygulandı!');
+          alert('Selected optimizations successfully applied to Windows Registry!');
         }
       } catch (e) {
-        alert('Hata oluştu: ' + e.message);
+        alert('Error: ' + e.message);
       } finally {
         applyBtn.disabled = false;
-        applyBtn.textContent = 'Seçilenleri Güvenle Uygula';
+        applyBtn.textContent = 'Apply Selected Optimizations';
       }
     });
   }
@@ -381,7 +381,7 @@ function setupDiagnostics() {
   if (speedBtn) {
     speedBtn.addEventListener('click', async () => {
       speedBtn.disabled = true;
-      speedBtn.textContent = 'Ölçülüyor...';
+      speedBtn.textContent = 'Testing...';
       const pingEl = document.getElementById('ping-readout');
       const downEl = document.getElementById('down-readout');
       const upEl = document.getElementById('up-readout');
@@ -405,7 +405,7 @@ function setupDiagnostics() {
       upEl.textContent = '38.6';
 
       speedBtn.disabled = false;
-      speedBtn.textContent = 'Testi Tekrarla';
+      speedBtn.textContent = 'Run Again';
     });
   }
 
@@ -480,10 +480,10 @@ function setupDiagnostics() {
 
       const warn = document.getElementById('double-click-warning');
       if (diff > 0 && diff < 80) {
-        warn.textContent = `Şüpheli Hızlı Tıklama (${Math.round(diff)} ms)!`;
+        warn.textContent = `Chatter Detected (${Math.round(diff)} ms)!`;
         warn.className = 'accent-red';
       } else {
-        warn.textContent = 'Hata Yok (Normal)';
+        warn.textContent = 'Healthy (Normal)';
         warn.className = 'green';
       }
     });
@@ -497,7 +497,7 @@ function setupCompactMode() {
     btn.addEventListener('click', () => {
       document.body.classList.toggle('compact-mode');
       const isCompact = document.body.classList.contains('compact-mode');
-      btn.textContent = isCompact ? '⛶ Normal Mod' : '⛶ Mini Mod';
+      btn.textContent = isCompact ? '⛶ Normal View' : '⛶ Mini Mode';
     });
   }
 }
@@ -511,13 +511,13 @@ function setupWinGetStore() {
   installBtn.addEventListener('click', async () => {
     const checked = Array.from(document.querySelectorAll('.pkg-checkbox input:checked')).map(cb => cb.value);
     if (checked.length === 0) {
-      alert('Lütfen en az bir paket seçin.');
+      alert('Please select at least one package.');
       return;
     }
 
     installBtn.disabled = true;
-    installBtn.textContent = 'Kuruluyor...';
-    if (logBox) logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">Kurulum kuyruğa alındı, arka plan işçisi başlatılıyor...</div>';
+    installBtn.textContent = 'Installing...';
+    if (logBox) logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">Installation queued. Starting background WinGet worker...</div>';
 
     try {
       const res = await fetch('/api/winget/install', {
@@ -525,7 +525,7 @@ function setupWinGetStore() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packages: checked })
       });
-      if (!res.ok) throw new Error('API isteği başarısız oldu.');
+      if (!res.ok) throw new Error('API request failed.');
 
       const pollInterval = setInterval(async () => {
         try {
@@ -539,16 +539,16 @@ function setupWinGetStore() {
           if (statusData.status === 'done' || statusData.status === 'error') {
             clearInterval(pollInterval);
             installBtn.disabled = false;
-            installBtn.textContent = 'Seçilenleri Sessizce Kur';
+            installBtn.textContent = 'Install Selected Silently';
           }
         } catch (err) {
           clearInterval(pollInterval);
         }
       }, 1000);
     } catch (e) {
-      alert('Hata: ' + e.message);
+      alert('Error: ' + e.message);
       installBtn.disabled = false;
-      installBtn.textContent = 'Seçilenleri Sessizce Kur';
+      installBtn.textContent = 'Install Selected Silently';
     }
   });
 }
@@ -568,7 +568,7 @@ function setupInstalledApps() {
     sortBtn.addEventListener('click', () => {
       sortBySizeAsc = !sortBySizeAsc;
       installedAppsList.sort((a, b) => sortBySizeAsc ? b.size_mb - a.size_mb : a.name.localeCompare(b.name));
-      sortBtn.textContent = sortBySizeAsc ? 'Ada Göre Sırala' : 'Boyuta Göre Sırala';
+      sortBtn.textContent = sortBySizeAsc ? 'Sort by Name' : 'Sort by Size';
       filterAndRenderApps(searchInput ? searchInput.value : '');
     });
   }
@@ -578,14 +578,14 @@ async function loadInstalledApps() {
   const tbody = document.getElementById('installed-apps-tbody');
   const countLabel = document.getElementById('installed-apps-count');
   if (tbody && tbody.children.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Kayıt Defteri taranıyor...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Scanning Windows Registry...</td></tr>';
   }
 
   try {
     const res = await fetch('/api/apps');
     if (!res.ok) return;
     installedAppsList = await res.json();
-    if (countLabel) countLabel.textContent = `Yüklü Programlar: ${installedAppsList.length}`;
+    if (countLabel) countLabel.textContent = `Installed Programs: ${installedAppsList.length}`;
     filterAndRenderApps('');
   } catch (e) {
     console.error('Failed to load apps', e);
@@ -603,16 +603,16 @@ function filterAndRenderApps(query) {
     (a.publisher && a.publisher.toLowerCase().includes(q))
   );
 
-  if (countLabel) countLabel.textContent = `Yüklü Programlar: ${filtered.length}`;
+  if (countLabel) countLabel.textContent = `Installed Programs: ${filtered.length}`;
 
   tbody.innerHTML = filtered.slice(0, 100).map(a => `
     <tr>
       <td><strong>${a.name}</strong></td>
-      <td><span class="tag-pill">${a.version || 'Bilinmiyor'}</span></td>
+      <td><span class="tag-pill">${a.version || 'Unknown'}</span></td>
       <td style="color: var(--text-dim);">${a.publisher}</td>
       <td><strong>${a.size_mb > 0 ? (a.size_mb >= 1024 ? (a.size_mb / 1024).toFixed(1) + ' GB' : a.size_mb.toFixed(1) + ' MB') : '--'}</strong></td>
       <td style="text-align: right;">
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="uninstallApp('${encodeURIComponent(a.uninstall_string)}')">Kaldır</button>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="uninstallApp('${encodeURIComponent(a.uninstall_string)}')">Uninstall</button>
       </td>
     </tr>
   `).join('');
@@ -621,10 +621,10 @@ function filterAndRenderApps(query) {
 window.uninstallApp = async function(encodedCmd) {
   const cmd = decodeURIComponent(encodedCmd);
   if (!cmd) {
-    alert('Bu uygulama için doğrudan kaldırma komutu bulunamadı.');
+    alert('Direct uninstall command not found for this application.');
     return;
   }
-  if (!confirm('Program kaldırıcıyı başlatmak istiyor musunuz?')) return;
+  if (!confirm('Do you want to launch the uninstaller for this program?')) return;
   await fetch('/api/uninstall', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -645,19 +645,19 @@ function setupReportCopy() {
     const npu = hardwareData.npu?.name || 'Intel AI Boost';
     const gpu = hardwareData.displays?.[0]?.adapter || 'RTX 5070 Ti';
     const ram = hardwareData.memory?.total_gb ? `${hardwareData.memory.total_gb.toFixed(0)} GB DDR5` : '32 GB DDR5';
-    const bat = hardwareData.battery ? `%${((hardwareData.battery.remaining_mwh / hardwareData.battery.design_capacity_mwh) * 100).toFixed(1)} Sağlık` : '--';
+    const bat = hardwareData.battery ? `${((hardwareData.battery.remaining_mwh / hardwareData.battery.design_capacity_mwh) * 100).toFixed(1)}% Health` : '--';
 
-    const report = `# Zenith System — Donanım Raporu
-- **İşlemci:** ${cpu} (20 Çekirdek, ${pCores}P + ${eCores}E)
-- **Yapay Zeka (NPU):** ${npu} (Aktif / Hazır)
-- **Ekran Kartı:** ${gpu}
-- **Bellek (RAM):** ${ram}
-- **Batarya:** ${bat}
-- **İşletim Sistemi:** Windows 11 64-bit`;
+    const report = `# Zenith System — Hardware Specification Report
+- **Processor (CPU):** ${cpu} (20 Cores, ${pCores}P + ${eCores}E)
+- **Neural Processor (NPU):** ${npu} (Operational / Ready)
+- **Graphics (GPU):** ${gpu}
+- **Memory (RAM):** ${ram}
+- **Battery:** ${bat}
+- **Operating System:** Windows 11 64-bit`;
 
     navigator.clipboard.writeText(report).then(() => {
       const orig = copyBtn.textContent;
-      copyBtn.textContent = '✓ Kopyalandı!';
+      copyBtn.textContent = '✓ Copied!';
       copyBtn.style.color = 'var(--accent-green)';
       setTimeout(() => {
         copyBtn.textContent = orig;
@@ -677,8 +677,8 @@ function setupCpuStressTest() {
 
   stressBtn.addEventListener('click', async () => {
     stressBtn.disabled = true;
-    stressBtn.textContent = 'Test Yapılıyor...';
-    resultEl.textContent = 'Yük Altında';
+    stressBtn.textContent = 'Stressing Cores...';
+    resultEl.textContent = 'Under Load';
     resultEl.className = 'readout-num';
 
     try {
@@ -700,9 +700,9 @@ function setupCpuStressTest() {
           if (data.status === 'completed' || !data.active) {
             clearInterval(poll);
             stressBtn.disabled = false;
-            stressBtn.textContent = 'Stres Testini Başlat (15s)';
+            stressBtn.textContent = 'Run Stress Test (15s)';
             if (resultEl) {
-              resultEl.textContent = '✓ Kararlı / Başarılı';
+              resultEl.textContent = '✓ Stable / Passed';
               resultEl.className = 'readout-num green';
             }
           }
@@ -711,9 +711,9 @@ function setupCpuStressTest() {
         }
       }, 500);
     } catch (e) {
-      alert('Hata: ' + e.message);
+      alert('Error: ' + e.message);
       stressBtn.disabled = false;
-      stressBtn.textContent = 'Stres Testini Başlat (15s)';
+      stressBtn.textContent = 'Run Stress Test (15s)';
     }
   });
 }

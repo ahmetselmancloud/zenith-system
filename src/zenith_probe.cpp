@@ -371,7 +371,7 @@ int main(int argc, char* argv[]) {
     std::cout << jsonStr;
 
     // Cache to file for ultra-fast instant startup (< 1ms)
-    std::ofstream cacheFile("D:\\Antigravity\\zenith-system\\hardware_cache.json");
+    std::ofstream cacheFile("hardware_cache.json");
     if (cacheFile.is_open()) {
         cacheFile << jsonStr;
         cacheFile.close();

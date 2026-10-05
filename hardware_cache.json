@@ -1,6 +1,6 @@
 {
   "engine": "Zenith Native Hardware Probe V1.0",
-  "execution_time_ms": 379.433,
+  "execution_time_ms": 143.798,
   "cpu": {
     "model": "Intel(R) Core(TM) Ultra 7 255HX",
     "total_cores": 20,
@@ -15,8 +15,8 @@
   },
   "memory": {
     "total_gb": 31.6645,
-    "used_gb": 16.183,
-    "usage_percent": 51
+    "used_gb": 15.5026,
+    "usage_percent": 48
   },
   "displays": [
     {
@@ -55,6 +55,6 @@
     "is_discharging": false,
     "rate_mw": 0,
     "remaining_mwh": 67221,
-    "voltage_mv": 16482
+    "voltage_mv": 16481
   }
 }

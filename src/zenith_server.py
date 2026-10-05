@@ -154,7 +154,7 @@ def get_installed_apps():
                         apps.append({
                             "name": name,
                             "version": val("DisplayVersion") or "",
-                            "publisher": val("Publisher") or "Bilinmiyor",
+                            "publisher": val("Publisher") or "Unknown",
                             "size_mb": round(size_raw / 1024, 1),
                             "install_date": val("InstallDate") or "",
                             "uninstall_string": val("UninstallString") or ""
@@ -189,9 +189,11 @@ def get_processes():
 def search_files(query):
     results = []
     q = query.lower()
+    user_prof = os.environ.get("USERPROFILE", "")
     search_dirs = [
-        os.path.join(os.environ.get("USERPROFILE", ""), "Desktop"),
-        os.path.join(os.environ.get("USERPROFILE", ""), "OneDrive", "Masaüstü"),
+        os.path.join(user_prof, "Desktop"),
+        os.path.join(user_prof, "OneDrive", "Desktop"),
+        os.path.join(user_prof, "OneDrive", "Masaüstü"),
         "D:\\Antigravity"
     ]
     for sdir in search_dirs:
@@ -216,12 +218,12 @@ def run_winget_worker(package_ids):
         winget_state["status"] = "installing"
         winget_state["total"] = len(package_ids)
         winget_state["completed"] = 0
-        winget_state["logs"].append(f"[Zenith WinGet] {len(package_ids)} paket kurulumu başlatılıyor...")
+        winget_state["logs"].append(f"[Zenith WinGet] Queued {len(package_ids)} package(s) for silent installation...")
 
     for pkg_id in package_ids:
         with winget_lock:
             winget_state["current_package"] = pkg_id
-            winget_state["logs"].append(f"Kuruluyor: {pkg_id}...")
+            winget_state["logs"].append(f"Installing: {pkg_id}...")
 
         cmd = [
             "winget", "install", "--id", pkg_id, "-e",
@@ -231,19 +233,19 @@ def run_winget_worker(package_ids):
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             with winget_lock:
                 if res.returncode == 0:
-                    winget_state["logs"].append(f"✓ Başarıyla kuruldu: {pkg_id}")
+                    winget_state["logs"].append(f"✓ Successfully installed: {pkg_id}")
                 else:
-                    winget_state["logs"].append(f"Bilgi: {pkg_id} tamamlandı (Kod: {res.returncode})")
+                    winget_state["logs"].append(f"Info: {pkg_id} completed (Code: {res.returncode})")
                 winget_state["completed"] += 1
         except Exception as e:
             with winget_lock:
-                winget_state["logs"].append(f"✗ Hata ({pkg_id}): {str(e)}")
+                winget_state["logs"].append(f"✗ Error ({pkg_id}): {str(e)}")
                 winget_state["completed"] += 1
 
     with winget_lock:
         winget_state["status"] = "done"
         winget_state["current_package"] = ""
-        winget_state["logs"].append("[Zenith WinGet] Tüm kurulum işlemleri tamamlandı!")
+        winget_state["logs"].append("[Zenith WinGet] All package installations completed!")
 
 def cpu_stress_worker(duration=15):
     global stress_state
@@ -286,18 +288,18 @@ def apply_registry_tweaks(tweaks):
     if tweaks.get("bing", True):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v BingSearchEnabled /t REG_DWORD /d 0 /f', shell=True)
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v CortanaConsent /t REG_DWORD /d 0 /f', shell=True)
-        logs.append("Başlat Menüsü Bing web aramaları kapatıldı (Saf yerel arama aktif).")
+        logs.append("Disabled Start Menu Bing web searches (pure local search enabled).")
     else:
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v BingSearchEnabled /t REG_DWORD /d 1 /f', shell=True)
-        logs.append("Bing web aramaları varsayılana getirildi.")
+        logs.append("Restored Bing web searches to default.")
 
     if tweaks.get("telemetry", True):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\Siuf\\Rules" /v NumberOfSIUFInPeriod /t REG_DWORD /d 0 /f', shell=True)
-        logs.append("Windows kullanıcı geri bildirim istemleri kapatıldı.")
+        logs.append("Disabled Windows feedback & telemetry prompts.")
 
     if tweaks.get("game_mode", True):
         subprocess.run('reg add "HKCU\\Software\\Microsoft\\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f', shell=True)
-        logs.append("Windows Otomatik Oyun Modu (Performans Önceliği) aktif edildi.")
+        logs.append("Enabled Windows Game Mode (Performance Scheduling Priority).")
 
     return logs
 

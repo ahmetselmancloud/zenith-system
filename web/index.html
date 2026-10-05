@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zenith System — Hafif Donanım & Sistem Asistanı</title>
+  <title>Zenith System — Ultra-Lightweight Hardware & System Assistant</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,31 +32,31 @@
         </button>
         <button class="nav-item" data-tab="tab-hardware">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
-          <span>Donanım Kimliği</span>
+          <span>Hardware Identity</span>
         </button>
         <button class="nav-item" data-tab="tab-processes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          <span>Görev Yöneticisi</span>
-        </button>
-        <button class="nav-item" data-tab="tab-search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <span>Hızlı Dosya Arama</span>
+          <span>Process Manager</span>
         </button>
         <button class="nav-item" data-tab="tab-apps">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          <span>Yüklü Programlar</span>
+          <span>Installed Apps</span>
+        </button>
+        <button class="nav-item" data-tab="tab-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>Instant Search</span>
         </button>
         <button class="nav-item" data-tab="tab-winget">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>Paket Kurucu</span>
+          <span>Package Installer</span>
         </button>
         <button class="nav-item" data-tab="tab-tweaks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-          <span>Windows Tweak</span>
+          <span>Windows Tweaks</span>
         </button>
         <button class="nav-item" data-tab="tab-diagnostics">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-          <span>Test Laboratuvarı</span>
+          <span>Diagnostics Lab</span>
         </button>
       </nav>
 
@@ -64,7 +64,7 @@
         <div class="status-indicator">
           <span class="pulse-dot"></span>
           <div class="status-text">
-            <span class="status-title">Çekirdek Aktif</span>
+            <span class="status-title">Core Active</span>
             <span class="status-sub" id="exec-time">Native C++ • 0.2s</span>
           </div>
         </div>
@@ -77,7 +77,7 @@
       <header class="top-header">
         <div class="header-left">
           <h2 id="section-title">Dashboard</h2>
-          <p class="subtitle">Sistem kaynakları, anlık sensörler ve telemetri özeti</p>
+          <p class="subtitle" id="section-subtitle">Real-time system telemetry, core frequencies & resource metrics</p>
         </div>
         <div class="header-right">
           <div class="quick-chip" id="cpu-chip">
@@ -89,14 +89,14 @@
             <span class="chip-val" id="gpu-chip-val">RTX 5070 Ti</span>
           </div>
           <div class="quick-chip highlight" id="bat-chip">
-            <span class="chip-label">SAĞLIK</span>
-            <span class="chip-val" id="bat-chip-val">%81 Pil</span>
+            <span class="chip-label">HEALTH</span>
+            <span class="chip-val" id="bat-chip-val">81% Battery</span>
           </div>
           <button class="btn btn-secondary" id="btn-copy-report" style="padding: 6px 12px; font-size: 0.8rem;">
-            📋 Raporu Kopyala
+            📋 Copy Specs
           </button>
           <button class="btn btn-secondary" id="btn-toggle-compact" style="padding: 6px 12px; font-size: 0.8rem;">
-            ⛶ Mini Mod
+            ⛶ Mini Mode
           </button>
         </div>
       </header>
@@ -108,7 +108,7 @@
           <!-- CPU GAUGE -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">İşlemci (CPU)</span>
+              <span class="card-title">Processor (CPU)</span>
               <span class="tag-pill" id="cpu-temp-tag">Intel Ultra 7</span>
             </div>
             <div class="gauge-wrapper">
@@ -119,7 +119,7 @@
                 </svg>
                 <div class="gauge-value">
                   <span class="big-num" id="cpu-percent">0%</span>
-                  <span class="label">20 Çekirdek</span>
+                  <span class="label">20 Cores</span>
                 </div>
               </div>
             </div>
@@ -131,7 +131,7 @@
           <!-- GPU GAUGE -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">Ekran Kartı (GPU)</span>
+              <span class="card-title">Graphics (GPU)</span>
               <span class="tag-pill purple" id="gpu-temp-badge">56 °C</span>
             </div>
             <div class="gauge-wrapper">
@@ -148,11 +148,11 @@
             </div>
             <div class="card-footer-stats">
               <div class="stat-col">
-                <span class="stat-label">VRAM</span>
+                <span class="stat-label">VRAM Used</span>
                 <span class="stat-val purple" id="gpu-vram-text">2.2 / 12 GB</span>
               </div>
               <div class="stat-col">
-                <span class="stat-label">Sıcaklık</span>
+                <span class="stat-label">Temperature</span>
                 <span class="stat-val" id="gpu-temp-text">56 °C</span>
               </div>
             </div>
@@ -161,7 +161,7 @@
           <!-- RAM GAUGE -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">Bellek (RAM)</span>
+              <span class="card-title">Memory (RAM)</span>
               <span class="tag-pill">DDR5 6400</span>
             </div>
             <div class="gauge-wrapper">
@@ -178,11 +178,11 @@
             </div>
             <div class="card-footer-stats">
               <div class="stat-col">
-                <span class="stat-label">Kullanılan</span>
+                <span class="stat-label">Used</span>
                 <span class="stat-val" id="ram-used-gb">0 GB</span>
               </div>
               <div class="stat-col">
-                <span class="stat-label">Boşta</span>
+                <span class="stat-label">Available</span>
                 <span class="stat-val" id="ram-free-gb">0 GB</span>
               </div>
             </div>
@@ -191,8 +191,8 @@
           <!-- BATTERY CARD -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">Batarya & Güç</span>
-              <span class="tag-pill green" id="bat-status-badge">Prize Takılı</span>
+              <span class="card-title">Battery & Power</span>
+              <span class="tag-pill green" id="bat-status-badge">Plugged In</span>
             </div>
             <div class="gauge-wrapper">
               <div class="circle-progress">
@@ -208,11 +208,11 @@
             </div>
             <div class="card-footer-stats">
               <div class="stat-col">
-                <span class="stat-label">Pil Sağlığı</span>
-                <span class="stat-val green" id="bat-health-val">%80.97</span>
+                <span class="stat-label">Health</span>
+                <span class="stat-val green" id="bat-health-val">80.97%</span>
               </div>
               <div class="stat-col">
-                <span class="stat-label">Tasarım Kapasite</span>
+                <span class="stat-label">Design Cap.</span>
                 <span class="stat-val" id="bat-design-val">87.4 Wh</span>
               </div>
             </div>
@@ -221,27 +221,27 @@
           <!-- NETWORK CARD -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">Ağ Trafiği</span>
-              <span class="tag-pill blue">Canlı I/O</span>
+              <span class="card-title">Network I/O</span>
+              <span class="tag-pill blue">Live Stream</span>
             </div>
             <div class="net-stats-container">
               <div class="net-row">
                 <div class="net-icon down">↓</div>
                 <div class="net-info">
-                  <span class="net-label">İndirme (Download)</span>
+                  <span class="net-label">Download Speed</span>
                   <span class="net-speed" id="net-down-speed">0.0 KB/s</span>
                 </div>
               </div>
               <div class="net-row">
                 <div class="net-icon up">↑</div>
                 <div class="net-info">
-                  <span class="net-label">Yükleme (Upload)</span>
+                  <span class="net-label">Upload Speed</span>
                   <span class="net-speed" id="net-up-speed">0.0 KB/s</span>
                 </div>
               </div>
             </div>
             <div class="net-total-box">
-              <span>Toplam Aktarılan: </span>
+              <span>Total Transferred: </span>
               <span class="net-total" id="net-total-transfer">0 GB</span>
             </div>
           </div>
@@ -253,32 +253,32 @@
           <div class="card glass-card">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="card-title">Yapay Zeka Birimi (NPU)</span>
-                <span class="badge-accent">2026 Nesil</span>
+                <span class="card-title">Neural Processing Unit (NPU)</span>
+                <span class="badge-accent">2026 Gen</span>
               </div>
             </div>
             <div class="hardware-spec-row">
-              <span class="spec-name">Model</span>
+              <span class="spec-name">Device Model</span>
               <span class="spec-value" id="npu-model-name">Intel(R) AI Boost</span>
             </div>
             <div class="hardware-spec-row">
-              <span class="spec-name">Sınıf</span>
+              <span class="spec-name">Device Class</span>
               <span class="spec-value">ComputeAccelerator</span>
             </div>
             <div class="hardware-spec-row">
-              <span class="spec-name">Durum</span>
-              <span class="spec-value green" id="npu-status-val">Aktif / Hazır</span>
+              <span class="spec-name">Status</span>
+              <span class="spec-value green" id="npu-status-val">Ready / Operational</span>
             </div>
             <div class="hardware-spec-row">
-              <span class="spec-name">Hızlandırıcı Tipi</span>
-              <span class="spec-value">DirectML / ONNX Destekli</span>
+              <span class="spec-name">Framework Support</span>
+              <span class="spec-value">DirectML / ONNX Runtime</span>
             </div>
           </div>
 
           <!-- GPU & DISPLAYS CARD -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">Ekran Kartı & Monitörler</span>
+              <span class="card-title">Active Displays</span>
               <span class="tag-pill purple">144 Hz</span>
             </div>
             <div id="displays-list">
@@ -289,8 +289,8 @@
           <!-- STORAGE DISKS CARD -->
           <div class="card glass-card">
             <div class="card-header">
-              <span class="card-title">Depolama (NVMe SSD)</span>
-              <span class="tag-pill cyan">PCIe Gen4</span>
+              <span class="card-title">Physical Storage</span>
+              <span class="tag-pill cyan">PCIe Gen4 NVMe</span>
             </div>
             <div id="storage-list">
               <!-- Dynamically populated -->
@@ -304,7 +304,7 @@
         <div class="grid-2">
           <!-- CPU DETAILED -->
           <div class="card glass-card">
-            <h3 class="box-title">İşlemci Mimarisi (CPU Identity)</h3>
+            <h3 class="box-title">Processor Topology & Architecture</h3>
             <div class="spec-table" id="cpu-detail-table">
               <!-- Filled by JS -->
             </div>
@@ -312,7 +312,7 @@
 
           <!-- BATTERY & POWER DETAILED -->
           <div class="card glass-card">
-            <h3 class="box-title">Batarya & Güç Yönetimi</h3>
+            <h3 class="box-title">Battery Health & Power Delivery</h3>
             <div class="spec-table" id="bat-detail-table">
               <!-- Filled by JS -->
             </div>
@@ -320,23 +320,23 @@
         </div>
 
         <div class="card glass-card mt-4">
-          <h3 class="box-title">Sistem Önbellek Kaydı (hardware_cache.json)</h3>
-          <p class="subtitle mb-2">Bu veriler program açılışını 0.25 saniyeye düşürmek için yerel hafızadan 1 milisaniyede okunur.</p>
+          <h3 class="box-title">Local Hardware Cache (hardware_cache.json)</h3>
+          <p class="subtitle mb-2">Stored locally on the machine for instant sub-millisecond cold boot retrieval.</p>
           <pre class="json-viewer" id="raw-json-viewer"></pre>
         </div>
       </section>
 
-      <!-- TAB 3: COMPACT TASK MANAGER -->
+      <!-- TAB 3: COMPACT PROCESS MANAGER -->
       <section class="tab-pane" id="tab-processes">
         <div class="card glass-card">
           <div class="task-manager-header">
             <div class="task-search-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="proc-search-input" placeholder="Çalışan işlem veya program ara...">
+              <input type="text" id="proc-search-input" placeholder="Filter running processes by name or PID...">
             </div>
             <div class="task-stats">
-              <span id="active-proc-count">Aktif İşlemler: 0</span>
-              <button class="btn btn-secondary" id="refresh-procs-btn">Yenile</button>
+              <span id="active-proc-count">Active Processes: 0</span>
+              <button class="btn btn-secondary" id="refresh-procs-btn">Refresh</button>
             </div>
           </div>
 
@@ -345,10 +345,10 @@
               <thead>
                 <tr>
                   <th>PID</th>
-                  <th>İşlem Adı</th>
-                  <th>CPU Yükü</th>
-                  <th>Bellek (RAM)</th>
-                  <th style="text-align: right;">Eylem</th>
+                  <th>Process Name</th>
+                  <th>CPU Usage</th>
+                  <th>Memory (RAM)</th>
+                  <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
               <tbody id="processes-tbody">
@@ -359,37 +359,17 @@
         </div>
       </section>
 
-      <!-- TAB 4: INSTANT FILE SEARCH -->
-      <section class="tab-pane" id="tab-search">
-        <div class="card glass-card">
-          <div class="search-hero">
-            <h3>Işık Hızında Dosya ve Belge Arama</h3>
-            <p class="subtitle">Windows Ayarları'nın hantallığı olmadan, anlık hızlı fihristleme</p>
-            <div class="search-bar-huge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="file-search-input" placeholder="Dosya adı, proje veya uzantı yazın (.pdf, .cpp, .png)..." autofocus>
-            </div>
-          </div>
-
-          <div class="search-results-container" id="search-results-box">
-            <div class="empty-state">
-              <span>Aramak istediğiniz dosya adını yazmaya başlayın.</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB: INSTALLED APPS (0.1s REGISTRY ENGINE) -->
+      <!-- TAB 4: INSTALLED APPS (100ms REGISTRY ENGINE) -->
       <section class="tab-pane" id="tab-apps">
         <div class="card glass-card">
           <div class="task-manager-header">
             <div class="task-search-box" style="width: 380px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="app-search-input" placeholder="280+ yüklü program arasında anında ara...">
+              <input type="text" id="app-search-input" placeholder="Instant search among 280+ installed programs...">
             </div>
             <div class="task-stats">
-              <span id="installed-apps-count">Yüklü Programlar: Yükleniyor...</span>
-              <button class="btn btn-secondary" id="btn-sort-apps-size">Boyuta Göre Sırala</button>
+              <span id="installed-apps-count">Installed Apps: Loading...</span>
+              <button class="btn btn-secondary" id="btn-sort-apps-size">Sort by Size</button>
             </div>
           </div>
 
@@ -397,11 +377,11 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Uygulama Adı</th>
-                  <th>Sürüm</th>
-                  <th>Yayıncı</th>
-                  <th>Boyut</th>
-                  <th style="text-align: right;">Eylem</th>
+                  <th>Application Name</th>
+                  <th>Version</th>
+                  <th>Publisher</th>
+                  <th>Installed Size</th>
+                  <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
               <tbody id="installed-apps-tbody">
@@ -412,21 +392,41 @@
         </div>
       </section>
 
-      <!-- TAB: WINGET APP STORE -->
+      <!-- TAB 5: INSTANT FILE SEARCH -->
+      <section class="tab-pane" id="tab-search">
+        <div class="card glass-card">
+          <div class="search-hero">
+            <h3>Instant Multi-Drive File Finder</h3>
+            <p class="subtitle">Bypass sluggish Windows Settings indexing with lightning fast directory traversal</p>
+            <div class="search-bar-huge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="file-search-input" placeholder="Type file name, extension (.pdf, .cpp, .png)..." autofocus>
+            </div>
+          </div>
+
+          <div class="search-results-container" id="search-results-box">
+            <div class="empty-state">
+              <span>Start typing to find any file across your drives.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: WINGET APP STORE -->
       <section class="tab-pane" id="tab-winget">
         <div class="card glass-card">
           <div class="tweak-header">
             <div>
-              <h3>WinGet Toplu Paket & Program Kurucu</h3>
-              <p class="subtitle">Windows'un resmi paket yöneticisiyle arka planda reklamsız ve sessiz toplu kurulum</p>
+              <h3>WinGet Bulk Software Provisioner</h3>
+              <p class="subtitle">Deploy essential desktop software silently in the background with official Microsoft WinGet</p>
             </div>
-            <button class="btn btn-primary" id="btn-install-winget-pkgs">Seçilenleri Sessizce Kur</button>
+            <button class="btn btn-primary" id="btn-install-winget-pkgs">Install Selected Silently</button>
           </div>
 
           <!-- PACKAGE CATEGORIES -->
           <div class="grid-3">
             <div class="card glass-card">
-              <h4 class="category-title">🌐 Web Tarayıcıları</h4>
+              <h4 class="category-title">🌐 Web Browsers</h4>
               <div class="package-list">
                 <label class="pkg-checkbox"><input type="checkbox" value="Brave.Brave"> <span>Brave Browser</span></label>
                 <label class="pkg-checkbox"><input type="checkbox" value="Google.Chrome"> <span>Google Chrome</span></label>
@@ -435,7 +435,7 @@
             </div>
 
             <div class="card glass-card">
-              <h4 class="category-title">💻 Geliştirici & Kod</h4>
+              <h4 class="category-title">💻 Developer & Code</h4>
               <div class="package-list">
                 <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.VisualStudioCode"> <span>VS Code</span></label>
                 <label class="pkg-checkbox"><input type="checkbox" value="Git.Git"> <span>Git CLI</span></label>
@@ -445,17 +445,17 @@
             </div>
 
             <div class="card glass-card">
-              <h4 class="category-title">🛠️ Sistem & Araçlar</h4>
+              <h4 class="category-title">🛠️ Utilities & Tools</h4>
               <div class="package-list">
                 <label class="pkg-checkbox"><input type="checkbox" value="7zip.7zip"> <span>7-Zip</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="voidtools.Everything"> <span>Everything (Dosya Arama)</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="voidtools.Everything"> <span>Everything Search</span></label>
                 <label class="pkg-checkbox"><input type="checkbox" value="Notepad++.Notepad++"> <span>Notepad++</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.PowerToys"> <span>PowerToys</span></label>
+                <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.PowerToys"> <span>Microsoft PowerToys</span></label>
               </div>
             </div>
 
             <div class="card glass-card">
-              <h4 class="category-title">🎬 Medya & İletişim</h4>
+              <h4 class="category-title">🎬 Media & Communication</h4>
               <div class="package-list">
                 <label class="pkg-checkbox"><input type="checkbox" value="VideoLAN.VLC"> <span>VLC Media Player</span></label>
                 <label class="pkg-checkbox"><input type="checkbox" value="Discord.Discord"> <span>Discord</span></label>
@@ -465,7 +465,7 @@
             </div>
 
             <div class="card glass-card">
-              <h4 class="category-title">🎮 Oyun & Başlatıcılar</h4>
+              <h4 class="category-title">🎮 Gaming Launchers</h4>
               <div class="package-list">
                 <label class="pkg-checkbox"><input type="checkbox" value="Valve.Steam"> <span>Steam</span></label>
                 <label class="pkg-checkbox"><input type="checkbox" value="EpicGames.EpicGamesLauncher"> <span>Epic Games</span></label>
@@ -473,31 +473,31 @@
             </div>
 
             <div class="card glass-card">
-              <h4 class="category-title">📋 Kurulum Terminali</h4>
+              <h4 class="category-title">📋 Live Install Terminal</h4>
               <div class="winget-terminal" id="winget-log-box">
-                <div class="terminal-line text-dim">Henüz kurulum başlatılmadı. Paketleri seçip 'Kur' butonuna basın.</div>
+                <div class="terminal-line text-dim">No installation active. Select packages and click 'Install Selected Silently'.</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- TAB 5: WINDOWS TWEAKS & DEBLOAT -->
+      <!-- TAB 7: WINDOWS TWEAKS & DEBLOAT -->
       <section class="tab-pane" id="tab-tweaks">
         <div class="card glass-card">
           <div class="tweak-header">
             <div>
-              <h3>Windows İnce Ayar & Gizlilik Merkezi</h3>
-              <p class="subtitle">Chris Titus Tech standartlarında güvenli, geri alınabilir sistem optimizasyonu</p>
+              <h3>Windows Privacy & System Optimizer</h3>
+              <p class="subtitle">Safe, reversible system debloating inspired by Chris Titus Tech standards</p>
             </div>
-            <button class="btn btn-primary" id="btn-apply-all-tweaks">Seçilenleri Güvenle Uygula</button>
+            <button class="btn btn-primary" id="btn-apply-all-tweaks">Apply Selected Optimizations</button>
           </div>
 
           <div class="tweak-grid">
             <div class="tweak-item">
               <div class="tweak-text">
-                <span class="tweak-title">Microsoft Telemetrisini Kapat</span>
-                <span class="tweak-desc">Windows tanılama verilerinin ve kullanıcı alışkanlıklarının Microsoft sunucularına iletilmesini engeller.</span>
+                <span class="tweak-title">Disable Microsoft Telemetry & Feedback</span>
+                <span class="tweak-desc">Stops background diagnostic reports, prompt popups, and telemetry upload to Microsoft servers.</span>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" checked id="twk-telemetry">
@@ -507,8 +507,8 @@
 
             <div class="tweak-item">
               <div class="tweak-text">
-                <span class="tweak-title">Başlat Menüsü Bing Aramalarını Kapat</span>
-                <span class="tweak-desc">Arama çubuğunda yavaşlatan web aramalarını kapatıp aramayı saf yerel hıza kavuşturur.</span>
+                <span class="tweak-title">Disable Start Menu Bing Web Results</span>
+                <span class="tweak-desc">Restores instant local search speed by disabling remote Bing search queries in Windows search box.</span>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" checked id="twk-bing">
@@ -518,8 +518,8 @@
 
             <div class="tweak-item">
               <div class="tweak-text">
-                <span class="tweak-title">Cortana & Copilot Arka Plan Kancalarını Kapat</span>
-                <span class="tweak-desc">Kullanılmayan asistan servislerinin bellekte zombi olarak beklemesini engeller.</span>
+                <span class="tweak-title">Disable Cortana & Copilot Background Hooks</span>
+                <span class="tweak-desc">Prevents unused digital assistant services from holding background idle memory allocations.</span>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" checked id="twk-copilot">
@@ -529,8 +529,8 @@
 
             <div class="tweak-item">
               <div class="tweak-text">
-                <span class="tweak-title">Oyun Modu: Arka Plan Gecikmelerini Azalt</span>
-                <span class="tweak-desc">Ağır oyunlarda Windows'un arka plan indeksleme yapmasını önler.</span>
+                <span class="tweak-title">Game Mode: Minimize Background Latency</span>
+                <span class="tweak-desc">Ensures Windows automatically grants GPU and CPU scheduling priority to full-screen games and render workloads.</span>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" checked id="twk-game-mode">
@@ -541,69 +541,69 @@
         </div>
       </section>
 
-      <!-- TAB 6: DIAGNOSTICS LAB -->
+      <!-- TAB 8: DIAGNOSTICS LAB -->
       <section class="tab-pane" id="tab-diagnostics">
         <div class="grid-2">
           <!-- SPEED TEST -->
           <div class="card glass-card">
-            <h3 class="box-title">İnternet Hız & Gecikme Testi</h3>
-            <p class="subtitle mb-3">Reklamsız, hafif soket tabanlı hız ölçümü</p>
+            <h3 class="box-title">Internet Bandwidth & Latency</h3>
+            <p class="subtitle mb-3">Ad-free, lightweight socket ping & throughput check</p>
             <div class="speedtest-box">
               <div class="speed-readouts">
                 <div class="readout-box">
                   <span class="readout-num" id="ping-readout">--</span>
-                  <span class="readout-label">Ping (ms)</span>
+                  <span class="readout-label">Latency (ms)</span>
                 </div>
                 <div class="readout-box">
                   <span class="readout-num" id="down-readout">--</span>
-                  <span class="readout-label">İndirme (Mbps)</span>
+                  <span class="readout-label">Download (Mbps)</span>
                 </div>
                 <div class="readout-box">
                   <span class="readout-num" id="up-readout">--</span>
-                  <span class="readout-label">Yükleme (Mbps)</span>
+                  <span class="readout-label">Upload (Mbps)</span>
                 </div>
               </div>
-              <button class="btn btn-primary mt-3" id="start-speedtest-btn">Testi Başlat</button>
+              <button class="btn btn-primary mt-3" id="start-speedtest-btn">Run Speedtest</button>
             </div>
           </div>
 
           <!-- DEAD PIXEL TEST -->
           <div class="card glass-card">
-            <h3 class="box-title">Ekran & Ölü Piksel Testi</h3>
-            <p class="subtitle mb-3">Tam ekran renk geçişiyle ölü/takılı piksel tespiti</p>
+            <h3 class="box-title">Display & Dead Pixel Inspector</h3>
+            <p class="subtitle mb-3">Inspect stuck or dead sub-pixels across primary RGB and mono screens</p>
             <div class="pixel-color-buttons">
-              <button class="pixel-btn btn-red" data-color="#ff0000">Kırmızı</button>
-              <button class="pixel-btn btn-green" data-color="#00ff00">Yeşil</button>
-              <button class="pixel-btn btn-blue" data-color="#0000ff">Mavi</button>
-              <button class="pixel-btn btn-white" data-color="#ffffff">Beyaz</button>
-              <button class="pixel-btn btn-black" data-color="#000000">Siyah</button>
+              <button class="pixel-btn btn-red" data-color="#ff0000">Red</button>
+              <button class="pixel-btn btn-green" data-color="#00ff00">Green</button>
+              <button class="pixel-btn btn-blue" data-color="#0000ff">Blue</button>
+              <button class="pixel-btn btn-white" data-color="#ffffff">White</button>
+              <button class="pixel-btn btn-black" data-color="#000000">Black</button>
             </div>
-            <button class="btn btn-secondary mt-3" id="start-pixel-wizard">Tam Ekran Sihirbazını Başlat (ESC ile çıkılır)</button>
+            <button class="btn btn-secondary mt-3" id="start-pixel-wizard">Launch Fullscreen Wizard (Press ESC to Exit)</button>
           </div>
         </div>
 
         <div class="grid-2 mt-4">
           <!-- KEYBOARD TEST -->
           <div class="card glass-card">
-            <h3 class="box-title">Klavye & N-Key Rollover Testi</h3>
-            <p class="subtitle mb-2">Klavyenizdeki tuşlara basın, basılan tuş yeşile döner.</p>
+            <h3 class="box-title">Keyboard & N-Key Rollover</h3>
+            <p class="subtitle mb-2">Press keys to test ghosting, key release latency, and multi-key rollover.</p>
             <div class="key-tester-display" id="key-display-box">
-              Son Basılan Tuş: <span class="active-key-name" id="last-key-pressed">Hazır (Bir tuşa basın)</span>
+              Last Key Detected: <span class="active-key-name" id="last-key-pressed">Ready (Press any key)</span>
             </div>
             <div class="key-stats-row">
-              <span>Algılanan Eşzamanlı Tuş: <strong id="simultaneous-key-count">0</strong></span>
+              <span>Simultaneous Keys Held: <strong id="simultaneous-key-count">0</strong></span>
             </div>
           </div>
 
           <!-- MOUSE POLLING TEST -->
           <div class="card glass-card">
-            <h3 class="box-title">Fare Çift Tıklama & Polling Rate Testi</h3>
-            <p class="subtitle mb-2">Fare tıklama arızasını (Double Click) tespit edin</p>
+            <h3 class="box-title">Mouse Double-Click & Sensor Check</h3>
+            <p class="subtitle mb-2">Detect hardware micro-switch chatter and false double-clicks</p>
             <div class="mouse-tester-area" id="mouse-click-area">
-              <span class="mouse-cta">Bu kutunun içine tıklayın</span>
+              <span class="mouse-cta">Click repeatedly inside this testing zone</span>
               <div class="mouse-metrics">
-                <span>Tıklama Sayısı: <strong id="click-counter">0</strong></span>
-                <span>Çift Tıklama Hatası: <strong class="green" id="double-click-warning">Hata Yok</strong></span>
+                <span>Total Clicks: <strong id="click-counter">0</strong></span>
+                <span>Micro-switch Health: <strong class="green" id="double-click-warning">Normal</strong></span>
               </div>
             </div>
           </div>
@@ -613,23 +613,23 @@
         <div class="card glass-card mt-4">
           <div class="tweak-header">
             <div>
-              <h3 class="box-title">⚡ 15 Saniyelik Güvenli CPU Stres & Kararlılık Testi</h3>
-              <p class="subtitle">20 çekirdeği tam yüke sokup termal kararlılığı ve fan tepkisini ölçün</p>
+              <h3 class="box-title">⚡ 15-Second Safe CPU Stress & Thermal Benchmark</h3>
+              <p class="subtitle">Engage all 20 threads to inspect thermal stability, power throttling, and cooling response</p>
             </div>
-            <button class="btn btn-primary" id="btn-start-cpu-stress">Stres Testini Başlat (15s)</button>
+            <button class="btn btn-primary" id="btn-start-cpu-stress">Run Stress Test (15s)</button>
           </div>
           <div class="speed-readouts mt-3">
             <div class="readout-box">
               <span class="readout-num" id="stress-timer">0s / 15s</span>
-              <span class="readout-label">Geçen Süre</span>
+              <span class="readout-label">Elapsed Time</span>
             </div>
             <div class="readout-box">
               <span class="readout-num" id="stress-peak-cpu">0.0%</span>
-              <span class="readout-label">Zirve CPU Yükü</span>
+              <span class="readout-label">Peak CPU Load</span>
             </div>
             <div class="readout-box">
-              <span class="readout-num green" id="stress-result-text">Hazır</span>
-              <span class="readout-label">Test Durumu</span>
+              <span class="readout-num green" id="stress-result-text">Ready</span>
+              <span class="readout-label">Stability Status</span>
             </div>
           </div>
         </div>
