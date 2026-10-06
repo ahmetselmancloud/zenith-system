@@ -23,7 +23,7 @@
         </div>
         <div class="brand-text">
           <h1>ZENITH</h1>
-          <span class="badge" id="app-version-badge" title="Tıkla: Güncellemeleri Denetle" style="cursor: pointer;">SYSTEM V1.0</span>
+          <span class="badge" id="app-version-badge" title="Click: Check for Updates" style="cursor: pointer;">SYSTEM V1.0</span>
         </div>
       </div>
 
@@ -133,10 +133,10 @@
           <button class="btn btn-secondary" id="btn-copy-report" style="padding: 6px 12px; font-size: 0.8rem;">
             📋 Copy Specs
           </button>
-          <button class="btn btn-secondary" id="btn-export-html-report" style="padding: 6px 12px; font-size: 0.8rem;" title="Detaylı Sistem & OBD Sağlık Raporunu Görüntüle / PDF Olarak Kaydet">
-            📄 Rapor İndir
+          <button class="btn btn-secondary" id="btn-export-html-report" style="padding: 6px 12px; font-size: 0.8rem;" title="View Detailed System & OBD Health Report / Save as PDF">
+            📄 Download Report
           </button>
-          <button class="btn btn-secondary" id="btn-theme-toggle" style="padding: 6px 12px; font-size: 0.8rem;" title="Tema Değiştir (Midnight / AMOLED / Cyber)">
+          <button class="btn btn-secondary" id="btn-theme-toggle" style="padding: 6px 12px; font-size: 0.8rem;" title="Switch Theme (Midnight / AMOLED / Cyber)">
             🎨 <span id="theme-label">Midnight</span>
           </button>
           <button class="btn btn-secondary" id="btn-toggle-compact" style="padding: 6px 12px; font-size: 0.8rem;" title="Toggle compact layout">
@@ -581,7 +581,7 @@
           <div class="tweak-header" style="margin-bottom: 16px;">
             <div>
               <h3>⚡ 1-Click Setup Profiles</h3>
-              <p class="subtitle">Format sonrası veya yeni sistem için tek tıkla otomatik paket kurulum presetleri</p>
+              <p class="subtitle">One-click automated package installation presets for fresh installs or new systems</p>
             </div>
           </div>
           <div class="profile-carousel" id="winget-profiles-container">
@@ -595,14 +595,14 @@
           <div class="tweak-header" style="margin-bottom: 16px;">
             <div>
               <h3 id="winget-title">📦 WinGet Software Catalogue & Manager</h3>
-              <p class="subtitle">Microsoft WinGet resmi deposundan 180+ popüler uygulama, canlı arama ve güncelleme takibi</p>
+              <p class="subtitle">180+ popular apps from official Microsoft WinGet repo, live search and upgrade tracker</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
               <button class="btn btn-secondary" id="btn-winget-check-upgrades" style="display: flex; align-items: center; gap: 6px;">
-                <span>🔄 Güncellemeleri Tara</span>
+                <span>🔄 Check for Updates</span>
               </button>
               <button class="btn btn-primary" id="btn-install-winget-pkgs" style="display: flex; align-items: center; gap: 6px;">
-                <span>Seçilenleri Kur (<span id="winget-selected-count">0</span>)</span>
+                <span>Install Selected (<span id="winget-selected-count">0</span>)</span>
               </button>
             </div>
           </div>
@@ -610,21 +610,21 @@
           <div class="winget-controls-bar">
             <!-- SEARCH INPUT -->
             <div class="winget-search-row">
-              <input type="text" class="winget-search-input" id="winget-search-input" placeholder="🔍 Microsoft WinGet deposunda canlı ara (örn: obs, vlc, git, discord, rust, blender)...">
+              <input type="text" class="winget-search-input" id="winget-search-input" placeholder="🔍 Live search Microsoft WinGet repo (e.g. obs, vlc, git, discord, rust, blender)...">
               <button class="btn btn-secondary" id="btn-clear-winget-search" style="display: none; padding: 10px 16px;">Temizle</button>
             </div>
 
             <!-- CATEGORY FILTER PILLS -->
             <div class="winget-pills-container" id="winget-pills-container">
-              <button class="winget-pill active" data-cat="all">Tümü (150+)</button>
-              <button class="winget-pill" data-cat="browsers">🌐 Tarayıcılar</button>
-              <button class="winget-pill" data-cat="development">💻 Geliştirici</button>
+              <button class="winget-pill active" data-cat="all">All (150+)</button>
+              <button class="winget-pill" data-cat="browsers">🌐 Browsers</button>
+              <button class="winget-pill" data-cat="development">💻 Development</button>
               <button class="winget-pill" data-cat="utilities">🛠️ Sistem</button>
               <button class="winget-pill" data-cat="media">🎬 Medya</button>
               <button class="winget-pill" data-cat="gaming">🎮 Oyun</button>
-              <button class="winget-pill" data-cat="communication">💬 İletişim</button>
-              <button class="winget-pill" data-cat="security">🔒 Güvenlik</button>
-              <button class="winget-pill" data-cat="network">📡 Ağ</button>
+              <button class="winget-pill" data-cat="communication">💬 Communication</button>
+              <button class="winget-pill" data-cat="security">🔒 Security</button>
+              <button class="winget-pill" data-cat="network">📡 Network</button>
               <button class="winget-pill" data-cat="cloud">☁️ Bulut</button>
               <button class="winget-pill" data-cat="office">📋 Ofis</button>
               <button class="winget-pill" data-cat="ai">🤖 Yapay Zeka</button>
@@ -634,7 +634,7 @@
 
           <!-- CATALOG CONTENT VIEW (Categories / Search / Upgrades) -->
           <div id="winget-content-view">
-            <div style="padding: 40px; text-align: center; color: var(--text-dim);">Katalog yükleniyor...</div>
+            <div style="padding: 40px; text-align: center; color: var(--text-dim);">Loading catalog...</div>
           </div>
 
           <!-- COLLAPSIBLE LIVE TERMINAL -->
@@ -642,12 +642,12 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
                 <span>📋 WinGet Kurulum Konsolu</span>
-                <span id="winget-spinner" style="display: none; font-size: 0.75rem; color: var(--accent-cyan);">⏳ İşlem yapılıyor...</span>
+                <span id="winget-spinner" style="display: none; font-size: 0.75rem; color: var(--accent-cyan);">⏳ Processing...</span>
               </span>
-              <button class="btn btn-secondary" id="btn-toggle-winget-terminal" style="padding: 3px 8px; font-size: 0.72rem;">Konsolu Gizle/Göster</button>
+              <button class="btn btn-secondary" id="btn-toggle-winget-terminal" style="padding: 3px 8px; font-size: 0.72rem;">Toggle Console</button>
             </div>
             <div class="winget-terminal" id="winget-log-box">
-              <div class="terminal-line text-dim">Hazır. Kurulum başlatıldığında arka plan çıktıları burada canlı akacaktır.</div>
+              <div class="terminal-line text-dim">Ready. Installation logs will stream live here when started.</div>
             </div>
           </div>
         </div>
@@ -812,10 +812,10 @@
           <div class="tweak-header" style="margin-bottom: 16px;">
             <div>
               <h3>🩺 One-Click Windows System Fixer & Troubleshooter</h3>
-              <p class="subtitle">Windows'un en can sıkıcı ağ, ses, gezgin, yazdırma ve sistem dosyası sorunlarını tek tıkla onarın</p>
+              <p class="subtitle">One-click repair for Windows network, audio, explorer, print spooler and system file issues</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <span id="troubleshoot-global-status" style="font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">✓ Sistem Hazır</span>
+              <span id="troubleshoot-global-status" style="font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">✓ System Ready</span>
               <button class="btn btn-secondary" id="btn-refresh-troubleshoot" style="padding: 6px 12px; font-size: 0.8rem;">Yenile</button>
             </div>
           </div>
@@ -826,7 +826,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 1.2rem;">⏳</span>
-              <strong id="troubleshoot-task-title" style="color: #fff;">Derin Sistem Onarımı Çalışıyor...</strong>
+              <strong id="troubleshoot-task-title" style="color: #fff;">Deep System Repair in Progress...</strong>
             </div>
             <span id="troubleshoot-task-percent" style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan);">0%</span>
           </div>
@@ -834,13 +834,13 @@
             <div id="troubleshoot-task-bar" style="width: 0%; height: 100%; background: var(--accent-cyan); transition: width 0.3s;"></div>
           </div>
           <div class="winget-terminal" id="troubleshoot-task-logs" style="max-height: 140px; min-height: 80px;">
-            <div class="terminal-line text-dim">Komut başlatılıyor...</div>
+            <div class="terminal-line text-dim">Initiating command...</div>
           </div>
         </div>
 
         <!-- REPAIR TOOLS CATEGORIES -->
         <div id="troubleshoot-categories-container">
-          <div style="padding: 40px; text-align: center; color: var(--text-dim);">Onarım araçları yükleniyor...</div>
+          <div style="padding: 40px; text-align: center; color: var(--text-dim);">Loading repair tools...</div>
         </div>
       </section>
 
@@ -851,10 +851,10 @@
           <div class="tweak-header" style="margin-bottom: 16px;">
             <div>
               <h3>⚡ Zenith Intelligent Automation Rules Engine</h3>
-              <p class="subtitle">Sisteminizi arka planda izleyen akıllı IF/THEN kuralları. Oyun açılınca fanı ve güç planını yönetir, aşırı ısınmayı önler ve pil tasarrufu sağlar.</p>
+              <p class="subtitle">Intelligent background IF/THEN automation rules. Tunes fans and power schemes on game launches, prevents overheating and saves battery.</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <button class="btn btn-secondary" id="btn-eval-rules-now" title="Kuralları hemen kontrol et">⚡ Şimdi Değerlendir</button>
+              <button class="btn btn-secondary" id="btn-eval-rules-now" title="Evaluate rules now">⚡ Evaluate Now</button>
               <button class="btn btn-secondary" id="btn-open-create-rule" style="background: rgba(0, 240, 255, 0.1); border-color: var(--accent-cyan); color: var(--accent-cyan);">+ Yeni Kural Ekle</button>
               <button class="btn btn-primary" id="btn-toggle-engine-master">
                 <span id="engine-master-status-text">⚡ Motor: Aktif</span>
@@ -868,11 +868,11 @@
               <span class="chip-val" id="rules-active-count">0 / 0</span>
             </div>
             <div class="quick-chip">
-              <span class="chip-label">Çalışma Döngüsü</span>
+              <span class="chip-label">Polling Interval</span>
               <span class="chip-val" style="color: var(--accent-cyan);">2.5s Polling (Zero Overhead)</span>
             </div>
             <div class="quick-chip">
-              <span class="chip-label">Otomatik Geri Dönüş</span>
+              <span class="chip-label">Auto-Revert</span>
               <span class="chip-val" style="color: var(--accent-green);">✓ Auto-Revert Etkin</span>
             </div>
             <div class="quick-chip">
@@ -886,12 +886,12 @@
         <div class="card glass-card mb-4">
           <div class="tweak-header" style="margin-bottom: 16px;">
             <div>
-              <h4 style="margin: 0; font-size: 1.05rem; color: #fff;">Sistem Otomasyon Kuralları</h4>
-              <span class="subtitle">Aktif kurallar arka planda otomatik olarak tetiklenir ve koşul sona erdiğinde sistemi eski durumuna döndürür</span>
+              <h4 style="margin: 0; font-size: 1.05rem; color: #fff;">System Automation Rules</h4>
+              <span class="subtitle">Active rules trigger automatically in the background and revert changes when conditions clear</span>
             </div>
           </div>
           <div id="rules-list-container">
-            <div style="padding: 30px; text-align: center; color: var(--text-dim);">Kurallar yükleniyor...</div>
+            <div style="padding: 30px; text-align: center; color: var(--text-dim);">Loading rules...</div>
           </div>
         </div>
 
@@ -900,12 +900,12 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 1.1rem;">📜</span>
-              <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">Otomasyon Etkinlik & Tetikleme Günlüğü</h4>
+              <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">Automation Event & Trigger Log</h4>
             </div>
-            <button class="btn btn-secondary" id="btn-clear-rules-history" style="padding: 4px 10px; font-size: 0.75rem;">Günlüğü Temizle</button>
+            <button class="btn btn-secondary" id="btn-clear-rules-history" style="padding: 4px 10px; font-size: 0.75rem;">Clear Log</button>
           </div>
           <div class="winget-terminal" id="rules-history-log" style="max-height: 180px; min-height: 90px;">
-            <div class="terminal-line text-dim">Henüz bir kural tetiklenmedi...</div>
+            <div class="terminal-line text-dim">No automation rules triggered yet...</div>
           </div>
         </div>
       </section>
@@ -916,14 +916,14 @@
         <div class="card glass-card mb-4">
           <div class="tweak-header" style="margin-bottom: 20px;">
             <div>
-              <h3>🚗 Zenith PC OBD-II — Donanım Ekspertizi & Derin Check-Up</h3>
-              <p class="subtitle">Otomobil arıza tespit cihazı (OBD-II) mantığıyla tüm donanım hatlarını, PCIe veri yollarını, WHEA kayıtlarını ve soket temassızlıklarını tarar</p>
+              <h3>🚗 Zenith PC OBD-II — Hardware Diagnostics & Deep Check-Up</h3>
+              <p class="subtitle">Automotive OBD-II style comprehensive scan for hardware buses, PCIe links, WHEA faults and port disconnects</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <button class="btn btn-secondary" id="btn-obd-clear-dtc" title="Arıza kodlarını sıfırla">Arıza Kodlarını Sıfırla</button>
+              <button class="btn btn-secondary" id="btn-obd-clear-dtc" title="Clear trouble codes">Clear Trouble Codes</button>
               <button class="btn btn-secondary" id="btn-obd-export" title="Ekspertiz raporunu panoya kopyala">📋 Rapor Al</button>
-              <button class="btn btn-secondary" id="btn-obd-download-html" title="OBD Ekspertiz Raporunu HTML/PDF Olarak İndir">📄 HTML Rapor</button>
-              <button class="btn btn-primary" id="btn-obd-scan-now">⚡ Derin Check-Up Başlat</button>
+              <button class="btn btn-secondary" id="btn-obd-download-html" title="Download OBD Diagnostic Report as HTML/PDF">📄 HTML Report</button>
+              <button class="btn btn-primary" id="btn-obd-scan-now">⚡ Run Deep Check-Up</button>
             </div>
           </div>
 
@@ -931,8 +931,8 @@
           <div class="obd-hero-row">
             <div class="obd-gauge-box">
               <div class="obd-gauge-val" id="obd-score-val">100</div>
-              <div class="obd-gauge-label">DONANIM SAĞLIK PUANI (0-100)</div>
-              <div class="obd-gauge-sub" id="obd-scan-time-label">Son Tarama: Az önce</div>
+              <div class="obd-gauge-label">HARDWARE HEALTH SCORE (0-100)</div>
+              <div class="obd-gauge-sub" id="obd-scan-time-label">Last Scan: Just now</div>
             </div>
 
             <div class="obd-mil-box">
@@ -941,7 +941,7 @@
                 <span class="obd-mil-lamp off" id="obd-mil-lamp">CHECK ENGINE</span>
               </div>
               <div class="obd-summary-box" id="obd-summary-text">
-                Tüm donanım hatları, PCIe veri yolları ve USB/Ses portları kusursuz durumda.
+                All hardware rails, PCIe lanes, and USB/Audio ports are in pristine condition.
               </div>
             </div>
           </div>
@@ -950,7 +950,7 @@
         <!-- 5 SUBSYSTEMS DIAGNOSTIC CARDS -->
         <div class="obd-subsystems-grid" id="obd-subsystems-grid">
           <!-- Injected dynamically by JS -->
-          <div style="padding: 30px; text-align: center; color: var(--text-dim); grid-column: 1 / -1;">Donanım alt sistemleri taranıyor...</div>
+          <div style="padding: 30px; text-align: center; color: var(--text-dim); grid-column: 1 / -1;">Scanning hardware subsystems...</div>
         </div>
 
         <!-- DIAGNOSTIC TROUBLE CODES (DTC) TABLE CARD -->
@@ -958,9 +958,9 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 1.2rem;">⚠️</span>
-              <h4 style="margin: 0; font-size: 1rem; color: #fff;">Aktif Arıza Kodları (Diagnostic Trouble Codes - DTC)</h4>
+              <h4 style="margin: 0; font-size: 1rem; color: #fff;">Active Diagnostic Trouble Codes (DTC)</h4>
             </div>
-            <span id="obd-dtc-count-badge" class="tag-pill green">0 Arıza Kodu</span>
+            <span id="obd-dtc-count-badge" class="tag-pill green">0 Trouble Codes</span>
           </div>
           <div id="obd-dtc-container">
             <!-- Injected dynamically by JS -->
@@ -1102,8 +1102,8 @@
         <div class="card glass-card mt-4">
           <div class="card-header">
             <div>
-              <span class="card-title">🌐 Canlı Ağ Bağlantıları & Port İzleyici</span>
-              <p class="subtitle">Hangi uygulamanın hangi uzak IP ve porta bağlı olduğunu anlık olarak listeler</p>
+              <span class="card-title">🌐 Live Network Connections & Port Monitor</span>
+              <p class="subtitle">Real-time monitoring of active process connections, remote IPs, and ports</p>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
               <input type="text" id="net-conn-filter" placeholder="Uygulama veya IP ara..." style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; width: 220px;">
@@ -1122,7 +1122,7 @@
                 </tr>
               </thead>
               <tbody id="net-conns-tbody">
-                <tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">Bağlantılar yükleniyor...</td></tr>
+                <tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">Loading connections...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1171,7 +1171,7 @@
               <p class="subtitle">Direct hardware control: Windows key lock, F12 custom hotkey, thermal fan curves, RGB lighting & GPU MUX modes</p>
             </div>
             <div class="laptop-hero-badges" style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <span class="stat-badge green" id="hal-hardware-badge">💻 HAL: Donanım Taranıyor...</span>
+              <span class="stat-badge green" id="hal-hardware-badge">💻 HAL: Scanning Hardware...</span>
               <span class="stat-badge cyan" id="hook-status-badge">⚡ Hook Active (0ms)</span>
               <span class="stat-badge purple" id="active-profile-badge">Balanced Mode</span>
             </div>
@@ -1364,13 +1364,13 @@
                 </button>
                 <button class="gpu-mode-btn" data-gpu="eco">
                   <strong>🍃 Eco iGPU</strong>
-                  <span>Harici GPU Kapalı</span>
+                  <span>Discrete GPU Off</span>
                 </button>
               </div>
             </div>
 
             <div>
-              <label class="text-dim text-sm mb-2" style="display: block;">Battery Health Care Threshold (Şarj Koruma Eşiği):</label>
+              <label class="text-dim text-sm mb-2" style="display: block;">Battery Health Care Threshold:</label>
               <div class="battery-limit-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
                 <button class="bat-limit-btn" data-limit="60">
                   <strong>60% Cap</strong>
@@ -1422,8 +1422,8 @@
         <div class="modal-title-group">
           <div class="modal-icon">⚡</div>
           <div>
-            <h3>Yeni Otomasyon Kuralı Oluştur</h3>
-            <span class="subtitle">Sistem koşullarına göre otomatik aksiyon tetikleyen kural tanımlayın</span>
+            <h3>Create Automation Rule</h3>
+            <span class="subtitle">Define automated actions based on real-time system conditions</span>
           </div>
         </div>
         <button class="modal-close-btn" id="modal-create-rule-close" title="Kapat (Esc)">✕</button>
@@ -1431,48 +1431,48 @@
       <div class="modal-body" style="padding: 20px;">
         <div style="display: flex; flex-direction: column; gap: 14px;">
           <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Kural Adı:</label>
-            <input type="text" id="new-rule-name" placeholder="Örn: Render Modu (Blender)" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Rule Name:</label>
+            <input type="text" id="new-rule-name" placeholder="e.g. Render Mode (Blender)" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
           </div>
           <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Tetikleyici Koşul (IF):</label>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Trigger Condition (IF):</label>
             <select id="new-rule-trigger-type" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
-              <option value="gpu_temp_gte">GPU Sıcaklığı Belirli Eşiği Aşınca (°C)</option>
-              <option value="cpu_load_gte">CPU Yükü Belirli Eşiği Aşınca (%)</option>
-              <option value="battery_lte">Pil Seviyesi Belirli Eşiğin Altına İnince (%)</option>
+              <option value="gpu_temp_gte">GPU Temperature Exceeds (°C)</option>
+              <option value="cpu_load_gte">CPU Load Exceeds (%)</option>
+              <option value="battery_lte">Battery Level Drops Below (%)</option>
               <option value="foreground_game">Belirli Bir Uygulama / .exe Aktif Olunca</option>
-              <option value="time_range">Gece Saat Aralığı (Örn: 23:00 - 08:00)</option>
+              <option value="time_range">Night Time Window (e.g. 23:00 - 08:00)</option>
             </select>
           </div>
           <div id="new-rule-trigger-param-container">
-            <label id="new-rule-param-label" style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Eşik Değeri (°C):</label>
+            <label id="new-rule-param-label" style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Threshold Value (°C):</label>
             <input type="text" id="new-rule-trigger-val" value="80" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
           </div>
           <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Yürütülecek Eylem (THEN):</label>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Action to Execute (THEN):</label>
             <select id="new-rule-action-type" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
-              <option value="set_fan_profile">Fan Profilini Değiştir</option>
-              <option value="set_power_plan">Güç Planını Değiştir</option>
-              <option value="set_winkey">Windows Tuşunu Kilitle</option>
-              <option value="notify">Masaüstü Bildirimi Gönder</option>
+              <option value="set_fan_profile">Change Fan Profile</option>
+              <option value="set_power_plan">Change Power Scheme</option>
+              <option value="set_winkey">Lock Windows Key</option>
+              <option value="notify">Send Desktop Notification</option>
             </select>
           </div>
           <div>
             <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Eylem Parametresi:</label>
             <select id="new-rule-action-val" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
-              <option value="turbo">Fan: Turbo (Yüksek Performans)</option>
+              <option value="turbo">Fan: Turbo (High Performance)</option>
               <option value="cooler_boost">Fan: Cooler Boost (Maksimum %100)</option>
-              <option value="silent">Fan: Sessiz (Düşük Gürültü)</option>
+              <option value="silent">Fan: Silent (Low Noise)</option>
               <option value="auto">Fan: Otomatik (Dengeli)</option>
             </select>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
             <input type="checkbox" id="new-rule-auto-revert" checked style="accent-color: var(--accent-cyan); width: 16px; height: 16px;">
-            <label for="new-rule-auto-revert" style="font-size: 0.82rem; color: var(--text-muted); cursor: pointer;">Koşul sona erdiğinde sistemi otomatik olarak önceki ayarlara geri döndür (Auto-Revert)</label>
+            <label for="new-rule-auto-revert" style="font-size: 0.82rem; color: var(--text-muted); cursor: pointer;">Automatically revert to previous system settings when condition clears (Auto-Revert)</label>
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
-            <button class="btn btn-secondary" id="btn-cancel-create-rule">İptal</button>
-            <button class="btn btn-primary" id="btn-submit-create-rule">Kuralı Kaydet</button>
+            <button class="btn btn-secondary" id="btn-cancel-create-rule">Cancel</button>
+            <button class="btn btn-primary" id="btn-submit-create-rule">Save Rule</button>
           </div>
         </div>
       </div>

@@ -651,7 +651,7 @@ function setupDiagnostics() {
   if (speedBtn) {
     speedBtn.addEventListener('click', async () => {
       speedBtn.disabled = true;
-      speedBtn.textContent = 'Ölçülüyor...';
+      speedBtn.textContent = 'Testing...';
       const pingEl = document.getElementById('ping-readout');
       const downEl = document.getElementById('down-readout');
       const upEl = document.getElementById('up-readout');
@@ -823,12 +823,12 @@ function setupUpdateChecker() {
 
   const applyBadge = (data) => {
     if (data && data.update_available) {
-      badge.textContent = `⚡ GÜNCELLE (${data.latest_version})`;
+      badge.textContent = `⚡ UPDATE (${data.latest_version})`;
       badge.style.background = 'rgba(16, 185, 129, 0.2)';
       badge.style.color = 'var(--accent-green)';
       badge.style.border = '1px solid var(--accent-green)';
       badge.style.animation = 'pulse-border 1.5s infinite';
-      badge.title = `Yeni sürüm mevcut (${data.latest_version})! İndirmek için tıklayın.`;
+      badge.title = `New version available (${data.latest_version})! Click to download.`;
       badge.onclick = () => {
         if (data.release_url) window.open(data.release_url, '_blank');
       };
@@ -864,12 +864,12 @@ function setupUpdateChecker() {
       } catch (e) {}
       applyBadge(data);
       if (isManual && !data.update_available) {
-        alert('Zenith System güncel! En son sürümü kullanıyorsunuz.');
+        alert('Zenith System is up to date! You are using the latest version.');
       }
     } catch (e) {
       if (isManual) {
         badge.textContent = 'SYSTEM V1.0';
-        alert('Güncelleme kontrolü başarısız: ' + e.message);
+        alert('Update check failed: ' + e.message);
       }
     }
   };
@@ -910,7 +910,7 @@ async function setupWinGetStore() {
       if (q.length < 2) return;
 
       const view = document.getElementById('winget-content-view');
-      if (view) view.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--accent-cyan);">🔍 Microsoft WinGet deposunda "${q}" aranıyor...</div>`;
+      if (view) view.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--accent-cyan);">🔍 Searching "${q}" in Microsoft WinGet repo...</div>`;
 
       wingetSearchTimeout = setTimeout(() => {
         executeLiveWingetSearch(q);
@@ -945,18 +945,18 @@ async function setupWinGetStore() {
   if (upgradesBtn) {
     upgradesBtn.addEventListener('click', async () => {
       upgradesBtn.disabled = true;
-      upgradesBtn.innerHTML = '<span>⏳ Taranıyor...</span>';
+      upgradesBtn.innerHTML = '<span>⏳ Scanning...</span>';
       const view = document.getElementById('winget-content-view');
-      if (view) view.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--accent-green);">🔄 Sisteminizdeki kurulu uygulamalar için güncellemeler taranıyor...</div>';
+      if (view) view.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--accent-green);">🔄 Scanning for updates across installed applications...</div>';
       try {
         const res = await fetch('/api/winget/upgrades');
         const upgrades = res.ok ? await res.json() : [];
         renderWingetUpgradesView(upgrades);
       } catch (e) {
-        if (view) view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Güncelleme taraması başarısız oldu: ${e.message}</div>`;
+        if (view) view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Update scan failed: ${e.message}</div>`;
       } finally {
         upgradesBtn.disabled = false;
-        upgradesBtn.innerHTML = '<span>🔄 Güncellemeleri Tara</span>';
+        upgradesBtn.innerHTML = '<span>🔄 Check for Updates</span>';
       }
     });
   }
@@ -973,12 +973,12 @@ async function setupWinGetStore() {
     installBtn.addEventListener('click', async () => {
       const checked = Array.from(document.querySelectorAll('.pkg-cb:checked')).map(cb => cb.value);
       if (checked.length === 0) {
-        alert('Lütfen kurmak için en az bir paket seçin.');
+        alert('Please select at least one package to install.');
         return;
       }
 
       installBtn.disabled = true;
-      installBtn.textContent = 'Kuruluyor...';
+      installBtn.textContent = 'Installing...';
       startWingetPolling();
 
       try {
@@ -987,7 +987,7 @@ async function setupWinGetStore() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ packages: checked })
         });
-        if (!res.ok) throw new Error('API isteği başarısız oldu.');
+        if (!res.ok) throw new Error('API request failed.');
       } catch (e) {
         alert('Hata: ' + e.message);
         installBtn.disabled = false;
@@ -1013,7 +1013,7 @@ async function loadWingetProfiles() {
             <h4 class="profile-card-title">${p.name.substring(p.name.indexOf(' ') + 1) || p.name}</h4>
           </div>
           <p class="profile-card-desc">${p.description}</p>
-          <div class="profile-pkg-count">${p.packages.length} Paket Hazır</div>
+          <div class="profile-pkg-count">${p.packages.length} Packages Ready</div>
         </div>
         <button class="profile-deploy-btn" onclick="deployWingetProfile('${p.id}', '${p.name.replace(/'/g, "\\'")}')">
           <span>⚡ Profili Kur</span>
@@ -1033,7 +1033,7 @@ async function loadWingetCatalog() {
     wingetCatalogData = await res.json();
     renderWingetCatalogView();
   } catch (e) {
-    if (view) view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Katalog yüklenemedi: ${e.message}</div>`;
+    if (view) view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Failed to load catalog: ${e.message}</div>`;
   }
 }
 
@@ -1047,7 +1047,7 @@ function renderWingetCatalogView() {
     : categories.filter(c => c.id === wingetCurrentCategory);
 
   if (filtered.length === 0) {
-    view.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-dim);">Bu kategoride paket bulunamadı.</div>';
+    view.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-dim);">No packages found in this category.</div>';
     return;
   }
 
@@ -1098,8 +1098,8 @@ async function executeLiveWingetSearch(query) {
       view.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-dim);">
           <div style="font-size: 1.8rem; margin-bottom: 8px;">🔍</div>
-          <div>"${query}" için resmi Microsoft WinGet deposunda sonuç bulunamadı.</div>
-          <div style="font-size: 0.75rem; margin-top: 6px; color: var(--text-dim);">Farklı bir arama terimi deneyin (örn: chrome, vlc, discord).</div>
+          <div>"${query}" returned no results in Microsoft WinGet repo.</div>
+          <div style="font-size: 0.75rem; margin-top: 6px; color: var(--text-dim);">Try an alternate query (e.g. chrome, vlc, discord).</div>
         </div>
       `;
       return;
@@ -1107,8 +1107,8 @@ async function executeLiveWingetSearch(query) {
 
     view.innerHTML = `
       <div style="margin-bottom: 14px; font-size: 0.82rem; color: var(--text-muted); display: flex; justify-content: space-between;">
-        <span>"${query}" için <strong>${results.length}</strong> canlı sonuç bulundu:</span>
-        <span style="color: var(--accent-cyan);">Kaynak: Microsoft WinGet Repository</span>
+        <span>Found <strong>${results.length}</strong> results for "${query}":</span>
+        <span style="color: var(--accent-cyan);">Source: Microsoft WinGet Repository</span>
       </div>
       <div class="winget-cat-grid">
         <div class="winget-cat-card" style="grid-column: 1 / -1;">
@@ -1119,10 +1119,10 @@ async function executeLiveWingetSearch(query) {
                   <input type="checkbox" class="pkg-cb" value="${r.id}" onchange="updateSelectedPackagesCount()" style="accent-color: var(--accent-cyan); cursor: pointer; width: 16px; height: 16px;">
                   <div>
                     <div class="pkg-item-name" style="font-size: 0.9rem;">${r.name}</div>
-                    <div class="pkg-item-id">${r.id} • Sürüm: ${r.version || 'Son'} ${r.source ? `• ${r.source}` : ''}</div>
+                    <div class="pkg-item-id">${r.id} • Version: ${r.version || 'Latest'} ${r.source ? `• ${r.source}` : ''}</div>
                   </div>
                 </div>
-                <button class="pkg-install-quick-btn" style="padding: 6px 14px; font-weight: 600;" onclick="installSingleWingetPackage('${r.id}')">⚡ Şimdi Kur</button>
+                <button class="pkg-install-quick-btn" style="padding: 6px 14px; font-weight: 600;" onclick="installSingleWingetPackage('${r.id}')">⚡ Install Now</button>
               </div>
             `).join('')}
           </div>
@@ -1132,7 +1132,7 @@ async function executeLiveWingetSearch(query) {
 
     updateSelectedPackagesCount();
   } catch (e) {
-    view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Arama sırasında hata oluştu: ${e.message}</div>`;
+    view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Error during package search: ${e.message}</div>`;
   }
 }
 
@@ -1144,8 +1144,8 @@ function renderWingetUpgradesView(upgrades) {
     view.innerHTML = `
       <div style="padding: 50px; text-align: center; color: var(--accent-green);">
         <div style="font-size: 2.2rem; margin-bottom: 10px;">✨</div>
-        <div style="font-size: 1rem; font-weight: 700;">Tebrikler, tüm yazılımlarınız güncel!</div>
-        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">Sisteminizdeki WinGet paketleri için bekleyen yeni bir güncelleme bulunmuyor.</div>
+        <div style="font-size: 1rem; font-weight: 700;">All applications are up to date!</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">No pending upgrades found for installed WinGet packages.</div>
       </div>
     `;
     return;
@@ -1154,11 +1154,11 @@ function renderWingetUpgradesView(upgrades) {
   view.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <div>
-        <h4 style="margin: 0; font-size: 1rem; color: #fff;">Güncellenebilir Uygulamalar (${upgrades.length})</h4>
-        <span style="font-size: 0.75rem; color: var(--text-dim);">Aşağıdaki uygulamaların daha yeni sürümleri mevcut</span>
+        <h4 style="margin: 0; font-size: 1rem; color: #fff;">Upgradable Applications (${upgrades.length})</h4>
+        <span style="font-size: 0.75rem; color: var(--text-dim);">Newer versions are available for the following packages</span>
       </div>
       <button class="btn btn-primary" onclick="upgradeAllWingetPackages(${JSON.stringify(upgrades.map(u => u.id)).replace(/"/g, '&quot;')})">
-        ⚡ Hepsini Güncelle (${upgrades.length})
+        ⚡ Upgrade All (${upgrades.length})
       </button>
     </div>
     <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -1174,7 +1174,7 @@ function renderWingetUpgradesView(upgrades) {
               <span style="color: var(--accent-cyan); margin: 0 6px;">➔</span>
               <span class="upgrade-version-badge">${u.available || 'Yeni'}</span>
             </div>
-            <button class="pkg-install-quick-btn" onclick="installSingleWingetPackage('${u.id}')">Güncelle</button>
+            <button class="pkg-install-quick-btn" onclick="installSingleWingetPackage('${u.id}')">Upgrade</button>
           </div>
         </div>
       `).join('')}
@@ -1188,12 +1188,12 @@ window.updateSelectedPackagesCount = function() {
   const installBtn = document.getElementById('btn-install-winget-pkgs');
   if (countEl) countEl.textContent = checked.length;
   if (installBtn && !isWingetPollActive) {
-    installBtn.innerHTML = `<span>Seçilenleri Kur (${checked.length})</span>`;
+    installBtn.innerHTML = `<span>Install Selected (${checked.length})</span>`;
   }
 };
 
 window.installSingleWingetPackage = async function(pkgId) {
-  if (!confirm(`'${pkgId}' uygulamasını arka planda sessizce kurmak istiyor musunuz?`)) return;
+  if (!confirm(`Do you want to install '${pkgId}' silently in the background?`)) return;
   startWingetPolling();
   try {
     await fetch('/api/winget/install', {
@@ -1202,12 +1202,12 @@ window.installSingleWingetPackage = async function(pkgId) {
       body: JSON.stringify({ packages: [pkgId] })
     });
   } catch (e) {
-    alert('Kurulum başlatılamadı: ' + e.message);
+    alert('Installation failed to start: ' + e.message);
   }
 };
 
 window.deployWingetProfile = async function(profileId, profileName) {
-  if (!confirm(`'${profileName}' profilindeki tüm paketler sırayla sessizce kurulacak. Başlatılsın mı?`)) return;
+  if (!confirm(`All packages in profile '${profileName}' will be silently installed. Proceed?`)) return;
   startWingetPolling();
   try {
     const res = await fetch('/api/winget/install-profile', {
@@ -1215,14 +1215,14 @@ window.deployWingetProfile = async function(profileId, profileName) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile_id: profileId })
     });
-    if (!res.ok) throw new Error('Profil kurulum isteği başarısız oldu.');
+    if (!res.ok) throw new Error('Profile installation request failed.');
   } catch (e) {
-    alert('Profil kurulum hatası: ' + e.message);
+    alert('Profile installation error: ' + e.message);
   }
 };
 
 window.upgradeAllWingetPackages = async function(pkgIds) {
-  if (!confirm(`${pkgIds.length} adet uygulama sırayla en güncel sürüme yükseltilecek. Başlatılsın mı?`)) return;
+  if (!confirm(`${pkgIds.length} package(s) will be upgraded to their latest versions. Proceed?`)) return;
   startWingetPolling();
   try {
     await fetch('/api/winget/install', {
@@ -1231,7 +1231,7 @@ window.upgradeAllWingetPackages = async function(pkgIds) {
       body: JSON.stringify({ packages: pkgIds })
     });
   } catch (e) {
-    alert('Toplu güncelleme hatası: ' + e.message);
+    alert('Batch upgrade error: ' + e.message);
   }
 };
 
@@ -1242,12 +1242,12 @@ function startWingetPolling() {
 
   if (logBox) {
     logBox.style.display = 'block';
-    logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">[Zenith WinGet] Arka plan kurulum işi başlatıldı...</div>';
+    logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">[Zenith WinGet] Background installation initiated...</div>';
   }
   if (spinner) spinner.style.display = 'inline';
   if (installBtn) {
     installBtn.disabled = true;
-    installBtn.textContent = 'Kuruluyor...';
+    installBtn.textContent = 'Installing...';
   }
 
   isWingetPollActive = true;
@@ -1735,7 +1735,7 @@ async function loadActiveNetworkConnections() {
     renderNetworkConnections();
   } catch (e) {
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--accent-red);">Ağ bağlantıları alınamadı: ${escapeHtml(e.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--accent-red);">Failed to load network connections: ${escapeHtml(e.message)}</td></tr>`;
     }
   }
 }
@@ -1756,7 +1756,7 @@ function renderNetworkConnections() {
     : allNetworkConnections;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">Eşleşen aktif bağlantı bulunamadı.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">No matching active connections found.</td></tr>`;
     return;
   }
 
@@ -2372,11 +2372,11 @@ function renderLaptopStudioState(cfg) {
     if (hw) {
       const vendorName = (hw.vendor || 'generic').toUpperCase();
       const modelName = hw.model || 'PC';
-      halBadge.textContent = `💻 HAL: ${vendorName} ${modelName} (Donanım Kontrolü Aktif)`;
+      halBadge.textContent = `💻 HAL: ${vendorName} ${modelName} (Hardware Control Active)`;
       halBadge.className = 'stat-badge green';
-      halBadge.title = `Sağlayıcı: ${vendorName} | Model: ${modelName} | Fan, RGB, Pil ve MUX doğrudan bağlı`;
+      halBadge.title = `Provider: ${vendorName} | Model: ${modelName} | Fan, RGB, Battery & MUX directly linked`;
     } else {
-      halBadge.textContent = '💻 HAL: Otomatik Algılandı';
+      halBadge.textContent = '💻 HAL: Auto Detected';
     }
   }
 
@@ -2664,12 +2664,12 @@ async function loadTroubleshootTools(force = false) {
   if (!container) return;
 
   if (force) {
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-dim);">Onarım araçları taranıyor...</div>';
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-dim);">Scanning repair tools...</div>';
   }
 
   try {
     const res = await fetch('/api/troubleshoot/tools');
-    if (!res.ok) throw new Error('API hatası: ' + res.status);
+    if (!res.ok) throw new Error('API error: ' + res.status);
     const data = await res.json();
     renderTroubleshootCategories(data.tools || []);
     
@@ -2678,12 +2678,12 @@ async function loadTroubleshootTools(force = false) {
       showTroubleshootBanner(data.active_task);
       startTroubleshootPolling(data.active_task.tool_id);
     } else if (globalStatus) {
-      globalStatus.textContent = '✓ Sistem Hazır';
+      globalStatus.textContent = '✓ System Ready';
       globalStatus.style.color = 'var(--accent-green)';
     }
   } catch (e) {
     console.error('Failed to load troubleshoot tools:', e);
-    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-red);">Onarım araçları yüklenemedi: ${escapeTroubleshootHtml(e.message)}</div>`;
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-red);">Failed to load repair tools: ${escapeTroubleshootHtml(e.message)}</div>`;
   }
 }
 
@@ -2692,14 +2692,14 @@ function renderTroubleshootCategories(tools) {
   if (!container) return;
 
   if (!tools || tools.length === 0) {
-    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-dim);">Kullanılabilir onarım aracı bulunamadı.</div>';
+    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-dim);">No repair tools available.</div>';
     return;
   }
 
   // Group by category_name
   const grouped = {};
   tools.forEach(tool => {
-    const cat = tool.category_name || 'Genel Onarım';
+    const cat = tool.category_name || 'General Repair';
     if (!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(tool);
   });
@@ -2710,7 +2710,7 @@ function renderTroubleshootCategories(tools) {
       <div class="troubleshoot-cat-card">
         <div class="troubleshoot-cat-header">
           <div class="troubleshoot-cat-title">${escapeTroubleshootHtml(catName)}</div>
-          <span style="font-size: 0.75rem; color: var(--text-dim);">${catTools.length} Araç</span>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">${catTools.length} Tools</span>
         </div>
         <div class="troubleshoot-tools-grid">
           ${catTools.map(tool => `
@@ -2726,9 +2726,9 @@ function renderTroubleshootCategories(tools) {
                 <div class="repair-tool-desc">${escapeTroubleshootHtml(tool.description)}</div>
               </div>
               <div class="repair-tool-footer">
-                <span class="repair-status-pill idle" id="repair-status-${tool.id}">Hazır</span>
+                <span class="repair-status-pill idle" id="repair-status-${tool.id}">Ready</span>
                 <button class="repair-run-btn" id="repair-btn-${tool.id}" onclick="runTroubleshootTool('${tool.id}', ${tool.is_long ? 'true' : 'false'})">
-                  <span>${tool.is_long ? '🛡️ Derin Onarımı Başlat' : '⚡ Onar'}</span>
+                  <span>${tool.is_long ? '🛡️ Run Deep Repair' : '⚡ Repair'}</span>
                 </button>
               </div>
             </div>
@@ -2748,7 +2748,7 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
   const globalStatus = document.getElementById('troubleshoot-global-status');
 
   if (isLong) {
-    if (!confirm('Bu derin sistem onarımı Windows sistem bileşenlerini ve çekirdek dosyalarını tarayacak. Birkaç dakika sürebilir. Başlatmak istiyor musunuz?')) {
+    if (!confirm('This deep repair will scan Windows protected system files and components. It may take several minutes. Proceed?')) {
       return;
     }
   }
@@ -2756,11 +2756,11 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
   if (btn) btn.disabled = true;
   if (statusPill) {
     statusPill.className = 'repair-status-pill running';
-    statusPill.textContent = 'Çalışıyor...';
+    statusPill.textContent = 'Running...';
   }
   if (card) card.classList.add('running');
   if (globalStatus) {
-    globalStatus.textContent = '⏳ Onarım Yürütülüyor...';
+    globalStatus.textContent = '⏳ Repair in Progress...';
     globalStatus.style.color = 'var(--accent-cyan)';
   }
 
@@ -2773,10 +2773,10 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
     const data = await res.json();
 
     if (data.status === 'busy') {
-      alert(data.error || 'Başka bir onarım işlemi zaten çalışıyor!');
+      alert(data.error || 'Another repair task is already running!');
       if (statusPill) {
         statusPill.className = 'repair-status-pill idle';
-        statusPill.textContent = 'Meşgul';
+        statusPill.textContent = 'Busy';
       }
       if (btn) btn.disabled = false;
       if (card) card.classList.remove('running');
@@ -2785,7 +2785,7 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
 
     if (data.status === 'running') {
       // Async long-running task (SFC / DISM)
-      showTroubleshootBanner({ tool_id: toolId, progress: 0, logs: ['Onarım süreci başlatıldı...'] });
+      showTroubleshootBanner({ tool_id: toolId, progress: 0, logs: ['Repair process initiated...'] });
       startTroubleshootPolling(toolId);
     } else {
       // Sync tool completed
@@ -2797,10 +2797,10 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
         }
         if (statusPill) {
           statusPill.className = 'repair-status-pill success';
-          statusPill.textContent = '✓ Başarılı';
+          statusPill.textContent = '✓ Success';
         }
         if (globalStatus) {
-          globalStatus.textContent = '✓ Onarım Tamamlandı';
+          globalStatus.textContent = '✓ Repair Completed';
           globalStatus.style.color = 'var(--accent-green)';
         }
       } else {
@@ -2813,7 +2813,7 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
           statusPill.textContent = '❌ Hata';
         }
         if (globalStatus) {
-          globalStatus.textContent = '❌ Onarım Hatası';
+          globalStatus.textContent = '❌ Repair Error';
           globalStatus.style.color = 'var(--accent-red)';
         }
       }
@@ -2827,7 +2827,7 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
     if (card) card.classList.remove('running');
     if (statusPill) {
       statusPill.className = 'repair-status-pill error';
-      statusPill.textContent = 'İletişim Hatası';
+      statusPill.textContent = 'Network Error';
     }
     if (btn) btn.disabled = false;
   }
@@ -2844,11 +2844,11 @@ function showTroubleshootBanner(task) {
   banner.style.display = 'block';
 
   const toolName = task.tool_id === 'sfc_scannow' 
-    ? 'SFC /scannow (Sistem Dosyası Doğrulama)' 
-    : (task.tool_id === 'dism_restorehealth' ? 'DISM RestoreHealth (Bileşen Deposu Onarımı)' : 'Sistem Onarımı');
+    ? 'SFC /scannow (System File Checker)' 
+    : (task.tool_id === 'dism_restorehealth' ? 'DISM RestoreHealth (Component Store Repair)' : 'System Repair');
 
   if (title) {
-    title.textContent = `${toolName} Çalışıyor...`;
+    title.textContent = `${toolName} in progress...`;
     title.style.color = '#fff';
   }
   if (percent) percent.textContent = `${task.progress || 0}%`;
@@ -2893,13 +2893,13 @@ function startTroubleshootPolling(activeToolId = null) {
         troubleshootPollInterval = null;
 
         const isOk = status.status === 'completed';
-        if (percent) percent.textContent = isOk ? '100%' : 'Hata!';
+        if (percent) percent.textContent = isOk ? '100%' : 'Error!';
         if (bar) {
           bar.style.width = '100%';
           bar.style.background = isOk ? 'var(--accent-green)' : 'var(--accent-red)';
         }
         if (title) {
-          title.textContent = isOk ? '✓ Derin Sistem Onarımı Başarıyla Tamamlandı!' : '❌ Derin Sistem Onarımı Hatayla Sonlandı!';
+          title.textContent = isOk ? '✓ Deep System Repair Completed Successfully!' : '❌ Deep System Repair Ended with Errors!';
           title.style.color = isOk ? 'var(--accent-green)' : 'var(--accent-red)';
         }
 
@@ -2920,13 +2920,13 @@ function startTroubleshootPolling(activeToolId = null) {
           }
           if (statusPill) {
             statusPill.className = `repair-status-pill ${isOk ? 'success' : 'error'}`;
-            statusPill.textContent = isOk ? '✓ Tamamlandı' : '❌ Hata';
+            statusPill.textContent = isOk ? '✓ Done' : '❌ Error';
           }
           if (btn) btn.disabled = false;
         }
 
         if (globalStatus) {
-          globalStatus.textContent = isOk ? '✓ Sistem Hazır' : '⚠️ Onarım Uyarısı';
+          globalStatus.textContent = isOk ? '✓ System Ready' : '⚠️ Repair Notice';
           globalStatus.style.color = isOk ? 'var(--accent-green)' : 'var(--accent-yellow)';
         }
       }
@@ -2965,7 +2965,7 @@ async function setupAutomationRules() {
         await fetch('/api/rules/evaluate', { method: 'POST' });
         await loadAutomationRules();
       } finally {
-        setTimeout(() => { evalNowBtn.textContent = '⚡ Şimdi Değerlendir'; }, 1000);
+        setTimeout(() => { evalNowBtn.textContent = '⚡ Evaluate Now'; }, 1000);
       }
     });
   }
@@ -3004,23 +3004,23 @@ async function setupAutomationRules() {
       if (!label || !input) return;
 
       if (val === 'gpu_temp_gte') {
-        label.textContent = 'Eşik Değeri (°C):';
+        label.textContent = 'Threshold Value (°C):';
         input.value = '80';
         input.placeholder = '80';
       } else if (val === 'cpu_load_gte') {
-        label.textContent = 'CPU Yük Eşiği (%):';
+        label.textContent = 'CPU Load Threshold (%):';
         input.value = '85';
         input.placeholder = '85';
       } else if (val === 'battery_lte') {
-        label.textContent = 'Pil Seviye Eşiği (%):';
+        label.textContent = 'Battery Level Threshold (%):';
         input.value = '25';
         input.placeholder = '25';
       } else if (val === 'foreground_game') {
-        label.textContent = 'Hedef Uygulama Exe Adı:';
+        label.textContent = 'Target Application Exe Name:';
         input.value = 'Cyberpunk2077.exe';
-        input.placeholder = 'Ornek.exe veya virgülle ayrılmış liste';
+        input.placeholder = 'e.g. App.exe or comma-separated list';
       } else if (val === 'time_range') {
-        label.textContent = 'Saat Aralığı (Başlangıç-Bitiş):';
+        label.textContent = 'Time Window (Start-End):';
         input.value = '23-08';
         input.placeholder = '23-08';
       }
@@ -3036,25 +3036,25 @@ async function setupAutomationRules() {
 
       if (actVal === 'set_fan_profile') {
         actionParamSelect.innerHTML = `
-          <option value="turbo">Fan: Turbo (Yüksek Performans)</option>
+          <option value="turbo">Fan: Turbo (High Performance)</option>
           <option value="cooler_boost">Fan: Cooler Boost (Maksimum %100)</option>
-          <option value="silent">Fan: Sessiz (Düşük Gürültü)</option>
+          <option value="silent">Fan: Silent (Low Noise)</option>
           <option value="auto">Fan: Otomatik (Dengeli)</option>
         `;
       } else if (actVal === 'set_power_plan') {
         actionParamSelect.innerHTML = `
-          <option value="high_performance">Yüksek Performans Planı</option>
-          <option value="balanced">Dengeli Güç Planı</option>
-          <option value="power_saver">Güç Tasarrufu Planı</option>
+          <option value="high_performance">High Performance Plan</option>
+          <option value="balanced">Balanced Power Plan</option>
+          <option value="power_saver">Power Saver Plan</option>
         `;
       } else if (actVal === 'set_winkey') {
         actionParamSelect.innerHTML = `
-          <option value="locked">Windows Tuşunu Kilitle</option>
-          <option value="unlocked">Windows Tuşunun Kilidini Aç</option>
+          <option value="locked">Lock Windows Key</option>
+          <option value="unlocked">Unlock Windows Key</option>
         `;
       } else if (actVal === 'notify') {
         actionParamSelect.innerHTML = `
-          <option value="custom_msg">Masaüstü Bildirimi Gönder</option>
+          <option value="custom_msg">Send Desktop Notification</option>
         `;
       }
     });
@@ -3071,7 +3071,7 @@ async function setupAutomationRules() {
       const autoRevert = document.getElementById('new-rule-auto-revert')?.checked ?? true;
 
       if (!name) {
-        alert('Lütfen kural için bir isim belirleyin.');
+        alert('Please specify a name for the rule.');
         return;
       }
 
@@ -3088,7 +3088,7 @@ async function setupAutomationRules() {
 
       const ruleObj = {
         name,
-        description: `Özel Tanımlı Kural (${triggerType} ➔ ${actionType})`,
+        description: `Custom Rule (${triggerType} ➔ ${actionType})`,
         icon: '⚡',
         enabled: true,
         auto_revert: autoRevert,
@@ -3128,13 +3128,13 @@ async function loadAutomationRules() {
 
   try {
     const res = await fetch('/api/rules');
-    if (!res.ok) throw new Error('API yanıt vermedi: ' + res.status);
+    if (!res.ok) throw new Error('API request failed: ' + res.status);
     rulesEngineData = await res.json();
 
     // 1. Update Master Toggle Button & Stats
     const isMasterOn = rulesEngineData.enabled;
     if (masterText) {
-      masterText.textContent = isMasterOn ? '⚡ Motor: Aktif' : '⏸️ Motor: Duraklatıldı';
+      masterText.textContent = isMasterOn ? '⚡ Engine: Active' : '⏸️ Engine: Paused';
     }
     if (masterBtn) {
       if (isMasterOn) {
@@ -3157,7 +3157,7 @@ async function loadAutomationRules() {
     if (historyLog) {
       const history = rulesEngineData.history || [];
       if (history.length === 0) {
-        historyLog.innerHTML = '<div class="terminal-line text-dim">Henüz bir otomasyon olayı tetiklenmedi...</div>';
+        historyLog.innerHTML = '<div class="terminal-line text-dim">No automation events triggered yet...</div>';
       } else {
         historyLog.innerHTML = history.map(item => {
           const color = item.event_type === 'trigger' ? 'var(--accent-green)' : (item.event_type === 'revert' ? 'var(--accent-cyan)' : 'var(--accent-red)');
@@ -3189,7 +3189,7 @@ async function loadAutomationRules() {
   } catch (e) {
     console.error('Error loading automation rules:', e);
     if (container) {
-      container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--accent-red);">Kurallar yüklenemedi: ${escapeTroubleshootHtml(e.message)}</div>`;
+      container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--accent-red);">Failed to load rules: ${escapeTroubleshootHtml(e.message)}</div>`;
     }
   }
 }
@@ -3199,7 +3199,7 @@ function renderAutomationRules(rules) {
   if (!container) return;
 
   if (rules.length === 0) {
-    container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim);">Tanımlı kural bulunmuyor.</div>';
+    container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim);">No automation rules defined.</div>';
     return;
   }
 
@@ -3215,8 +3215,8 @@ function renderAutomationRules(rules) {
           <div class="rule-details">
             <div class="rule-header-row">
               <span class="rule-title">${escapeTroubleshootHtml(rule.name)}</span>
-              ${isFiring ? '<span class="repair-status-pill running">🔥 Tetiklendi / Aktif</span>' : (rule.enabled ? '<span class="repair-status-pill success">İzlemede</span>' : '<span class="repair-status-pill idle">Devre Dışı</span>')}
-              ${rule.is_preset ? '<span class="tag-pill blue" style="font-size: 0.65rem;">Ön Tanımlı</span>' : '<span class="tag-pill purple" style="font-size: 0.65rem;">Özel Kural</span>'}
+              ${isFiring ? '<span class="repair-status-pill running">🔥 Triggered / Active</span>' : (rule.enabled ? '<span class="repair-status-pill success">Watching</span>' : '<span class="repair-status-pill idle">Disabled</span>')}
+              ${rule.is_preset ? '<span class="tag-pill blue" style="font-size: 0.65rem;">Preset</span>' : '<span class="tag-pill purple" style="font-size: 0.65rem;">Custom Rule</span>'}
             </div>
             <div class="rule-desc">${escapeTroubleshootHtml(rule.description || '')}</div>
             <div class="rule-logic-flow">
@@ -3228,12 +3228,12 @@ function renderAutomationRules(rules) {
           </div>
         </div>
         <div class="rule-item-right">
-          <label class="zenith-toggle" title="${rule.enabled ? 'Kuralı Kapat' : 'Kuralı Aç'}">
+          <label class="zenith-toggle" title="${rule.enabled ? 'Disable Rule' : 'Enable Rule'}">
             <input type="checkbox" ${rule.enabled ? 'checked' : ''} onchange="toggleRuleState('${rule.id}', this.checked)">
             <span class="zenith-toggle-slider"></span>
           </label>
           ${!rule.is_preset ? `
-            <button class="rule-delete-btn" onclick="deleteCustomRule('${rule.id}')" title="Kuralı Sil">Sil</button>
+            <button class="rule-delete-btn" onclick="deleteCustomRule('${rule.id}')" title="Delete Rule">Delete</button>
           ` : ''}
         </div>
       </div>
@@ -3242,16 +3242,16 @@ function renderAutomationRules(rules) {
 }
 
 function formatRuleTriggerText(trigger) {
-  if (!trigger) return 'Koşul Yok';
+  if (!trigger) return 'No Condition';
   const t = trigger.type;
   if (t === 'foreground_game') {
     const procs = trigger.process_list || [];
-    return procs.length > 3 ? `Oyun / 3D Uygulama (${procs.length} Yazılım)` : procs.join(', ');
+    return procs.length > 3 ? `Game / 3D App (${procs.length} Apps)` : procs.join(', ');
   }
-  if (t === 'gpu_temp_gte') return `GPU ≥ ${trigger.threshold}°C (Soğuma: ${trigger.hysteresis || trigger.threshold - 6}°C)`;
-  if (t === 'cpu_load_gte') return `CPU Yükü ≥ %${trigger.threshold}`;
-  if (t === 'battery_lte') return `Pil ≤ %${trigger.threshold} (${trigger.require_discharging ? 'Prizden Çıkarılınca' : ''})`;
-  if (t === 'time_range') return `Saat ${trigger.start_hour}:00 - ${trigger.end_hour}:00`;
+  if (t === 'gpu_temp_gte') return `GPU ≥ ${trigger.threshold}°C (Cooldown: ${trigger.hysteresis || trigger.threshold - 6}°C)`;
+  if (t === 'cpu_load_gte') return `CPU Load ≥ %${trigger.threshold}`;
+  if (t === 'battery_lte') return `Battery ≤ ${trigger.threshold}% (${trigger.require_discharging ? 'On Battery' : ''})`;
+  if (t === 'time_range') return `Hours ${trigger.start_hour}:00 - ${trigger.end_hour}:00`;
   return t;
 }
 
@@ -3283,7 +3283,7 @@ window.toggleEngineMaster = async function() {
 };
 
 window.deleteCustomRule = async function(ruleId) {
-  if (!confirm('Bu kuralı silmek istediğinize emin misiniz?')) return;
+  if (!confirm('Are you sure you want to delete this rule?')) return;
   try {
     await fetch('/api/rules/delete', {
       method: 'POST',
@@ -3309,19 +3309,19 @@ async function setupHardwareObd() {
   if (scanBtn) {
     scanBtn.addEventListener('click', async () => {
       scanBtn.disabled = true;
-      scanBtn.textContent = '⏳ Derin Donanım Taranıyor...';
+      scanBtn.textContent = '⏳ Deep Hardware Scan in Progress...';
       try {
         await runHardwareObdScan();
       } finally {
         scanBtn.disabled = false;
-        scanBtn.textContent = '⚡ Derin Check-Up Başlat';
+        scanBtn.textContent = '⚡ Run Deep Check-Up';
       }
     });
   }
 
   if (clearBtn) {
     clearBtn.addEventListener('click', async () => {
-      if (!confirm('Tüm aktif arıza kodlarını (DTC) sıfırlamak istiyor musunuz?')) return;
+      if (!confirm('Do you want to reset all active diagnostic trouble codes (DTC)?')) return;
       try {
         await fetch('/api/obd/clear_dtc', { method: 'POST' });
         await loadHardwareObdReport(false);
@@ -3337,27 +3337,27 @@ async function setupHardwareObd() {
       const rep = obdCurrentReport;
       const subs = rep.subsystems || {};
       const lines = [
-        `# 🚗 ZENITH PC OBD-II DONANIM EKSPERTİZ VE CHECK-UP RAPORU`,
-        `- **Tarama Tarihi:** ${rep.scan_time_str || 'Az önce'}`,
-        `- **Donanım Sağlık Skoru:** ${rep.overall_score} / 100`,
-        `- **Arıza Lambası (MIL):** ${rep.mil_status === 'OFF' ? 'NORMAL (Söndürüldü / 0 Hata)' : rep.mil_status}`,
-        `- **Özet:** ${rep.summary || 'Kusursuz'}`,
+        `# 🚗 ZENITH PC OBD-II HARDWARE DIAGNOSTIC REPORT`,
+        `- **Scan Date:** ${rep.scan_time_str || 'Just now'}`,
+        `- **Hardware Health Score:** ${rep.overall_score} / 100`,
+        `- **Check Lamp (MIL):** ${rep.mil_status === 'OFF' ? 'NORMAL (Clean / 0 Faults)' : rep.mil_status}`,
+        `- **Summary:** ${rep.summary || 'Pristine'}`,
         ``,
-        `### 🔬 Alt Sistem Teşhisleri`,
-        `- **WHEA Kararlılığı:** ${subs.whea?.status?.toUpperCase()} (${subs.whea?.score}/100) — ${subs.whea?.details}`,
-        `- **Kablo & Soket Kararlılığı:** ${subs.port_stability?.status?.toUpperCase()} (${subs.port_stability?.score}/100) — ${subs.port_stability?.details}`,
+        `### 🔬 Subsystem Diagnostics`,
+        `- **WHEA Stability:** ${subs.whea?.status?.toUpperCase()} (${subs.whea?.score}/100) — ${subs.whea?.details}`,
+        `- **Cable & Port Stability:** ${subs.port_stability?.status?.toUpperCase()} (${subs.port_stability?.score}/100) — ${subs.port_stability?.details}`,
         `- **PCIe Veri Yolu (GPU):** ${subs.pcie_bus?.status?.toUpperCase()} (${subs.pcie_bus?.score}/100) — ${subs.pcie_bus?.details}`,
-        `- **Disk Arayüz Bütünlüğü:** ${subs.storage_interface?.status?.toUpperCase()} (${subs.storage_interface?.score}/100) — ${subs.storage_interface?.details}`,
-        `- **Güç Rayları & Voltaj:** ${subs.power_rails?.status?.toUpperCase()} (${subs.power_rails?.score}/100) — ${subs.power_rails?.details}`,
+        `- **Storage Bus Integrity:** ${subs.storage_interface?.status?.toUpperCase()} (${subs.storage_interface?.score}/100) — ${subs.storage_interface?.details}`,
+        `- **Power Rails & Voltages:** ${subs.power_rails?.status?.toUpperCase()} (${subs.power_rails?.score}/100) — ${subs.power_rails?.details}`,
         ``,
-        `### ⚠️ Arıza Kodları (DTC - ${rep.dtc_codes?.length || 0} Adet)`,
+        `### ⚠️ Trouble Codes (DTC - ${rep.dtc_codes?.length || 0} Total)`,
         ...(rep.dtc_codes && rep.dtc_codes.length > 0 
-          ? rep.dtc_codes.map(c => `- [${c.code}] ${c.subsystem}: ${c.description} -> Çözüm: ${c.recommendation}`)
-          : ['- Aktif arıza kodu (DTC) saptanmadı. Tüm donanım hatları temiz.'])
+          ? rep.dtc_codes.map(c => `- [${c.code}] ${c.subsystem}: ${c.description} -> Solution: ${c.recommendation}`)
+          : ['- No active trouble codes (DTC) detected. All hardware lines clean.'])
       ];
 
       navigator.clipboard.writeText(lines.join('\n')).then(() => {
-        exportBtn.textContent = '✓ Kopyalandı!';
+        exportBtn.textContent = '✓ Copied to Clipboard!';
         setTimeout(() => { exportBtn.textContent = '📋 Rapor Al'; }, 2000);
       });
     });
@@ -3384,7 +3384,7 @@ async function loadHardwareObdReport(force = false) {
     const url = force ? '/api/obd/scan' : '/api/obd/report';
     const method = force ? 'POST' : 'GET';
     const res = await fetch(url, { method });
-    if (!res.ok) throw new Error('API yanıt vermedi: ' + res.status);
+    if (!res.ok) throw new Error('API request failed: ' + res.status);
     obdCurrentReport = await res.json();
     const rep = obdCurrentReport;
 
@@ -3394,23 +3394,23 @@ async function loadHardwareObdReport(force = false) {
       scoreVal.className = 'obd-gauge-val ' + (rep.overall_score >= 90 ? 'green' : (rep.overall_score >= 70 ? 'yellow' : 'red'));
     }
     if (scanTimeLabel) {
-      scanTimeLabel.textContent = `Son Tarama: ${rep.scan_time_str || 'Az önce'}`;
+      scanTimeLabel.textContent = `Last Scan: ${rep.scan_time_str || 'Just now'}`;
     }
 
     if (milLamp) {
       const mil = rep.mil_status || 'OFF';
       milLamp.className = `obd-mil-lamp ${mil.toLowerCase()}`;
       if (mil === 'OFF') {
-        milLamp.innerHTML = '✓ MIL: NORMAL (TEMİZ)';
+        milLamp.innerHTML = '✓ MIL: NORMAL (CLEAN)';
       } else if (mil === 'PENDING') {
-        milLamp.innerHTML = '⚠️ MIL: UYARI / PARAZİT';
+        milLamp.innerHTML = '⚠️ MIL: WARNING / FLAPPING';
       } else {
         milLamp.innerHTML = '🚨 CHECK ENGINE (ARIZA)';
       }
     }
 
     if (summaryText) {
-      summaryText.textContent = rep.summary || 'Tüm donanım hatları sağlıklı.';
+      summaryText.textContent = rep.summary || 'All hardware buses and links are healthy.';
     }
 
     // 2. Subsystems Grid
@@ -3422,7 +3422,7 @@ async function loadHardwareObdReport(force = false) {
         const sc = item.score ?? 100;
         const color = sc >= 90 ? 'var(--accent-green)' : (sc >= 70 ? '#f59e0b' : 'var(--accent-red)');
         const statusBadge = item.status === 'clean' || item.status === 'optimal' || item.status === 'stable'
-          ? '<span class="repair-status-pill success">Kusursuz</span>'
+          ? '<span class="repair-status-pill success">Pristine</span>'
           : '<span class="repair-status-pill error">Dikkat</span>';
 
         return `
@@ -3439,7 +3439,7 @@ async function loadHardwareObdReport(force = false) {
             </div>
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 4px;">
-                <span>Donanım Sağlığı</span>
+                <span>Hardware Health</span>
                 <strong style="color: ${color};">${sc}%</strong>
               </div>
               <div class="obd-subsystem-bar-wrapper">
@@ -3455,7 +3455,7 @@ async function loadHardwareObdReport(force = false) {
     if (dtcBox) {
       const dtcs = rep.dtc_codes || [];
       if (dtcBadge) {
-        dtcBadge.textContent = `${dtcs.length} Arıza Kodu`;
+        dtcBadge.textContent = `${dtcs.length} Trouble Code(s)`;
         dtcBadge.className = `tag-pill ${dtcs.length === 0 ? 'green' : 'red'}`;
       }
 
@@ -3463,8 +3463,8 @@ async function loadHardwareObdReport(force = false) {
         dtcBox.innerHTML = `
           <div style="padding: 30px; text-align: center; color: var(--accent-green);">
             <div style="font-size: 2rem; margin-bottom: 8px;">✨</div>
-            <strong style="font-size: 0.95rem;">Tebrikler, sistemde donanım arıza kodu (DTC) bulunamadı!</strong>
-            <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">Tüm soketler, PCIe hatları ve voltaj rayları nominal toleranslar içinde çalışıyor.</p>
+            <strong style="font-size: 0.95rem;">Congratulations, no hardware diagnostic trouble codes (DTC) detected!</strong>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">All sockets, PCIe lanes, and voltage rails are operating within nominal tolerances.</p>
           </div>
         `;
       } else {
@@ -3473,7 +3473,7 @@ async function loadHardwareObdReport(force = false) {
             <span class="obd-dtc-code-badge">${escapeTroubleshootHtml(dtc.code)}</span>
             <div class="obd-dtc-info">
               <div class="obd-dtc-desc">${escapeTroubleshootHtml(dtc.description)}</div>
-              <div class="obd-dtc-recom">💡 <strong>Önerilen Eylem:</strong> ${escapeTroubleshootHtml(dtc.recommendation)}</div>
+              <div class="obd-dtc-recom">💡 <strong>Recommended Action:</strong> ${escapeTroubleshootHtml(dtc.recommendation)}</div>
             </div>
           </div>
         `).join('');
@@ -3482,7 +3482,7 @@ async function loadHardwareObdReport(force = false) {
   } catch (e) {
     console.error('Error loading OBD report:', e);
     if (grid) {
-      grid.innerHTML = `<div style="padding: 20px; color: var(--accent-red); grid-column: 1 / -1;">OBD-II Raporu yüklenemedi: ${escapeTroubleshootHtml(e.message)}</div>`;
+      grid.innerHTML = `<div style="padding: 20px; color: var(--accent-red); grid-column: 1 / -1;">Failed to load OBD-II report: ${escapeTroubleshootHtml(e.message)}</div>`;
     }
   }
 }

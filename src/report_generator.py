@@ -46,7 +46,7 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
         elif s.get("health_status"):
             health_txt = s.get("health_status")
         else:
-            health_txt = "Sağlıklı (100%)"
+            health_txt = "Healthy (100%)"
             
         smart = s.get("smart_status") or {}
         temp_val = s.get("temperature_c") or smart.get("temp_c")
@@ -62,7 +62,7 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
         </tr>
         """
     if not storage_rows:
-        storage_rows = "<tr><td colspan='5' style='text-align:center;'>Disk bilgisi alınamadı</td></tr>"
+        storage_rows = "<tr><td colspan='5' style='text-align:center;'>Disk information unavailable</td></tr>"
 
     # 3. DTC Fault rows
     dtc_rows = ""
@@ -76,14 +76,14 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
                 <td><span class='badge badge-{sev}'>{sev.upper()}</span></td>
                 <td>{subsys}</td>
                 <td>{dtc.get('description', '')}</td>
-                <td><small>{dtc.get('recommendation', 'İnceleme gerekebilir.')}</small></td>
+                <td><small>{dtc.get('recommendation', 'Investigation may be required.')}</small></td>
             </tr>
             """
     else:
         dtc_rows = """
         <tr>
             <td colspan="5" style="text-align:center; color: #10b981; padding: 18px;">
-                ✔ Aktif donanım arızası veya WHEA hatası bulunamadı. Donanım sağlığı mükemmel durumda.
+                ✔ No active hardware faults or WHEA errors detected. Hardware health is in pristine condition.
             </td>
         </tr>
         """
@@ -119,7 +119,7 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zenith System — Donanım & Teşhis Raporu ({hostname})</title>
+    <title>Zenith System — Hardware & Diagnostic Report ({hostname})</title>
     <style>
         :root {{
             --bg: #090d16;
@@ -319,7 +319,7 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
 <body>
     <div class="container">
         <div class="actions">
-            <button class="btn" onclick="window.print()">🖨️ Yazdır / PDF Olarak Kaydet</button>
+            <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
             <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="window.close()">Kapat</button>
         </div>
 
@@ -328,38 +328,38 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
                 <div class="brand-icon">⚡</div>
                 <div>
                     <h1>ZENITH SYSTEM</h1>
-                    <div style="font-size: 12px; color: var(--text-muted);">Eksiksiz Donanım Envanteri ve Sağlık Teşhis Raporu</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Comprehensive Hardware Inventory & Diagnostic Report</div>
                 </div>
             </div>
             <div class="meta-info">
-                <div><strong>Bilgisayar:</strong> {hostname}</div>
-                <div><strong>Kullanıcı:</strong> {user}</div>
-                <div><strong>Oluşturulma Tarihi:</strong> {gen_time}</div>
+                <div><strong>Host:</strong> {hostname}</div>
+                <div><strong>User:</strong> {user}</div>
+                <div><strong>Generated At:</strong> {gen_time}</div>
             </div>
         </div>
 
         <!-- OBD & HEALTH SUMMARY -->
         <div class="card">
-            <div class="card-title">🩺 PC OBD-II Donanım Sağlığı & Teşhis Özeti</div>
+            <div class="card-title">🩺 PC OBD-II Hardware Health & Diagnostic Summary</div>
             <div style="display: flex; align-items: center; gap: 24px;">
                 <div class="score-circle">{obd_score}</div>
                 <div>
-                    <h3 style="color: #fff; margin-bottom: 4px;">Donanım Sağlık Skoru: {obd_score} / 100</h3>
+                    <h3 style="color: #fff; margin-bottom: 4px;">Hardware Health Score: {obd_score} / 100</h3>
                     <p style="color: var(--text-muted); font-size: 13px;">
-                        WHEA Donanım mimarisi, PCIe veriyolu kararlılığı, PnP aygıt sürücüleri ve sistem olay günlükleri taranarak oluşturulmuştur.
+                        Generated via comprehensive scan of WHEA architecture, PCIe bus links, PnP device status, and system event logs.
                     </p>
                 </div>
             </div>
             
-            <h4 style="margin-top: 20px; margin-bottom: 8px; color: #fff; font-size: 13px;">Hata ve Durum Kayıtları (DTC Codes):</h4>
+            <h4 style="margin-top: 20px; margin-bottom: 8px; color: #fff; font-size: 13px;">Trouble & Status Logs (DTC Codes):</h4>
             <table>
                 <thead>
                     <tr>
-                        <th>Kod</th>
-                        <th>Seviye</th>
-                        <th>Bileşen</th>
-                        <th>Açıklama</th>
-                        <th>Öneri</th>
+                        <th>Code</th>
+                        <th>Severity</th>
+                        <th>Component</th>
+                        <th>Description</th>
+                        <th>Recommendation</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -370,22 +370,22 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
 
         <!-- CPU & MOTHERBOARD -->
         <div class="card">
-            <div class="card-title">⚡ İşlemci (CPU) & Anakart</div>
+            <div class="card-title">⚡ Processor (CPU) & Motherboard</div>
             <div class="grid-2">
                 <div class="spec-item">
-                    <div class="spec-lbl">İşlemci Modeli</div>
+                    <div class="spec-lbl">Processor Model</div>
                     <div class="spec-val">{cpu.get('model', 'Bilinmiyor')}</div>
                 </div>
                 <div class="spec-item">
-                    <div class="spec-lbl">Çekirdek Yapısı</div>
-                    <div class="spec-val">{total_cores} Fiziksel, {total_threads} Mantıksal Çekirdek (P: {p_cores}, E: {e_cores})</div>
+                    <div class="spec-lbl">Core Architecture</div>
+                    <div class="spec-val">{total_cores} Physical, {total_threads} Logical Cores (P: {p_cores}, E: {e_cores})</div>
                 </div>
                 <div class="spec-item">
                     <div class="spec-lbl">Anakart</div>
                     <div class="spec-val">{mb.get('manufacturer', '')} {mb.get('product', 'Bilinmiyor')}</div>
                 </div>
                 <div class="spec-item">
-                    <div class="spec-lbl">BIOS Sürümü & Tarihi</div>
+                    <div class="spec-lbl">BIOS Version & Date</div>
                     <div class="spec-val">{bios.get('version', 'Bilinmiyor')} ({bios.get('release_date', '')})</div>
                 </div>
             </div>
@@ -393,38 +393,38 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
 
         <!-- GPU & MEMORY -->
         <div class="card">
-            <div class="card-title">🎮 Ekran Kartı (GPU) & Bellek (RAM)</div>
+            <div class="card-title">🎮 Graphics Card (GPU) & Memory (RAM)</div>
             <div class="grid-2">
                 <div class="spec-item">
-                    <div class="spec-lbl">Grafik İşlemcisi (GPU)</div>
+                    <div class="spec-lbl">Graphics Processor (GPU)</div>
                     <div class="spec-val">{primary_gpu.get('name', 'Bilinmiyor')}</div>
                 </div>
                 <div class="spec-item">
-                    <div class="spec-lbl">Canlı Telemetri</div>
-                    <div class="spec-val">Sıcaklık: {gpu_temp} | Yük: {gpu_load} | VRAM: {gpu_vram}</div>
+                    <div class="spec-lbl">Live Telemetry</div>
+                    <div class="spec-val">Temp: {gpu_temp} | Load: {gpu_load} | VRAM: {gpu_vram}</div>
                 </div>
                 <div class="spec-item">
-                    <div class="spec-lbl">Sistem Belleği (RAM)</div>
+                    <div class="spec-lbl">System Memory (RAM)</div>
                     <div class="spec-val">{ram_gb} GB {ram_type} {ram_speed}</div>
                 </div>
                 <div class="spec-item">
-                    <div class="spec-lbl">Kullanılabilir RAM</div>
-                    <div class="spec-val">{round(psutil.virtual_memory().available / (1024**3), 1)} GB Boşta ({psutil.virtual_memory().percent}% Kullanılıyor)</div>
+                    <div class="spec-lbl">Available RAM</div>
+                    <div class="spec-val">{round(psutil.virtual_memory().available / (1024**3), 1)} GB Free ({psutil.virtual_memory().percent}% Used)</div>
                 </div>
             </div>
         </div>
 
         <!-- STORAGE & BATTERY -->
         <div class="card">
-            <div class="card-title">💾 Depolama (SSD / HDD)</div>
+            <div class="card-title">💾 Storage (SSD / HDD)</div>
             <table>
                 <thead>
                     <tr>
                         <th>Model</th>
-                        <th>Tür</th>
-                        <th>Kapasite</th>
-                        <th>Sağlık</th>
-                        <th>Sıcaklık</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Health</th>
+                        <th>Temperature</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -435,14 +435,14 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
 
         <!-- BATTERY -->
         <div class="card">
-            <div class="card-title">🔋 Pil & Güç Durumu</div>
+            <div class="card-title">🔋 Battery & Power Status</div>
             <div class="grid-3">
                 <div class="spec-item">
-                    <div class="spec-lbl">Pil Sağlığı</div>
+                    <div class="spec-lbl">Battery Health</div>
                     <div class="spec-val">{bat_health_str}</div>
                 </div>
                 <div class="spec-item">
-                    <div class="spec-lbl">Döngü Sayısı (Cycle Count)</div>
+                    <div class="spec-lbl">Battery Cycle Count</div>
                     <div class="spec-val">{bat_cycle}</div>
                 </div>
                 <div class="spec-item">
@@ -454,7 +454,7 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
 
         <div class="footer">
             Zenith System V1.0.0 — Zero-Bloat Hardware & Diagnostic Suite<br>
-            Rapor üretici kimliği: {hostname}\\{user}
+            Report generator identity: {hostname}\\{user}
         </div>
     </div>
 </body>
