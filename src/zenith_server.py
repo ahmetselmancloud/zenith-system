@@ -26,6 +26,7 @@ try:
         delete_rule, clear_history_log, evaluate_all_rules
     )
     from obd_diagnostics import get_obd_report, run_full_hardware_checkup, clear_dtc_codes
+    from laptop_provider import laptop_hal
 except ImportError:
     from src.catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
     from src.system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
@@ -35,6 +36,7 @@ except ImportError:
         delete_rule, clear_history_log, evaluate_all_rules
     )
     from src.obd_diagnostics import get_obd_report, run_full_hardware_checkup, clear_dtc_codes
+    from src.laptop_provider import laptop_hal
 
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
@@ -866,22 +868,11 @@ def save_laptop_config():
         print("Failed to save laptop config:", e)
 
 def apply_fan_profile(profile):
-    epp_map = {
-        "extreme": 0,
-        "balanced": 50,
-        "silent": 85,
-        "eco": 100
-    }
-    epp = epp_map.get(profile, 50)
-    try:
-        silent_run(["powercfg", "/setacvalueindex", "SCHEME_CURRENT", "SUB_PROCESSOR", "PERFEPP", str(epp)], timeout=2)
-        silent_run(["powercfg", "/setdcvalueindex", "SCHEME_CURRENT", "SUB_PROCESSOR", "PERFEPP", str(epp)], timeout=2)
-        silent_run(["powercfg", "/setactive", "SCHEME_CURRENT"], timeout=2)
-    except Exception as e:
-        print("Error applying fan profile EPP:", e)
+    res = laptop_hal.set_fan_profile(profile)
     with laptop_lock:
         laptop_state["fan_profile"] = profile
     save_laptop_config()
+    return res
 
 def toggle_microphone_mute():
     try:
@@ -895,47 +886,28 @@ def toggle_microphone_mute():
         return False
 
 def apply_rgb_lighting(color_hex, effect, brightness, speed):
-    try:
-        hex_clean = color_hex.lstrip('#')
-        if len(hex_clean) == 6:
-            r = int(hex_clean[0:2], 16)
-            g = int(hex_clean[2:4], 16)
-            b = int(hex_clean[4:6], 16)
-            dword_color = 0xFF000000 | (r << 16) | (g << 8) | b
-        else:
-            dword_color = 4278255615
-
-        eff_map = {
-            "static": 0,
-            "breathing": 1,
-            "rainbow": 2,
-            "wave": 3,
-            "cycle": 4,
-            "off": 0
-        }
-        eff_code = eff_map.get(effect, 0)
-        eff_bright = 0 if effect == "off" else int(brightness)
-
-        key_path = r"Software\Microsoft\Lighting"
-        try:
-            k = winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path)
-            winreg.SetValueEx(k, "AmbientLightingEnabled", 0, winreg.REG_DWORD, 1)
-            winreg.SetValueEx(k, "Brightness", 0, winreg.REG_DWORD, eff_bright)
-            winreg.SetValueEx(k, "Speed", 0, winreg.REG_DWORD, int(speed))
-            winreg.SetValueEx(k, "EffectType", 0, winreg.REG_DWORD, eff_code)
-            winreg.SetValueEx(k, "Color", 0, winreg.REG_DWORD, dword_color)
-            winreg.CloseKey(k)
-        except Exception:
-            pass
-    except Exception as e:
-        print("Error applying RGB lighting:", e)
-
+    res = laptop_hal.set_rgb_lighting(color_hex, effect, brightness, speed)
     with laptop_lock:
         laptop_state["rgb_color"] = color_hex
         laptop_state["rgb_effect"] = effect
         laptop_state["rgb_brightness"] = brightness
         laptop_state["rgb_speed"] = speed
     save_laptop_config()
+    return res
+
+def apply_gpu_mode(mode):
+    res = laptop_hal.set_gpu_mode(mode)
+    with laptop_lock:
+        laptop_state["gpu_mode"] = mode
+    save_laptop_config()
+    return res
+
+def apply_battery_limit(limit):
+    res = laptop_hal.set_battery_limit(limit)
+    with laptop_lock:
+        laptop_state["battery_limit"] = limit
+    save_laptop_config()
+    return res
 
 def trigger_f12_action(action, custom_cmd):
     with laptop_lock:
@@ -1246,7 +1218,11 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"opened": True})
         elif path == "/api/laptop/config":
             with laptop_lock:
-                self.send_json(dict(laptop_state))
+                cfg = dict(laptop_state)
+            cfg["hardware_info"] = laptop_hal.get_info()
+            self.send_json(cfg)
+        elif path == "/api/laptop/info":
+            self.send_json(laptop_hal.get_info())
         elif path == "/api/catalog":
             self.send_json(get_catalog())
         elif path == "/api/catalog/profiles":
@@ -1428,30 +1404,26 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
 
         elif self.path == "/api/laptop/fan_profile":
             profile = data.get("profile", "balanced")
-            apply_fan_profile(profile)
-            self.send_json({"success": True, "profile": profile})
+            res = apply_fan_profile(profile)
+            self.send_json({"success": True, "profile": profile, "details": res})
 
         elif self.path == "/api/laptop/rgb":
             color = data.get("color", "#00f0ff")
             effect = data.get("effect", "static")
             brightness = int(data.get("brightness", 100))
             speed = int(data.get("speed", 5))
-            apply_rgb_lighting(color, effect, brightness, speed)
-            self.send_json({"success": True, "color": color, "effect": effect})
+            res = apply_rgb_lighting(color, effect, brightness, speed)
+            self.send_json({"success": True, "color": color, "effect": effect, "details": res})
 
         elif self.path == "/api/laptop/gpu_mode":
             mode = data.get("mode", "mshybrid")
-            with laptop_lock:
-                laptop_state["gpu_mode"] = mode
-            save_laptop_config()
-            self.send_json({"success": True, "mode": mode})
+            res = apply_gpu_mode(mode)
+            self.send_json({"success": True, "mode": mode, "details": res})
 
         elif self.path == "/api/laptop/battery_limit":
             limit = int(data.get("limit", 80))
-            with laptop_lock:
-                laptop_state["battery_limit"] = limit
-            save_laptop_config()
-            self.send_json({"success": True, "limit": limit})
+            res = apply_battery_limit(limit)
+            self.send_json({"success": True, "limit": limit, "details": res})
 
         elif self.path == "/api/laptop/mic_toggle":
             success = toggle_microphone_mute()

@@ -36,6 +36,7 @@ venv.bak/
 
 # PyInstaller / Build temp
 *.manifest
+!src/zenith.manifest
 *.spec
 
 # Test / Coverage

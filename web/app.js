@@ -2140,6 +2140,21 @@ async function loadLaptopStudioConfig() {
 }
 
 function renderLaptopStudioState(cfg) {
+  // 0. HAL Hardware Vendor Badge
+  const halBadge = document.getElementById('hal-hardware-badge');
+  if (halBadge) {
+    const hw = cfg.hardware_info;
+    if (hw) {
+      const vendorName = (hw.vendor || 'generic').toUpperCase();
+      const modelName = hw.model || 'PC';
+      halBadge.textContent = `💻 HAL: ${vendorName} ${modelName} (Donanım Kontrolü Aktif)`;
+      halBadge.className = 'stat-badge green';
+      halBadge.title = `Sağlayıcı: ${vendorName} | Model: ${modelName} | Fan, RGB, Pil ve MUX doğrudan bağlı`;
+    } else {
+      halBadge.textContent = '💻 HAL: Otomatik Algılandı';
+    }
+  }
+
   // 1. Win Key Lock
   const winSwitch = document.getElementById('winkey-toggle-switch');
   const winStatus = document.getElementById('winkey-status-text');

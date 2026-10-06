@@ -1,4 +1,5 @@
 1 ICON "assets/zenith.ico"
+1 24 "src/zenith.manifest"
 
 1 VERSIONINFO
 FILEVERSION     1,0,0,0
