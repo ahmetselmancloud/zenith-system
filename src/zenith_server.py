@@ -171,36 +171,47 @@ def get_installed_apps():
     apps.sort(key=lambda x: x["name"].lower())
     return apps
 
-def get_processes():
+# --- HIGH-PERFORMANCE PROCESS SNAPSHOT ENGINE ---
+process_cache = {
+    "total_processes": 0,
+    "total_threads": 0,
+    "processes": []
+}
+process_cache_lock = threading.Lock()
+pid_static_cache = {}  # pid -> (user, exe)
+
+def update_process_snapshot():
+    global process_cache, pid_static_cache
+    current_pids = set()
     procs = []
     total_threads = 0
-    for p in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_info', 'memory_percent', 'num_threads', 'status']):
+
+    for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info', 'memory_percent', 'num_threads']):
         try:
             info = p.info
             pid = info['pid']
+            current_pids.add(pid)
             name = info['name'] or f"PID {pid}"
-            user = (info['username'] or '').split('\\')[-1]
-            cpu = info['cpu_percent'] or 0.0
             threads = info['num_threads'] or 0
             total_threads += threads
-            status = info['status'] or 'running'
+
+            if pid in pid_static_cache:
+                user, exe = pid_static_cache[pid]
+            else:
+                try:
+                    user = (p.username() or '').split('\\')[-1]
+                except Exception:
+                    user = 'SYSTEM'
+                try:
+                    exe = p.exe()
+                except Exception:
+                    exe = ''
+                pid_static_cache[pid] = (user, exe)
 
             mem_info = info['memory_info']
             ram_mb = round((mem_info.rss / (1024 * 1024)), 1) if mem_info else 0.0
             ram_pct = round(info['memory_percent'] or 0.0, 1)
-
-            disk_mb = 0.0
-            try:
-                io = p.io_counters()
-                disk_mb = round((io.read_bytes + io.write_bytes) / (1024 * 1024), 1)
-            except Exception:
-                pass
-
-            exe = ""
-            try:
-                exe = p.exe()
-            except Exception:
-                pass
+            cpu = info['cpu_percent'] or 0.0
 
             procs.append({
                 "pid": pid,
@@ -209,20 +220,45 @@ def get_processes():
                 "cpu_percent": cpu,
                 "ram_mb": ram_mb,
                 "ram_pct": ram_pct,
-                "disk_mb": disk_mb,
+                "disk_mb": 0.0,
                 "threads": threads,
-                "status": status,
+                "status": "running",
                 "exe": exe
             })
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
 
+    # Prune terminated PIDs from cache
+    dead_pids = set(pid_static_cache.keys()) - current_pids
+    for dp in dead_pids:
+        pid_static_cache.pop(dp, None)
+
     procs.sort(key=lambda x: x['ram_mb'], reverse=True)
-    return {
+
+    payload = {
         "total_processes": len(procs),
         "total_threads": total_threads,
-        "processes": procs[:150]
+        "processes": procs[:180]
     }
+
+    with process_cache_lock:
+        process_cache = payload
+
+def process_cache_worker():
+    while True:
+        try:
+            update_process_snapshot()
+        except Exception as e:
+            print("Process worker error:", e)
+        time.sleep(2.0)
+
+def get_processes():
+    with process_cache_lock:
+        if process_cache["processes"]:
+            return process_cache
+    update_process_snapshot()
+    with process_cache_lock:
+        return process_cache
 
 def search_files(query):
     results = []
@@ -818,6 +854,8 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
 def start_server():
     try:
         psutil.cpu_percent(interval=None)
+        t_proc = threading.Thread(target=process_cache_worker, daemon=True)
+        t_proc.start()
         with socketserver.TCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
             print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
             httpd.serve_forever()
