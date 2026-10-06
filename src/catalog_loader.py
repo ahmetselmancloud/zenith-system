@@ -3,6 +3,7 @@ import sys
 import json
 import subprocess
 import threading
+import re
 
 CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
@@ -57,8 +58,8 @@ def parse_table_columns(lines, expected_cols):
         return []
 
     results = []
-    # lines[1] is typically '----', so start from lines[2]
-    start_row = 2 if lines[1].startswith("-") else 1
+    # lines[1] is typically '----' or '────', so check if it is a separator line
+    start_row = 2 if re.match(r'^[-─=]+$', lines[1].strip()) else 1
     for l in lines[start_row:]:
         if not l.strip() or l.startswith("<"):
             continue

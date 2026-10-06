@@ -610,36 +610,41 @@ function setupTweaks() {
 
 // --- DIAGNOSTICS LAB ---
 function setupDiagnostics() {
-  // 1. SPEED TEST SIMULATION
+  // 1. REAL SPEED TEST (Zero-Cloud, Socket & CDN Powered)
   const speedBtn = document.getElementById('start-speedtest-btn');
   if (speedBtn) {
     speedBtn.addEventListener('click', async () => {
       speedBtn.disabled = true;
-      speedBtn.textContent = 'Testing...';
+      speedBtn.textContent = 'Ölçülüyor...';
       const pingEl = document.getElementById('ping-readout');
       const downEl = document.getElementById('down-readout');
       const upEl = document.getElementById('up-readout');
 
-      pingEl.textContent = '..';
-      downEl.textContent = '..';
-      upEl.textContent = '..';
+      pingEl.textContent = '...';
+      downEl.textContent = '...';
+      upEl.textContent = '...';
 
-      // Ping measurement
-      const t0 = performance.now();
       try {
-        await fetch('/api/ping');
-        const ping = Math.round(performance.now() - t0);
-        pingEl.textContent = ping;
+        const res = await fetch('/api/speedtest');
+        if (res.ok) {
+          const data = await res.json();
+          pingEl.textContent = data.ping_ms || '0';
+          downEl.textContent = (data.download_mbps || 0).toFixed(1);
+          upEl.textContent = (data.upload_mbps || 0).toFixed(1);
+        } else {
+          pingEl.textContent = '--';
+          downEl.textContent = 'Hata';
+          upEl.textContent = 'Hata';
+        }
       } catch (e) {
-        pingEl.textContent = '14';
+        console.error('Speedtest error:', e);
+        pingEl.textContent = '--';
+        downEl.textContent = '0.0';
+        upEl.textContent = '0.0';
+      } finally {
+        speedBtn.disabled = false;
+        speedBtn.textContent = 'Yeniden Test Et';
       }
-
-      // Download test
-      downEl.textContent = '94.2';
-      upEl.textContent = '38.6';
-
-      speedBtn.disabled = false;
-      speedBtn.textContent = 'Run Again';
     });
   }
 

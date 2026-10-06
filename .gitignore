@@ -1,5 +1,122 @@
+# ============================================================================
+# Zenith System — .gitignore (Zero-Bloat, Zero-Cloud, Clean Repo)
+# ============================================================================
+
+# --- PYTHON ---
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.system_generated/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Sanal ortamlar
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# PyInstaller / Build temp
+*.manifest
+*.spec
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# --- C / C++ / BUILD ARTIFACTS ---
+*.o
+*.obj
+*.res
+*.ilk
+*.pdb
+*.exp
+*.lib
+*.dll
+*.out
+*.app
+
+# Zenith özel build çıktıları
+/dist/
+/build/
+
+# --- IDE / EDITOR ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vs/
+*.code-workspace
+
+# --- İŞLETİM SİSTEMİ ---
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# --- ZENITH KULLANICI / CİHAZ ÖZEL VERİLERİ ---
+# Donanım ve OBD cache'leri cihaz/makineye özeldir
+hardware_cache.json
+obd_cache.json
+
+# Loglar ve geçici dosyalar
+*.log
+logs/
+*.tmp
+*.temp
+temp/
+tmp/
+
+# --- GÜVENLİK & SIRLAR ---
+.env
+.env.local
+*.pem
+*.key
+*.pfx
+secrets.json
+credentials.json
