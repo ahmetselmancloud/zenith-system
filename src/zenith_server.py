@@ -173,7 +173,13 @@ def get_hardware_info(force_refresh=False):
             pass
     return {"error": "Probe not available"}
 
+_gpu_cache = {"data": {"available": False}, "time": 0}
+
 def get_gpu_live():
+    global _gpu_cache
+    now = time.time()
+    if now - _gpu_cache["time"] < 1.5:
+        return _gpu_cache["data"]
     try:
         out = silent_check_output(
             ["nvidia-smi", "--query-gpu=temperature.gpu,utilization.gpu,memory.total,memory.used,power.draw", "--format=csv,noheader,nounits"],
@@ -181,7 +187,7 @@ def get_gpu_live():
         ).decode().strip()
         parts = [p.strip() for p in out.split(',')]
         if len(parts) >= 5:
-            return {
+            _gpu_cache["data"] = {
                 "available": True,
                 "temp_c": int(parts[0]),
                 "usage_percent": int(parts[1]),
@@ -189,9 +195,13 @@ def get_gpu_live():
                 "vram_used_mb": int(parts[3]),
                 "power_w": float(parts[4])
             }
+            _gpu_cache["time"] = now
+            return _gpu_cache["data"]
     except Exception:
         pass
-    return {"available": False}
+    _gpu_cache["data"] = {"available": False}
+    _gpu_cache["time"] = now
+    return _gpu_cache["data"]
 
 def get_live_metrics():
     global last_net_time, last_net_io
