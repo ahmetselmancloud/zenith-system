@@ -4,7 +4,9 @@ import json
 import os
 
 # Zenith System — Comprehensive Diagnostic & Function Test Suite
-sys.path.append('src')
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC_DIR = os.path.join(ROOT_DIR, 'src')
+sys.path.insert(0, SRC_DIR)
 
 from zenith_server import (
     run_real_speedtest,

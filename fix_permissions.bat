@@ -9,7 +9,7 @@ echo yonetici izni engeline takilmadan dogrudan kontrol edebilmesini saglar.
 echo.
 echo Lutfen acilacak pencerede "Evet" (Yes) secenegini secin...
 echo.
-powershell -NoProfile -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"%~dp0scripts\grant_msi_access.ps1\"' -Verb RunAs"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '%~dp0scripts\grant_msi_access.ps1') -Verb RunAs"
 echo.
 echo ==============================================================
 echo [TAMAMLANDI] Yetkiler tanimlandi. Artik tum donanim kontrolleri aktif!

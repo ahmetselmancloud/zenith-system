@@ -140,6 +140,11 @@ A 137 KB native C++ binary compiled with `-O3` optimizations. It directly utiliz
 * **Native Win32 Binary (`Zenith.exe`):** 198 KB compiled executable with embedded cyberpunk icon, single-instance checking, and native Taskbar pinning.
 * **Copy Specs Report:** Generates a formatted Markdown hardware spec report in one click for Reddit, Discord, or support forums.
 
+### 15. Reporting, Live Streaming & Prometheus Exporter
+* **HTML & PDF Full Diagnostic Report:** Generates standalone printable A4 reports combining CPU, GPU, Storage S.M.A.R.T., and OBD-II fault logs.
+* **Real-time SSE Live Streaming (`/api/live/stream`):** Zero-overhead event stream updating telemetry without polling overhead.
+* **Prometheus Metrics (`/metrics`):** Standard Prometheus exposition endpoint listening locally on `127.0.0.1:49152/metrics` (local loopback only) for home servers and Grafana dashboards.
+
 ---
 
 ## 🛠️ Tech Stack & Directory Structure

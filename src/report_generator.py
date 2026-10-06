@@ -6,19 +6,20 @@ import datetime
 import psutil
 
 # Zenith System — Hardware & OBD Diagnostic HTML/PDF Report Generator
-# Generates a standalone, beautiful, printable A4 HTML report.
+# Generates a standalone, beautiful, printable A4 HTML report with zero external dependencies.
 
-def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None):
+def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None, storage_diag=None):
     hw = hardware_data or {}
     obd = obd_data or {}
     gpu = gpu_live or {}
+    st_diag = storage_diag or {}
     
     cpu = hw.get("cpu", {})
     gpus = hw.get("gpus", [])
     primary_gpu = gpus[0] if gpus else {}
     ram = hw.get("memory", {})
     battery = hw.get("battery", {})
-    storage = hw.get("storage", [])
+    storage_list = st_diag.get("disks") or hw.get("storage", [])
     mb = hw.get("motherboard", {})
     bios = hw.get("bios", {})
     
@@ -26,22 +27,36 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
     hostname = os.environ.get("COMPUTERNAME", "Unknown-PC")
     user = os.environ.get("USERNAME", "User")
     
-    # OBD Health Score & DTC Codes
-    obd_score = obd.get("health_score", 100)
+    # 1. OBD Health Score & DTC Codes
+    obd_score = obd.get("overall_score") if obd.get("overall_score") is not None else obd.get("health_score", 100)
     dtc_codes = obd.get("dtc_codes", [])
     
     score_color = "#10b981" if obd_score >= 90 else ("#f59e0b" if obd_score >= 70 else "#ef4444")
     
-    # Table rows for Disks
+    # 2. Storage rows
     storage_rows = ""
-    for s in storage:
-        health_txt = f"{s.get('health_percent', 100)}%" if s.get('health_percent') else "Sağlıklı"
-        temp_txt = f"{s.get('temperature_c', '--')}°C" if s.get('temperature_c') else "--"
+    for s in storage_list:
+        disk_name = s.get("name") or s.get("model") or "NVMe / SATA Disk"
+        disk_type = s.get("media_type") or s.get("bus_type") or s.get("type") or "SSD"
+        disk_size = s.get("size_gb", 0)
+        
+        rem_health = s.get("remaining_health_pct")
+        if rem_health is not None:
+            health_txt = f"{rem_health}%"
+        elif s.get("health_status"):
+            health_txt = s.get("health_status")
+        else:
+            health_txt = "Sağlıklı (100%)"
+            
+        smart = s.get("smart_status") or {}
+        temp_val = s.get("temperature_c") or smart.get("temp_c")
+        temp_txt = f"{temp_val}°C" if temp_val is not None else "--"
+        
         storage_rows += f"""
         <tr>
-            <td><strong>{s.get('model', 'Bilinmeyen Disk')}</strong></td>
-            <td>{s.get('type', 'SSD')}</td>
-            <td>{s.get('size_gb', 0)} GB</td>
+            <td><strong>{disk_name}</strong></td>
+            <td>{disk_type}</td>
+            <td>{disk_size} GB</td>
             <td>{health_txt}</td>
             <td>{temp_txt}</td>
         </tr>
@@ -49,17 +64,17 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
     if not storage_rows:
         storage_rows = "<tr><td colspan='5' style='text-align:center;'>Disk bilgisi alınamadı</td></tr>"
 
-    # Table rows for DTC fault codes
+    # 3. DTC Fault rows
     dtc_rows = ""
     if dtc_codes:
         for dtc in dtc_codes:
-            sev = dtc.get('severity', 'info')
-            sev_badge = f"<span class='badge badge-{sev}'>{sev.upper()}</span>"
+            sev = (dtc.get("severity") or "info").lower()
+            subsys = dtc.get("subsystem") or dtc.get("component") or "Sistem"
             dtc_rows += f"""
             <tr>
                 <td><code>{dtc.get('code', 'DTC-000')}</code></td>
-                <td>{sev_badge}</td>
-                <td>{dtc.get('component', 'Sistem')}</td>
+                <td><span class='badge badge-{sev}'>{sev.upper()}</span></td>
+                <td>{subsys}</td>
                 <td>{dtc.get('description', '')}</td>
                 <td><small>{dtc.get('recommendation', 'İnceleme gerekebilir.')}</small></td>
             </tr>
@@ -73,15 +88,31 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
         </tr>
         """
 
-    # Live GPU Status
-    gpu_temp = f"{gpu.get('temp_c', '--')}°C" if gpu.get('temp_c') else "--"
-    gpu_load = f"{gpu.get('util_gpu_percent', '--')}%" if gpu.get('util_gpu_percent') else "--"
+    # 4. Live GPU Status
+    gpu_temp = f"{gpu.get('temp_c', '--')}°C" if gpu.get('temp_c') is not None else "--"
+    gpu_load = f"{gpu.get('usage_percent') if gpu.get('usage_percent') is not None else gpu.get('util_gpu_percent', '--')}%"
     gpu_vram = f"{gpu.get('vram_used_mb', 0)} / {gpu.get('vram_total_mb', 0)} MB" if gpu.get('vram_total_mb') else "--"
 
-    # Ram specs
+    # 5. CPU Stats
+    total_cores = cpu.get("total_cores") or cpu.get("cores_physical") or psutil.cpu_count(logical=False) or 0
+    total_threads = cpu.get("total_threads") or cpu.get("cores_logical") or psutil.cpu_count(logical=True) or 0
+    p_cores = cpu.get("p_cores", "--")
+    e_cores = cpu.get("e_cores", "--")
+
+    # 6. Ram specs
     ram_gb = ram.get("total_gb", round(psutil.virtual_memory().total / (1024**3), 1))
     ram_type = ram.get("type", "DDR5")
     ram_speed = f"{ram.get('speed_mhz', '')} MHz" if ram.get('speed_mhz') else ""
+
+    # 7. Battery Stats
+    des_cap = battery.get("design_capacity_mwh", 0)
+    rem_cap = battery.get("remaining_mwh", 0)
+    if des_cap > 0 and rem_cap > 0:
+        bat_health_str = f"{round((rem_cap / des_cap) * 100, 1)}%"
+    else:
+        bat_health_str = f"{battery.get('health_percent', '--')}%" if battery.get('health_percent') else "--"
+    bat_cycle = battery.get("cycle_count", "--")
+    bat_capacity_str = f"{rem_cap} / {des_cap} mWh" if (rem_cap and des_cap) else "--"
 
     html = f"""<!DOCTYPE html>
 <html lang="tr">
@@ -347,7 +378,7 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
                 </div>
                 <div class="spec-item">
                     <div class="spec-lbl">Çekirdek Yapısı</div>
-                    <div class="spec-val">{cpu.get('cores_physical', 0)} Fiziksel, {cpu.get('cores_logical', 0)} Mantıksal Çekirdek (P: {cpu.get('p_cores', '--')}, E: {cpu.get('e_cores', '--')})</div>
+                    <div class="spec-val">{total_cores} Fiziksel, {total_threads} Mantıksal Çekirdek (P: {p_cores}, E: {e_cores})</div>
                 </div>
                 <div class="spec-item">
                     <div class="spec-lbl">Anakart</div>
@@ -408,15 +439,15 @@ def generate_system_html_report(hardware_data=None, obd_data=None, gpu_live=None
             <div class="grid-3">
                 <div class="spec-item">
                     <div class="spec-lbl">Pil Sağlığı</div>
-                    <div class="spec-val">{battery.get('health_percent', '--')}%</div>
+                    <div class="spec-val">{bat_health_str}</div>
                 </div>
                 <div class="spec-item">
                     <div class="spec-lbl">Döngü Sayısı (Cycle Count)</div>
-                    <div class="spec-val">{battery.get('cycle_count', '--')}</div>
+                    <div class="spec-val">{bat_cycle}</div>
                 </div>
                 <div class="spec-item">
                     <div class="spec-lbl">Kapasite</div>
-                    <div class="spec-val">{battery.get('full_capacity_mwh', 0)} / {battery.get('design_capacity_mwh', 0)} mWh</div>
+                    <div class="spec-val">{bat_capacity_str}</div>
                 </div>
             </div>
         </div>

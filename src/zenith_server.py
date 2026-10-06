@@ -57,7 +57,7 @@ def check_for_updates():
         req = urllib.request.Request(url, headers={"User-Agent": "Zenith-System-Updater"})
         with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            latest = data.get("tag_name", "").strip()
+            latest = (data.get("tag_name") or "").strip()
             html_url = data.get("html_url", "")
             notes = data.get("body", "")
             is_new = bool(latest and latest != ZENITH_VERSION)
@@ -107,6 +107,7 @@ def silent_popen(cmd, **kwargs):
     return subprocess.Popen(cmd, **kwargs)
 
 # Heartbeat & Auto-Shutdown Watchdog
+_shutdown_event = threading.Event()
 _last_heartbeat = time.time()
 _heartbeat_lock = threading.Lock()
 _pending_shutdown_timer = None
@@ -127,6 +128,7 @@ def trigger_shutdown_countdown(delay_sec=2.5):
         
         def do_exit():
             print("[Zenith Server] Shutdown timer expired (browser closed). Terminating cleanly.")
+            _shutdown_event.set()
             os._exit(0)
             
         _pending_shutdown_timer = threading.Timer(delay_sec, do_exit)
@@ -136,12 +138,13 @@ def trigger_shutdown_countdown(delay_sec=2.5):
 def watchdog_worker():
     # 60s initial grace period to allow browser startup and loading
     time.sleep(60)
-    while True:
+    while not _shutdown_event.is_set():
         time.sleep(4)
         with _heartbeat_lock:
             elapsed = time.time() - _last_heartbeat
-        if elapsed > 180.0:
+        if elapsed > 90.0:
             print(f"[Zenith Watchdog] No frontend heartbeat received for {int(elapsed)}s. Shutting down server cleanly.")
+            _shutdown_event.set()
             os._exit(0)
 
 last_net_time = time.time()
@@ -557,19 +560,19 @@ while time.time() < end_t:
 def apply_registry_tweaks(tweaks):
     logs = []
     if tweaks.get("bing", True):
-        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "/v", "BingSearchEnabled", "/t", "REG_DWORD", "/d", "0", "/f"])
-        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "/v", "CortanaConsent", "/t", "REG_DWORD", "/d", "0", "/f"])
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "/v", "BingSearchEnabled", "/t", "REG_DWORD", "/d", "0", "/f"])
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "/v", "CortanaConsent", "/t", "REG_DWORD", "/d", "0", "/f"])
         logs.append("Disabled Start Menu Bing web searches (pure local search enabled).")
     else:
-        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "/v", "BingSearchEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "/v", "BingSearchEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
         logs.append("Restored Bing web searches to default.")
 
     if tweaks.get("telemetry", True):
-        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Siuf\\Rules", "/v", "NumberOfSIUFInPeriod", "/t", "REG_DWORD", "/d", "0", "/f"])
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\Siuf\Rules", "/v", "NumberOfSIUFInPeriod", "/t", "REG_DWORD", "/d", "0", "/f"])
         logs.append("Disabled Windows feedback & telemetry prompts.")
 
     if tweaks.get("game_mode", True):
-        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\GameBar", "/v", "AutoGameModeEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\GameBar", "/v", "AutoGameModeEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
         logs.append("Enabled Windows Game Mode (Performance Scheduling Priority).")
 
     return logs
@@ -844,7 +847,16 @@ def get_wifi_diagnostics():
                     break
     return data
 
+_nc_cache = {"data": None, "time": 0}
+_nc_lock = threading.Lock()
+
 def get_active_network_connections(limit=150):
+    global _nc_cache
+    now = time.time()
+    with _nc_lock:
+        if _nc_cache["data"] and (now - _nc_cache["time"] < 3.0):
+            return _nc_cache["data"]
+
     try:
         proc_names = {}
         for p in psutil.process_iter(['name']):
@@ -867,7 +879,11 @@ def get_active_network_connections(limit=150):
             })
             if len(conns) >= limit:
                 break
-        return {"connections": conns, "count": len(conns)}
+        res = {"connections": conns, "count": len(conns)}
+        with _nc_lock:
+            _nc_cache["data"] = res
+            _nc_cache["time"] = now
+        return res
     except Exception as e:
         return {"connections": [], "count": 0, "error": str(e)}
 
@@ -898,7 +914,7 @@ def get_prometheus_metrics():
                 "",
                 "# HELP zenith_gpu_usage_percent GPU utilization percentage",
                 "# TYPE zenith_gpu_usage_percent gauge",
-                f"zenith_gpu_usage_percent {gpu.get('util_gpu_percent', 0)}",
+                f"zenith_gpu_usage_percent {gpu.get('usage_percent', 0)}",
                 "",
                 "# HELP zenith_gpu_power_watts GPU power consumption in Watts",
                 "# TYPE zenith_gpu_power_watts gauge",
@@ -1389,7 +1405,8 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 hw = get_hardware_info()
                 obd = get_obd_report()
                 gpu = get_gpu_live()
-                html_doc = generate_system_html_report(hw, obd, gpu)
+                st = get_storage_diagnostics()
+                html_doc = generate_system_html_report(hw, obd, gpu, st)
                 raw_bytes = html_doc.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -1646,12 +1663,18 @@ def start_server():
             daemon_threads = True
             allow_reuse_address = True
 
-        with ThreadedTCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
-            print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
+        try:
+            httpd = ThreadedTCPServer(("127.0.0.1", PORT), ZenithHandler)
+        except OSError as e:
+            print(f"[Zenith] Port {PORT} is already bound or busy ({e}). Exiting cleanly.")
+            sys.exit(0)
+
+        print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
+        with httpd:
             httpd.serve_forever()
-    except OSError:
-        # Server is already running on this port
-        sys.exit(0)
+    except Exception as e:
+        print(f"[Zenith] Server startup error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     start_server()

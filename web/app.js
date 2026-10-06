@@ -1,5 +1,15 @@
 // Zenith System — Client Controller (Vanilla JS, Zero Bloat)
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const CIRCLE_CIRCUMFERENCE = 264; // 2 * PI * 42
 
 let hardwareData = null;
@@ -776,11 +786,13 @@ function setupThemeEngine() {
   ];
 
   let currentIdx = 0;
-  const saved = localStorage.getItem('zenith-theme');
-  if (saved) {
-    const found = themes.findIndex(t => t.id === saved);
-    if (found !== -1) currentIdx = found;
-  }
+  try {
+    const saved = localStorage.getItem('zenith-theme');
+    if (saved) {
+      const found = themes.findIndex(t => t.id === saved);
+      if (found !== -1) currentIdx = found;
+    }
+  } catch (e) {}
 
   const applyTheme = (idx) => {
     const t = themes[idx];
@@ -788,7 +800,9 @@ function setupThemeEngine() {
     if (t.cls) document.body.classList.add(t.cls);
     const labelEl = document.getElementById('theme-label');
     if (labelEl) labelEl.textContent = t.label;
-    localStorage.setItem('zenith-theme', t.id);
+    try {
+      localStorage.setItem('zenith-theme', t.id);
+    } catch (e) {}
   };
 
   applyTheme(currentIdx);
@@ -807,27 +821,50 @@ function setupUpdateChecker() {
   const badge = document.getElementById('app-version-badge');
   if (!badge) return;
 
+  const applyBadge = (data) => {
+    if (data && data.update_available) {
+      badge.textContent = `⚡ GÜNCELLE (${data.latest_version})`;
+      badge.style.background = 'rgba(16, 185, 129, 0.2)';
+      badge.style.color = 'var(--accent-green)';
+      badge.style.border = '1px solid var(--accent-green)';
+      badge.style.animation = 'pulse-border 1.5s infinite';
+      badge.title = `Yeni sürüm mevcut (${data.latest_version})! İndirmek için tıklayın.`;
+      badge.onclick = () => {
+        if (data.release_url) window.open(data.release_url, '_blank');
+      };
+    } else {
+      badge.textContent = 'SYSTEM V1.0';
+    }
+  };
+
   const runCheck = async (isManual = false) => {
+    const CACHE_KEY = 'zenith-update-cache';
+    const CACHE_TTL_MS = 6 * 3600 * 1000; // 6 hours
+
+    if (!isManual) {
+      try {
+        const cachedStr = localStorage.getItem(CACHE_KEY);
+        if (cachedStr) {
+          const { ts, data } = JSON.parse(cachedStr);
+          if (Date.now() - ts < CACHE_TTL_MS) {
+            applyBadge(data);
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+
     try {
       if (isManual) badge.textContent = 'Denetleniyor...';
       const res = await fetch('/api/updates/check');
       if (!res.ok) return;
       const data = await res.json();
-      if (data.update_available) {
-        badge.textContent = `⚡ GÜNCELLE (${data.latest_version})`;
-        badge.style.background = 'rgba(16, 185, 129, 0.2)';
-        badge.style.color = 'var(--accent-green)';
-        badge.style.border = '1px solid var(--accent-green)';
-        badge.style.animation = 'pulse-border 1.5s infinite';
-        badge.title = `Yeni sürüm mevcut (${data.latest_version})! İndirmek için tıklayın.`;
-        badge.onclick = () => {
-          if (data.release_url) window.open(data.release_url, '_blank');
-        };
-      } else {
-        if (isManual) {
-          badge.textContent = 'SYSTEM V1.0';
-          alert('Zenith System güncel! En son sürümü kullanıyorsunuz.');
-        }
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+      } catch (e) {}
+      applyBadge(data);
+      if (isManual && !data.update_available) {
+        alert('Zenith System güncel! En son sürümü kullanıyorsunuz.');
       }
     } catch (e) {
       if (isManual) {

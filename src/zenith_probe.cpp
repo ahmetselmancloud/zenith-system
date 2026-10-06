@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <cstdio>
+#include <cstdint>
 #include <chrono>
 #include <batclass.h>
 #include <setupapi.h>
@@ -21,16 +22,16 @@ struct BatteryInfo {
     bool hasBattery = false;
     std::string deviceName = "";
     std::string chemistry = "";
-    unsigned long designCapacityMWh = 0;
-    unsigned long fullChargeCapacityMWh = 0;
+    uint64_t designCapacityMWh = 0;
+    uint64_t fullChargeCapacityMWh = 0;
     double healthPercentage = 0.0;
-    unsigned long cycleCount = 0;
+    uint64_t cycleCount = 0;
     bool isCharging = false;
     bool isDischarging = false;
-    long rateMilliwatts = 0;
-    unsigned long remainingCapacityMWh = 0;
+    int64_t rateMilliwatts = 0;
+    uint64_t remainingCapacityMWh = 0;
     double chargePercentage = 0.0;
-    unsigned long voltageMillivolts = 0;
+    uint64_t voltageMillivolts = 0;
 };
 
 struct CpuInfo {
