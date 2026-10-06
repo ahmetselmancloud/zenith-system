@@ -91,9 +91,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // Start python server in background (with py fallback)
         std::wstring serverCmd = L"python src\\zenith_server.py";
-        if (!runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW | DETACHED_PROCESS, SW_HIDE)) {
+        if (!runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW, SW_HIDE)) {
             serverCmd = L"py src\\zenith_server.py";
-            runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW | DETACHED_PROCESS, SW_HIDE);
+            runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW, SW_HIDE);
         }
         Sleep(400);
     }
@@ -131,7 +131,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     for (char& c : cmdLower) c = (char)tolower((unsigned char)c);
     if (cmdLower.find("--hud") != std::string::npos || 
         cmdLower.find("-hud") != std::string::npos || 
-        cmdLower.find("/hud") != std::string::npos) {
+        cmdLower.find("/hud") != std::string::npos ||
+        cmdLower.find("--mini") != std::string::npos ||
+        cmdLower.find("-mini") != std::string::npos ||
+        cmdLower.find("-m") != std::string::npos) {
         appUrl = L"http://127.0.0.1:49152/hud.html";
         windowSize = L"340,145";
     }

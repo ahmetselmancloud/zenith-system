@@ -177,7 +177,7 @@ def execute_fix(tool_id):
     # Check if a long async job is already running
     with _task_lock:
         if _active_task["status"] == "running":
-            return {"success": False, "error": "Başka bir onarım görevi şu an arka planda çalışıyor."}
+            return {"status": "busy", "success": False, "error": "Başka bir onarım görevi şu an arka planda çalışıyor."}
 
     # 1. Quick Sync Fixes
     if tool_id == "net_dns_flush":
@@ -235,8 +235,8 @@ def execute_fix(tool_id):
 
     elif tool_id == "store_reset_cache":
         try:
-            subprocess.Popen(["wsreset.exe", "-i"], creationflags=CREATE_NO_WINDOW)
-            return {"success": True, "tool_id": tool_id, "logs": ["✓ Microsoft Store önbellek sıfırlama işlemi arka planda başlatıldı."]}
+            subprocess.Popen(["wsreset.exe", "-i"])
+            return {"success": True, "tool_id": tool_id, "logs": ["✓ Microsoft Store önbellek sıfırlama işlemi başlatıldı."]}
         except Exception as e:
             return {"success": False, "tool_id": tool_id, "logs": [f"Hata: {str(e)}"]}
 

@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cstdio>
 #include <chrono>
 #include <batclass.h>
 #include <setupapi.h>

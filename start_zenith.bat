@@ -5,7 +5,7 @@ cd /d "%~dp0"
 :: Self-elevate to Administrator for low-level hardware control (Fans, RGB, MSR, WMI)
 net session >nul 2>&1
 if errorlevel 1 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd -ArgumentList '/c', '\"\"%~f0\"\"' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
     exit /b
 )
 

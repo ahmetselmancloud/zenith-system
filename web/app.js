@@ -3259,25 +3259,27 @@ async function runHardwareObdScan() {
   await loadHardwareObdReport(true);
 }
 
-// --- HEARTBEAT & GRACEFUL EXIT WATCHDOG ---
+// --- HEARTBEAT & WATCHDOG ---
 function setupHeartbeatAndExitHandler() {
-  // Send heartbeat every 4 seconds to keep Python backend alive
-  setInterval(async () => {
+  const sendHeartbeat = async () => {
     try {
       await fetch('/api/heartbeat', { cache: 'no-store' });
     } catch (e) {
       // Backend may be shutting down
     }
-  }, 4000);
+  };
 
-  // When browser or tab is closed, instantly notify server to terminate
-  window.addEventListener('beforeunload', () => {
-    try {
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon('/api/server/shutdown', JSON.stringify({ action: 'close' }));
-      } else {
-        fetch('/api/server/shutdown', { method: 'POST', keepalive: true });
-      }
-    } catch (e) {}
+  // Send heartbeat every 4 seconds to keep Python backend alive
+  setInterval(sendHeartbeat, 4000);
+
+  // Immediately wake up and send heartbeat when tab regains focus or visibility
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      sendHeartbeat();
+    }
+  });
+  window.addEventListener('focus', () => {
+    sendHeartbeat();
   });
 }
+

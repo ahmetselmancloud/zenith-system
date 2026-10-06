@@ -1169,6 +1169,9 @@ body.compact-mode .grid-5 {
 
 .stat-badge.cyan .stat-num { color: var(--accent-cyan); }
 .stat-badge.green .stat-num { color: var(--accent-green); }
+.stat-badge.purple .stat-num { color: #a855f7; }
+.stat-badge.yellow .stat-num { color: var(--accent-yellow, #f59e0b); }
+.stat-badge.red .stat-num { color: var(--accent-red, #ef4444); }
 
 .ssd-card {
   padding: 22px;
@@ -2593,6 +2596,19 @@ body.compact-mode .grid-5 {
   font-size: 0.8rem;
   color: var(--accent-cyan);
 }
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(0, 240, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);
+  }
+}
+
 
 
 

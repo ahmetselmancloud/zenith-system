@@ -50,9 +50,9 @@ def parse_table_columns(lines, expected_cols):
     header = lines[0]
     spans = []
     for name in expected_cols:
-        pos = header.find(name)
-        if pos != -1:
-            spans.append((name, pos))
+        match = re.search(r'\b' + re.escape(name) + r'\b', header, re.IGNORECASE)
+        if match:
+            spans.append((name, match.start()))
     spans.sort(key=lambda x: x[1])
     if not spans:
         return []

@@ -16,6 +16,9 @@ def silent_run(cmd, **kwargs):
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
     return subprocess.run(cmd, **kwargs)
 
+def safe_reg_create_or_open(root, subkey):
+    return winreg.CreateKeyEx(root, subkey, 0, winreg.KEY_SET_VALUE | winreg.KEY_READ)
+
 class LaptopProvider:
     def __init__(self):
         self.vendor = "generic"
@@ -88,18 +91,18 @@ class LaptopProvider:
             # MSI Center / Dragon Center Scenario Integration
             # Modes: 0=Extreme/Performance, 1=Balanced, 2=Silent, 3=SuperBattery, 4=User
             # Fan: 0=Auto, 1=Basic, 2=Advanced, 3=CoolerBoost
-            msi_mode_map = {"extreme": 0, "cooler_boost": 0, "balanced": 1, "silent": 2, "eco": 3}
+            msi_mode_map = {"extreme": 0, "turbo": 0, "cooler_boost": 0, "balanced": 1, "silent": 2, "eco": 3}
             mode_val = msi_mode_map.get(profile, 1)
-            fan_val = 3 if profile in ("extreme", "cooler_boost") else 0
+            fan_val = 3 if profile in ("extreme", "turbo", "cooler_boost") else 0
             
             try:
                 base_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Base Module\User Scenario"
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, base_key, 0, winreg.KEY_SET_VALUE) as k:
+                with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, base_key) as k:
                     winreg.SetValueEx(k, "Mode", 0, winreg.REG_DWORD, mode_val)
                     winreg.SetValueEx(k, "ModeCH", 0, winreg.REG_DWORD, 1)
 
                 gen_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Base Module\GeneralSetting"
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, gen_key, 0, winreg.KEY_SET_VALUE) as k:
+                with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, gen_key) as k:
                     winreg.SetValueEx(k, "Fan", 0, winreg.REG_DWORD, fan_val)
                 logs.append(f"MSI User Scenario Mode={mode_val}, Fan={fan_val} updated successfully.")
             except Exception as e:
@@ -108,9 +111,9 @@ class LaptopProvider:
         elif self.vendor == "asus":
             # ASUS Armoury Crate / G-Helper fan modes via WMI method
             try:
-                asus_mode_map = {"extreme": 2, "balanced": 0, "silent": 1, "eco": 1}
+                asus_mode_map = {"extreme": 2, "turbo": 2, "balanced": 0, "silent": 1, "eco": 1}
                 asus_val = asus_mode_map.get(profile, 0)
-                ps_asus = f'(Get-CimInstance -Namespace "root\\wmi" -ClassName "AsusAtkWmi_WMNB" -ErrorAction SilentlyContinue).Throttle_Thermal_Policy({asus_val})'
+                ps_asus = f'Invoke-CimMethod -Namespace "root\\wmi" -ClassName "AsusAtkWmi_WMNB" -MethodName "Throttle_Thermal_Policy" -Arguments @{{ThermalPolicy={asus_val}}} -ErrorAction SilentlyContinue'
                 silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_asus], timeout=2)
                 logs.append(f"ASUS Throttle_Thermal_Policy({asus_val}) executed.")
             except Exception as e:
@@ -119,7 +122,7 @@ class LaptopProvider:
         elif self.vendor == "lenovo":
             # Lenovo Legion Performance mode via WMI
             try:
-                lenovo_mode_map = {"extreme": 1, "balanced": 2, "silent": 3, "eco": 3}
+                lenovo_mode_map = {"extreme": 1, "turbo": 1, "balanced": 2, "silent": 3, "eco": 3}
                 l_val = lenovo_mode_map.get(profile, 2)
                 ps_lenovo = f'Invoke-CimMethod -Namespace "root\\wmi" -ClassName "Lenovo_ThermalMode" -MethodName "SetThermalMode" -Arguments @{{Mode={l_val}}} -ErrorAction SilentlyContinue'
                 silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_lenovo], timeout=2)
@@ -141,7 +144,7 @@ class LaptopProvider:
                 msi_bat_mode = 3
             try:
                 gen_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Base Module\GeneralSetting"
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, gen_key, 0, winreg.KEY_SET_VALUE) as k:
+                with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, gen_key) as k:
                     winreg.SetValueEx(k, "BatteryMode", 0, winreg.REG_DWORD, msi_bat_mode)
                 logs.append(f"MSI Battery Health Mode set to {msi_bat_mode} (Target: {limit_percent}%)")
             except Exception as e:
@@ -150,7 +153,7 @@ class LaptopProvider:
         elif self.vendor == "asus":
             # ASUS Battery Health Charging via WMI (e.g. 80%)
             try:
-                ps_asus = f'(Get-CimInstance -Namespace "root\\wmi" -ClassName "AsusAtkWmi_WMNB" -ErrorAction SilentlyContinue).SetBatteryHealthCharging({limit_percent})'
+                ps_asus = f'Invoke-CimMethod -Namespace "root\\wmi" -ClassName "AsusAtkWmi_WMNB" -MethodName "SetBatteryHealthCharging" -Arguments @{{Percent={limit_percent}}} -ErrorAction SilentlyContinue'
                 silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_asus], timeout=2)
                 logs.append(f"ASUS SetBatteryHealthCharging({limit_percent}) executed.")
             except Exception as e:
@@ -177,7 +180,7 @@ class LaptopProvider:
             target_val = 1 if mode == "dgpu" else 2
             try:
                 gen_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Base Module\GeneralSetting"
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, gen_key, 0, winreg.KEY_SET_VALUE) as k:
+                with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, gen_key) as k:
                     winreg.SetValueEx(k, "GPU_Switch", 0, winreg.REG_DWORD, target_val)
                     winreg.SetValueEx(k, "GPUswitchDiscrete", 0, winreg.REG_DWORD, 1 if mode == "dgpu" else 0)
                 logs.append(f"MSI GPU MUX Switch set to {mode} (Flag: {target_val}). Restart required for BIOS change.")
@@ -188,7 +191,7 @@ class LaptopProvider:
             try:
                 # ASUS dGPU mode
                 target_val = 0 if mode == "dgpu" else 1
-                ps_asus = f'(Get-CimInstance -Namespace "root\\wmi" -ClassName "AsusAtkWmi_WMNB" -ErrorAction SilentlyContinue).SetGpuEcoMode({target_val})'
+                ps_asus = f'Invoke-CimMethod -Namespace "root\\wmi" -ClassName "AsusAtkWmi_WMNB" -MethodName "SetGpuEcoMode" -Arguments @{{State={target_val}}} -ErrorAction SilentlyContinue'
                 silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_asus], timeout=2)
                 logs.append("ASUS GPU switch executed.")
             except Exception as e:
@@ -245,7 +248,7 @@ class LaptopProvider:
             try:
                 # 1. Update MSI Mystic Light Active LED Profile
                 ml_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Mystic Light\LED"
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, ml_key, 0, winreg.KEY_SET_VALUE) as k:
+                with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, ml_key) as k:
                     # Color format: R,G,B repeated across 24 zones
                     zone_rgb = f"{r},{g},{b}," * 24
                     winreg.SetValueEx(k, "Save_ColorBlock", 0, winreg.REG_SZ, zone_rgb)
@@ -258,14 +261,14 @@ class LaptopProvider:
                 # 2. Update ML Control trigger if key exists
                 try:
                     ctrl_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Mystic Light\ML Control"
-                    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, ctrl_key, 0, winreg.KEY_SET_VALUE) as k:
+                    with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, ctrl_key) as k:
                         winreg.SetValueEx(k, "ML_CMD_Apply", 0, winreg.REG_DWORD, 1)
                 except Exception:
                     pass
 
                 # 3. Update General Setting Backlight
                 gen_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Base Module\GeneralSetting"
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, gen_key, 0, winreg.KEY_SET_VALUE) as k:
+                with safe_reg_create_or_open(winreg.HKEY_LOCAL_MACHINE, gen_key) as k:
                     kb_level = 0 if not is_active else (1 if brightness < 50 else 2)
                     winreg.SetValueEx(k, "KBBacklight", 0, winreg.REG_DWORD, kb_level)
 

@@ -50,19 +50,33 @@ PROBE_EXE = os.path.join(BASE_DIR, "bin", "zenith_probe.exe")
 
 CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
+def get_silent_startupinfo():
+    if sys.platform == "win32":
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 0  # SW_HIDE
+        return si
+    return None
+
 def silent_run(cmd, **kwargs):
     if sys.platform == "win32":
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+        if "startupinfo" not in kwargs:
+            kwargs["startupinfo"] = get_silent_startupinfo()
     return subprocess.run(cmd, **kwargs)
 
 def silent_check_output(cmd, **kwargs):
     if sys.platform == "win32":
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+        if "startupinfo" not in kwargs:
+            kwargs["startupinfo"] = get_silent_startupinfo()
     return subprocess.check_output(cmd, **kwargs)
 
 def silent_popen(cmd, **kwargs):
     if sys.platform == "win32":
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+        if "startupinfo" not in kwargs:
+            kwargs["startupinfo"] = get_silent_startupinfo()
     return subprocess.Popen(cmd, **kwargs)
 
 # Heartbeat & Auto-Shutdown Watchdog
@@ -99,7 +113,7 @@ def watchdog_worker():
         time.sleep(4)
         with _heartbeat_lock:
             elapsed = time.time() - _last_heartbeat
-        if elapsed > 25.0:
+        if elapsed > 180.0:
             print(f"[Zenith Watchdog] No frontend heartbeat received for {int(elapsed)}s. Shutting down server cleanly.")
             os._exit(0)
 
@@ -178,12 +192,14 @@ def get_hardware_info(force_refresh=False):
     return {"error": "Probe not available"}
 
 _gpu_cache = {"data": {"available": False}, "time": 0}
+_gpu_cache_lock = threading.Lock()
 
 def get_gpu_live():
     global _gpu_cache
     now = time.time()
-    if now - _gpu_cache["time"] < 1.5:
-        return _gpu_cache["data"]
+    with _gpu_cache_lock:
+        if now - _gpu_cache["time"] < 1.5:
+            return _gpu_cache["data"]
     try:
         out = silent_check_output(
             ["nvidia-smi", "--query-gpu=temperature.gpu,utilization.gpu,memory.total,memory.used,power.draw", "--format=csv,noheader,nounits"],
@@ -191,7 +207,7 @@ def get_gpu_live():
         ).decode().strip()
         parts = [p.strip() for p in out.split(',')]
         if len(parts) >= 5:
-            _gpu_cache["data"] = {
+            data = {
                 "available": True,
                 "temp_c": int(parts[0]),
                 "usage_percent": int(parts[1]),
@@ -199,13 +215,16 @@ def get_gpu_live():
                 "vram_used_mb": int(parts[3]),
                 "power_w": float(parts[4])
             }
-            _gpu_cache["time"] = now
-            return _gpu_cache["data"]
+            with _gpu_cache_lock:
+                _gpu_cache["data"] = data
+                _gpu_cache["time"] = now
+            return data
     except Exception:
         pass
-    _gpu_cache["data"] = {"available": False}
-    _gpu_cache["time"] = now
-    return _gpu_cache["data"]
+    with _gpu_cache_lock:
+        _gpu_cache["data"] = {"available": False}
+        _gpu_cache["time"] = now
+        return _gpu_cache["data"]
 
 def get_live_metrics():
     global last_net_time, last_net_io
@@ -447,10 +466,14 @@ def run_winget_worker(package_ids):
                     winget_state["logs"].append(f"✓ Successfully installed: {pkg_id}")
                 else:
                     winget_state["logs"].append(f"Info: {pkg_id} completed (Code: {res.returncode})")
+                if len(winget_state["logs"]) > 200:
+                    winget_state["logs"] = winget_state["logs"][-200:]
                 winget_state["completed"] += 1
         except Exception as e:
             with winget_lock:
                 winget_state["logs"].append(f"✗ Error ({pkg_id}): {str(e)}")
+                if len(winget_state["logs"]) > 200:
+                    winget_state["logs"] = winget_state["logs"][-200:]
                 winget_state["completed"] += 1
 
     with winget_lock:
@@ -713,9 +736,7 @@ def run_real_speedtest():
         duration = max(0.05, time.perf_counter() - t_start)
         result["upload_mbps"] = round((len(up_data) * 8) / (duration * 1_000_000), 2)
     except Exception as e:
-        # If upload endpoint throttles or fails, calculate based on nominal link ratio
-        if result["download_mbps"] > 0:
-            result["upload_mbps"] = round(result["download_mbps"] * 0.35, 2)
+        result["upload_mbps"] = None
 
     result["success"] = (result["download_mbps"] > 0 or result["ping_ms"] > 0)
     return result
@@ -1481,7 +1502,11 @@ def start_server():
             set_power_plan=set_power_plan
         )
         start_engine_thread()
-        with socketserver.TCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
+        class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+            daemon_threads = True
+            allow_reuse_address = True
+
+        with ThreadedTCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
             print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
             httpd.serve_forever()
     except OSError:
