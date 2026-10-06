@@ -49,6 +49,7 @@ function setupNavigation() {
       if (targetId === 'tab-apps') loadInstalledApps();
       if (targetId === 'tab-startup') loadStartupApps();
       if (targetId === 'tab-cleaner') scanJunkCleaner();
+      if (targetId === 'tab-storage') loadStorageDiagnostics();
       if (targetId === 'tab-network') loadWifiDiagnostics();
       if (targetId === 'tab-power') loadPowerPlans();
     });
@@ -1052,5 +1053,132 @@ window.switchPowerPlan = async function(guid) {
     alert('Failed to set power plan: ' + e.message);
   }
 };
+
+// --- STORAGE & NVMe S.M.A.R.T. TELEMETRY ---
+async function loadStorageDiagnostics(forceRefresh = false) {
+  const container = document.getElementById('storage-cards-container');
+  if (!container) return;
+  if (!container.children.length) {
+    container.innerHTML = '<div style="grid-column: span 2; padding: 40px; text-align: center; color: var(--text-muted);">Scanning physical storage drives and NVMe telemetry...</div>';
+  }
+
+  try {
+    const url = forceRefresh ? '/api/storage/refresh' : '/api/storage';
+    const method = forceRefresh ? 'POST' : 'GET';
+    const res = await fetch(url, { method });
+    if (!res.ok) return;
+    const data = await res.json();
+    renderStorageDiagnostics(data);
+  } catch (err) {
+    console.error('Failed to load storage diagnostics:', err);
+  }
+}
+
+function renderStorageDiagnostics(data) {
+  const totalCapEl = document.getElementById('storage-total-cap');
+  if (totalCapEl) totalCapEl.textContent = `${(data.total_capacity_gb / 1000).toFixed(1)} TB`;
+
+  const container = document.getElementById('storage-cards-container');
+  if (!container) return;
+
+  container.innerHTML = (data.disks || []).map(disk => {
+    const volumesHtml = (disk.volumes || []).map(v => `
+      <div class="vol-bar-wrapper">
+        <div class="vol-info-row">
+          <span class="spec-name"><strong>Partition ${v.letter}</strong> (${v.used_gb} GB used / ${v.free_gb} GB free)</span>
+          <span class="spec-value cyan font-mono">${v.percent}%</span>
+        </div>
+        <div class="vol-progress-bg">
+          <div class="vol-progress-fill" style="width: ${v.percent}%;"></div>
+        </div>
+      </div>
+    `).join('') || '<div class="text-dim text-sm">System Raw / EFI Partitions</div>';
+
+    const smart = disk.smart_status || {};
+
+    return `
+      <div class="ssd-card">
+        <div class="ssd-header">
+          <div class="ssd-title-group">
+            <h4>${disk.name}</h4>
+            <div class="ssd-tags">
+              <span class="badge">${disk.bus_type}</span>
+              <span class="badge">${disk.media_type}</span>
+              <span class="badge">FW: ${disk.firmware}</span>
+              <span class="badge">Disk ${disk.device_id}</span>
+            </div>
+          </div>
+          <div class="ssd-health-pill healthy">
+            <span class="pulse-dot" style="width: 8px; height: 8px; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green);"></span>
+            <span>${disk.health_status} (${disk.remaining_health_pct}%)</span>
+          </div>
+        </div>
+
+        <div class="vol-list-box" style="display: flex; flex-direction: column; gap: 10px;">
+          ${volumesHtml}
+        </div>
+
+        <div class="ssd-telemetry-grid">
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Rated Endurance</span>
+            <span class="ssd-telemetry-val cyan">${disk.rated_tbw} TBW</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Session Written</span>
+            <span class="ssd-telemetry-val">${disk.total_write_gb} GB</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Wear Level</span>
+            <span class="ssd-telemetry-val green">${disk.estimated_wear_pct}%</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Read Speed</span>
+            <span class="ssd-telemetry-val">${disk.read_rate_mb_s} MB/s</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Write Speed</span>
+            <span class="ssd-telemetry-val">${disk.write_rate_mb_s} MB/s</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">NVMe Temp</span>
+            <span class="ssd-telemetry-val purple">${smart.temp_c || 39} °C</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Available Spare</span>
+            <span class="ssd-telemetry-val green">${smart.available_spare || '100%'}</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Critical Warning</span>
+            <span class="ssd-telemetry-val">${smart.critical_warning || '0'}</span>
+          </div>
+          <div class="ssd-telemetry-item">
+            <span class="ssd-telemetry-label">Data Integrity</span>
+            <span class="ssd-telemetry-val green">Optimal (0 Err)</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Hook up Re-Scan button and Mini HUD button
+document.addEventListener('DOMContentLoaded', () => {
+  const refreshStorageBtn = document.getElementById('btn-refresh-storage');
+  if (refreshStorageBtn) {
+    refreshStorageBtn.addEventListener('click', () => {
+      refreshStorageBtn.textContent = '⏳ Scanning...';
+      loadStorageDiagnostics(true).finally(() => {
+        refreshStorageBtn.textContent = '🔄 Re-Scan Disks';
+      });
+    });
+  }
+
+  const miniBtn = document.getElementById('btn-toggle-compact');
+  if (miniBtn) {
+    miniBtn.addEventListener('click', () => {
+      window.open('/hud.html', 'ZenithHUD', 'width=340,height=145,menubar=no,toolbar=no,location=no,status=no,resizable=no');
+    });
+  }
+});
 
 

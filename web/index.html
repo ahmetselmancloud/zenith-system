@@ -52,6 +52,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
           <span>Storage Cleaner</span>
         </button>
+        <button class="nav-item" data-tab="tab-storage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+          <span>Storage & S.M.A.R.T.</span>
+        </button>
         <button class="nav-item" data-tab="tab-search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <span>Instant Search</span>
@@ -735,6 +739,38 @@
           <div class="cleaner-grid mt-4" id="cleaner-categories-grid">
             <!-- Dynamically populated categories -->
           </div>
+        </div>
+      </section>
+
+      <!-- TAB: STORAGE & NVMe S.M.A.R.T. -->
+      <section class="tab-pane" id="tab-storage">
+        <div class="card glass-card storage-hero mb-4">
+          <div class="storage-hero-left">
+            <div class="storage-icon-pulse">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            </div>
+            <div>
+              <h3>NVMe High-Speed Storage & S.M.A.R.T. Telemetry</h3>
+              <p class="subtitle">Direct hardware-layer drive health, endurance wear analysis, TBW tracking & I/O bandwidth</p>
+            </div>
+          </div>
+          <div class="storage-hero-right">
+            <div class="stat-badge cyan">
+              <span class="stat-lbl">Total Capacity</span>
+              <span class="stat-num" id="storage-total-cap">-- TB</span>
+            </div>
+            <div class="stat-badge green">
+              <span class="stat-lbl">Health Condition</span>
+              <span class="stat-num" id="storage-aggregate-health">100% Healthy</span>
+            </div>
+            <button class="btn btn-secondary" id="btn-refresh-storage">
+              🔄 Re-Scan Disks
+            </button>
+          </div>
+        </div>
+
+        <div id="storage-cards-container" class="grid-2">
+          <!-- Dynamically populated per physical drive -->
         </div>
       </section>
 

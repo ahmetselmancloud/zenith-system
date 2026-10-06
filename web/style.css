@@ -1106,3 +1106,171 @@ body.compact-mode .grid-5 {
   background: rgba(16, 185, 129, 0.15);
   color: var(--accent-green);
 }
+
+/* STORAGE HERO & SSD CARDS */
+.storage-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+}
+
+.storage-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.storage-icon-pulse {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
+  border: 1px solid var(--border-color-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-cyan);
+}
+
+.storage-icon-pulse svg {
+  width: 28px;
+  height: 28px;
+}
+
+.storage-hero-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-badge {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-badge .stat-lbl {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.stat-badge .stat-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.stat-badge.cyan .stat-num { color: var(--accent-cyan); }
+.stat-badge.green .stat-num { color: var(--accent-green); }
+
+.ssd-card {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.25s;
+}
+
+.ssd-card:hover {
+  border-color: var(--border-color-glow);
+  box-shadow: 0 4px 25px rgba(6, 182, 212, 0.1);
+}
+
+.ssd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ssd-title-group h4 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.ssd-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ssd-health-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ssd-health-pill.healthy {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.vol-bar-wrapper {
+  margin-top: 4px;
+}
+
+.vol-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.vol-progress-bg {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vol-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+  transition: width 0.4s ease;
+}
+
+.ssd-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ssd-telemetry-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.ssd-telemetry-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.ssd-telemetry-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 2px;
+}
+

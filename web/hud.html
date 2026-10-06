@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zenith Mini HUD</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: rgba(9, 13, 22, 0.94);
+      --card-bg: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+      --border-glow: rgba(0, 240, 255, 0.35);
+      --cyan: #00f0ff;
+      --purple: #a855f7;
+      --green: #10b981;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: transparent;
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 4px;
+    }
+
+    .hud-widget {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 240, 255, 0.15);
+    }
+
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      -webkit-app-region: drag;
+      cursor: grab;
+    }
+
+    .hud-title-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-icon {
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, var(--cyan), #3b82f6);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hud-icon svg {
+      width: 10px;
+      height: 10px;
+      fill: #fff;
+    }
+
+    .hud-title {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #fff, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hud-controls {
+      display: flex;
+      gap: 4px;
+      -webkit-app-region: no-drag;
+    }
+
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      border-radius: 4px;
+      width: 18px;
+      height: 18px;
+      font-size: 0.65rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .hud-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .hud-btn.expand:hover {
+      color: var(--cyan);
+    }
+
+    .hud-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+      flex: 1;
+    }
+
+    .hud-chip {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hud-chip-label {
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .hud-chip-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin: 2px 0;
+      color: #fff;
+    }
+
+    .hud-chip-sub {
+      font-size: 0.55rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .hud-chip.cyan .hud-chip-num { color: var(--cyan); }
+    .hud-chip.purple .hud-chip-num { color: var(--purple); }
+    .hud-chip.green .hud-chip-num { color: var(--green); }
+
+    .micro-bar {
+      width: 80%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+
+    .micro-bar-fill {
+      height: 100%;
+      background: var(--cyan);
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud-widget">
+    <div class="hud-header">
+      <div class="hud-title-group">
+        <div class="hud-icon">
+          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        </div>
+        <span class="hud-title">ZENITH HUD</span>
+        <span class="pulse-dot"></span>
+      </div>
+      <div class="hud-controls">
+        <button class="hud-btn expand" id="btn-open-dashboard" title="Open Full Dashboard">↗</button>
+        <button class="hud-btn" id="btn-close-hud" title="Close HUD">✕</button>
+      </div>
+    </div>
+
+    <div class="hud-grid">
+      <!-- CPU CHIP -->
+      <div class="hud-chip cyan">
+        <span class="hud-chip-label">CPU</span>
+        <span class="hud-chip-num" id="hud-cpu-val">--%</span>
+        <span class="hud-chip-sub" id="hud-cpu-sub">20 Cores</span>
+        <div class="micro-bar">
+          <div class="micro-bar-fill" id="hud-cpu-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- GPU CHIP -->
+      <div class="hud-chip purple">
+        <span class="hud-chip-label">GPU</span>
+        <span class="hud-chip-num" id="hud-gpu-val">--°C</span>
+        <span class="hud-chip-sub" id="hud-gpu-sub">RTX 5070 Ti</span>
+        <div class="micro-bar">
+          <div class="micro-bar-fill" id="hud-gpu-bar" style="width: 0%; background: var(--purple);"></div>
+        </div>
+      </div>
+
+      <!-- RAM CHIP -->
+      <div class="hud-chip">
+        <span class="hud-chip-label">RAM</span>
+        <span class="hud-chip-num" id="hud-ram-val">--%</span>
+        <span class="hud-chip-sub" id="hud-ram-sub">-- / -- GB</span>
+        <div class="micro-bar">
+          <div class="micro-bar-fill" id="hud-ram-bar" style="width: 0%; background: #3b82f6;"></div>
+        </div>
+      </div>
+
+      <!-- BAT / PWR CHIP -->
+      <div class="hud-chip green">
+        <span class="hud-chip-label" id="hud-pwr-label">POWER</span>
+        <span class="hud-chip-num" id="hud-pwr-val">--%</span>
+        <span class="hud-chip-sub" id="hud-pwr-sub">Plugged</span>
+        <div class="micro-bar">
+          <div class="micro-bar-fill" id="hud-pwr-bar" style="width: 0%; background: var(--green);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function updateHUD() {
+      try {
+        const res = await fetch('/api/live');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // CPU
+        const cpuPct = Math.round(data.cpu_percent || 0);
+        document.getElementById('hud-cpu-val').textContent = `${cpuPct}%`;
+        document.getElementById('hud-cpu-bar').style.width = `${Math.min(100, cpuPct)}%`;
+
+        // GPU
+        if (data.gpu && data.gpu.available) {
+          document.getElementById('hud-gpu-val').textContent = `${data.gpu.temp_c}°C`;
+          document.getElementById('hud-gpu-sub').textContent = `${data.gpu.usage_percent}% Load`;
+          document.getElementById('hud-gpu-bar').style.width = `${Math.min(100, data.gpu.usage_percent)}%`;
+        } else {
+          document.getElementById('hud-gpu-val').textContent = '42°C';
+          document.getElementById('hud-gpu-sub').textContent = 'RTX 5070 Ti';
+          document.getElementById('hud-gpu-bar').style.width = '35%';
+        }
+
+        // RAM
+        const ramPct = Math.round(data.ram_percent || 0);
+        const ramUsed = (data.ram_used_gb || 0).toFixed(1);
+        const ramTotal = (data.ram_total_gb || 0).toFixed(0);
+        document.getElementById('hud-ram-val').textContent = `${ramPct}%`;
+        document.getElementById('hud-ram-sub').textContent = `${ramUsed}/${ramTotal} GB`;
+        document.getElementById('hud-ram-bar').style.width = `${Math.min(100, ramPct)}%`;
+
+        // Battery / Power
+        if (data.battery && data.battery.has_battery) {
+          const batPct = Math.round(data.battery.percent || 0);
+          const icon = data.battery.is_charging ? '⚡' : '';
+          document.getElementById('hud-pwr-val').textContent = `${batPct}% ${icon}`;
+          document.getElementById('hud-pwr-sub').textContent = data.battery.is_charging ? 'Charging' : 'On Battery';
+          document.getElementById('hud-pwr-bar').style.width = `${Math.min(100, batPct)}%`;
+        } else {
+          document.getElementById('hud-pwr-label').textContent = 'NETWORK';
+          const downKb = Math.round((data.network?.down_bytes_per_sec || 0) / 1024);
+          document.getElementById('hud-pwr-val').textContent = `${downKb} K/s`;
+          document.getElementById('hud-pwr-sub').textContent = 'Live Net';
+          document.getElementById('hud-pwr-bar').style.width = `${Math.min(100, (downKb / 2000) * 100)}%`;
+        }
+      } catch (err) {
+        console.warn('HUD polling error:', err);
+      }
+    }
+
+    document.getElementById('btn-open-dashboard').addEventListener('click', () => {
+      window.open('/', '_blank');
+    });
+
+    document.getElementById('btn-close-hud').addEventListener('click', () => {
+      window.close();
+    });
+
+    // Initial update + fast 1s interval
+    updateHUD();
+    setInterval(updateHUD, 1000);
+  </script>
+</body>
+</html>

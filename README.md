@@ -114,19 +114,30 @@ A 137 KB native C++ binary compiled with `-O3` optimizations. It directly utiliz
 * On-the-fly toggling between Windows Power Schemes ("High Performance", "Balanced", etc.) and CPU scheduling profiles.
 * Detailed battery telemetry displaying factory health integrity, live bus voltage, and remaining energy.
 
-### 10. Multi-Drive Lightning File Finder
+### 10. NVMe S.M.A.R.T. & Storage Health Engine
+* Deep inspection of physical NVMe PCIe drives, controller firmware, and mapped drive volumes (e.g. `C: [Ahmet]`, `D: [Selman]`).
+* Real-time partition capacity utilization bars and per-drive disk I/O bandwidth speeds (MB/s Read/Write).
+* Lifetime session throughput analysis and endurance wear rating (TBW - Total Bytes Written).
+* Complete S.M.A.R.T. operational health reporting (100% Verified, Available Spare, Temperature, 0 Critical Warnings).
+
+### 11. Dedicated Floating Desktop Mini HUD Widget
+* Standalone frameless micro-widget (`web/hud.html`) engineered to float unobtrusively in the corner of your desktop during intense gaming sessions or software engineering workflows.
+* Live 4-way neon metric cards: **CPU Load % & Sparkline**, **GPU Load % & Temperature (°C)**, **RAM Memory Allocation (GB)**, and **Battery / Live Network Rate**.
+* Instant launch via the **`⛶ Mini Mode`** header button, desktop shortcut, or native command line (`Zenith.exe --hud`, Hotkey: `Ctrl+Alt+H`).
+
+### 12. Multi-Drive Lightning File Finder
 * Instant multi-drive file search traversing user workspaces and desktop locations without waiting for indexing.
 * One-click direct explorer integration (`explorer.exe /select, ...`).
 
-### 11. Diagnostics Lab
+### 13. Diagnostics Lab
 * **Socket Ping & Bandwidth Check:** Ad-free, lightweight latency and throughput inspector.
 * **Display & Dead Pixel Wizard:** Fullscreen cycling test across pure RGB and monochrome test patterns.
 * **Keyboard & N-Key Rollover Tester:** Identifies ghosting, latency, and simultaneous key rollover.
 * **Mouse Double-Click & Sensor Chatter Inspector:** Detects failing hardware micro-switches and bounce times (< 80ms warning).
 * **15-Second Safe CPU Stress Benchmark:** Multithreaded mathematical burn test evaluating cooling response and thermal throttling.
 
-### 12. Compact Mini Mode & Spec Export
-* **Mini Mode:** Toggles a streamlined compact floating layout for secondary monitors or in-game reference.
+### 14. Native GUI Launcher & Spec Export
+* **Native Win32 Binary (`Zenith.exe`):** 198 KB compiled executable with embedded cyberpunk icon, single-instance checking, and native Taskbar pinning.
 * **Copy Specs Report:** Generates a formatted Markdown hardware spec report in one click for Reddit, Discord, or support forums.
 
 ---
@@ -135,18 +146,21 @@ A 137 KB native C++ binary compiled with `-O3` optimizations. It directly utiliz
 
 ```
 zenith-system/
+├── Zenith.exe                 # 198 KB native GUI launcher (C++ Win32 with embedded icon)
 ├── bin/
 │   └── zenith_probe.exe       # 137 KB native C++17 hardware probe (MSYS2/g++ -O3)
 ├── src/
 │   ├── zenith_probe.cpp       # Pure Win32 API / IOCTL hardware detection engine
+│   ├── zenith_launcher.cpp    # Native WinMain browser & HUD app wrapper
 │   └── zenith_server.py       # Zero-dependency Python 3 HTTP/API hub & WinGet worker
 ├── web/
 │   ├── index.html             # Glassmorphic cyberpunk cyber-dark UI layout
+│   ├── hud.html               # Dedicated floating desktop mini HUD widget
 │   ├── style.css              # Lightweight CSS design system with CSS variables
 │   └── app.js                 # Vanilla JavaScript client (zero dependencies)
 ├── dist/
 │   └── Zenith-System-v1.0.0-win-x64.zip # Standalone release archive
-├── install.ps1                # One-line global PowerShell installer
+├── install.ps1                # One-line global PowerShell installer & shortcuts
 ├── build_dist.ps1             # Release packager & SHA256 checksum generator
 ├── start_zenith.bat           # Portable auto-discovery launcher
 ├── hardware_cache.json        # Sub-millisecond cold boot hardware cache

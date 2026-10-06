@@ -117,8 +117,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     std::wstring appUrl = L"http://127.0.0.1:49152";
+    std::wstring windowSize = L"1240,820";
+
+    if (lpCmdLine && (strstr(lpCmdLine, "--hud") || strstr(lpCmdLine, "-hud") || strstr(lpCmdLine, "/hud"))) {
+        appUrl = L"http://127.0.0.1:49152/hud.html";
+        windowSize = L"340,145";
+    }
+
     if (!chosenBrowser.empty()) {
-        std::wstring fullCmd = L"\"" + chosenBrowser + L"\" --app=\"" + appUrl + L"\" --window-size=1240,820";
+        std::wstring fullCmd = L"\"" + chosenBrowser + L"\" --app=\"" + appUrl + L"\" --window-size=" + windowSize;
         STARTUPINFOW si = { sizeof(si) };
         PROCESS_INFORMATION pi = { 0 };
         si.dwFlags = STARTF_USESHOWWINDOW;

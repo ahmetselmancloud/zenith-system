@@ -98,6 +98,19 @@ try {
     $Shortcut.Save()
     Write-Host "      [OK] Desktop shortcut created (Hotkey: Ctrl+Alt+Z): $DesktopLnk" -ForegroundColor Green
 
+    # Desktop Mini HUD Shortcut
+    $HudLnk = Join-Path $DesktopFolder "Zenith Mini HUD.lnk"
+    $HudShortcut = $WshShell.CreateShortcut($HudLnk)
+    $HudShortcut.TargetPath = $TargetApp
+    $HudShortcut.Arguments = "--hud"
+    $HudShortcut.WorkingDirectory = $InstallDir
+    $HudShortcut.Description = "Zenith Mini HUD - Floating Desktop Hardware Widget (Hotkey: Ctrl+Alt+H)"
+    $HudShortcut.Hotkey = "CTRL+ALT+H"
+    $HudShortcut.WindowStyle = 1
+    $HudShortcut.IconLocation = $IconPath
+    $HudShortcut.Save()
+    Write-Host "      [OK] Mini HUD shortcut created (Hotkey: Ctrl+Alt+H): $HudLnk" -ForegroundColor Green
+
     # Start Menu Shortcut
     $StartMenuPrograms = [System.Environment]::GetFolderPath('Programs')
     if (Test-Path $StartMenuPrograms) {
@@ -110,7 +123,7 @@ try {
         $SMShortcut.WindowStyle = 1
         $SMShortcut.IconLocation = $IconPath
         $SMShortcut.Save()
-        Write-Host "      [OK] Start Menu shortcut created (Hotkey: Ctrl+Alt+Z): $StartMenuLnk" -ForegroundColor Green
+        Write-Host "      [OK] Start Menu shortcut created: $StartMenuLnk" -ForegroundColor Green
     }
 } catch {
     Write-Warning "Could not create desktop shortcuts automatically: $_"
