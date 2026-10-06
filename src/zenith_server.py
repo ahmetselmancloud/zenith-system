@@ -8,6 +8,8 @@ import subprocess
 import urllib.parse
 import threading
 import winreg
+import re
+import shutil
 import psutil
 
 # Zenith System — Backend Server & API Hub V3.0
@@ -303,6 +305,189 @@ def apply_registry_tweaks(tweaks):
 
     return logs
 
+def get_startup_apps():
+    items = []
+    roots = [
+        (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", "HKCU",
+         r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKLM",
+         r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run")
+    ]
+    for root, run_path, src, apprv_path in roots:
+        approved_map = {}
+        try:
+            ak = winreg.OpenKey(root, apprv_path)
+            for i in range(winreg.QueryInfoKey(ak)[1]):
+                aname, aval, _ = winreg.EnumValue(ak, i)
+                if isinstance(aval, (bytes, bytearray)) and len(aval) > 0:
+                    approved_map[aname] = (aval[0] == 2)
+            winreg.CloseKey(ak)
+        except Exception:
+            pass
+
+        try:
+            rk = winreg.OpenKey(root, run_path)
+            for i in range(winreg.QueryInfoKey(rk)[1]):
+                rname, rval, _ = winreg.EnumValue(rk, i)
+                enabled = approved_map.get(rname, True)
+                impact = "Low"
+                for heavy in ["steam", "epic", "discord", "docker", "overwolf", "riot", "ea", "spotify", "adobe", "electron"]:
+                    if heavy in rname.lower() or heavy in str(rval).lower():
+                        impact = "High"
+                        break
+                items.append({
+                    "name": rname,
+                    "command": str(rval),
+                    "source": src,
+                    "enabled": enabled,
+                    "impact": impact
+                })
+            winreg.CloseKey(rk)
+        except Exception:
+            pass
+    return items
+
+def toggle_startup_app(name, source, enable):
+    root = winreg.HKEY_CURRENT_USER if source == "HKCU" else winreg.HKEY_LOCAL_MACHINE
+    apprv_path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" if source == "HKCU" else r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"
+    try:
+        k = winreg.CreateKey(root, apprv_path)
+        val = b"\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" if enable else b"\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        winreg.SetValueEx(k, name, 0, winreg.REG_BINARY, val)
+        winreg.CloseKey(k)
+        return {"success": True, "name": name, "enabled": enable}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def scan_junk_cleaner():
+    categories = [
+        {"id": "user_temp", "name": "User Temporary Files", "path": os.environ.get("TEMP", "")},
+        {"id": "win_temp", "name": "Windows System Temp", "path": os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Temp")},
+        {"id": "crash_dumps", "name": "Crash & Error Dumps", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "CrashDumps")},
+        {"id": "win_update", "name": "Windows Update Delivery Cache", "path": os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "SoftwareDistribution", "Download")},
+        {"id": "prefetch", "name": "Windows Prefetch Cache", "path": os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Prefetch")}
+    ]
+    results = []
+    total_bytes = 0
+    total_files = 0
+    for cat in categories:
+        cpath = cat["path"]
+        sz = 0
+        cnt = 0
+        if cpath and os.path.exists(cpath):
+            try:
+                for root, _, files in os.walk(cpath):
+                    for f in files:
+                        try:
+                            fp = os.path.join(root, f)
+                            sz += os.path.getsize(fp)
+                            cnt += 1
+                        except OSError:
+                            pass
+            except Exception:
+                pass
+        total_bytes += sz
+        total_files += cnt
+        results.append({
+            "id": cat["id"],
+            "name": cat["name"],
+            "path": cpath,
+            "bytes": sz,
+            "size_mb": round(sz / (1024 * 1024), 1),
+            "files": cnt
+        })
+    return {"categories": results, "total_bytes": total_bytes, "total_files": total_files, "total_mb": round(total_bytes / (1024 * 1024), 1)}
+
+def clean_junk_categories(selected_ids):
+    cat_map = {
+        "user_temp": os.environ.get("TEMP", ""),
+        "win_temp": os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Temp"),
+        "crash_dumps": os.path.join(os.environ.get("LOCALAPPDATA", ""), "CrashDumps"),
+        "win_update": os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "SoftwareDistribution", "Download"),
+        "prefetch": os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Prefetch")
+    }
+    reclaimed_bytes = 0
+    reclaimed_files = 0
+    for cid in selected_ids:
+        cpath = cat_map.get(cid)
+        if not cpath or not os.path.exists(cpath):
+            continue
+        for root, dirs, files in os.walk(cpath, topdown=False):
+            for f in files:
+                try:
+                    fp = os.path.join(root, f)
+                    sz = os.path.getsize(fp)
+                    os.remove(fp)
+                    reclaimed_bytes += sz
+                    reclaimed_files += 1
+                except OSError:
+                    pass
+            for d in dirs:
+                try:
+                    os.rmdir(os.path.join(root, d))
+                except OSError:
+                    pass
+    return {
+        "success": True,
+        "reclaimed_bytes": reclaimed_bytes,
+        "reclaimed_mb": round(reclaimed_bytes / (1024 * 1024), 1),
+        "reclaimed_files": reclaimed_files
+    }
+
+def get_wifi_diagnostics():
+    try:
+        out = subprocess.check_output(["netsh", "wlan", "show", "interfaces"], text=True, stderr=subprocess.DEVNULL, timeout=2)
+    except Exception as e:
+        return {"connected": False, "error": str(e)}
+
+    data = {"connected": False, "adapter": "Wireless Interface", "signal_percent": 0, "band": "--", "channel": "--", "radio_type": "--", "ssid": "Disconnected"}
+    for line in out.splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            k = k.strip().lower()
+            v = v.strip()
+            if "description" in k: data["adapter"] = v
+            elif "state" in k:
+                data["state"] = v
+                if "connected" in v.lower(): data["connected"] = True
+            elif "ssid" in k and "bssid" not in k: data["ssid"] = v
+            elif "bssid" in k: data["bssid"] = v
+            elif "band" in k: data["band"] = v
+            elif "channel" in k: data["channel"] = v
+            elif "radio type" in k: data["radio_type"] = v
+            elif "signal" in k: data["signal_percent"] = int(v.replace("%", "").strip() or 0)
+            elif "rssi" in k: data["rssi_dbm"] = int(v.strip() or 0)
+            elif "receive rate" in k: data["rx_rate_mbps"] = float(v.strip() or 0)
+            elif "transmit rate" in k: data["tx_rate_mbps"] = float(v.strip() or 0)
+    return data
+
+def get_power_plans():
+    try:
+        out = subprocess.check_output(["powercfg", "/list"], text=True, stderr=subprocess.DEVNULL, timeout=2)
+    except Exception as e:
+        return {"plans": [], "error": str(e)}
+
+    plans = []
+    active_guid = None
+    pattern = re.compile(r"GUID:\s+([a-f0-9\-]+)\s+\((.*?)\)(\s+\*)?")
+    for line in out.splitlines():
+        m = pattern.search(line)
+        if m:
+            guid = m.group(1)
+            name = m.group(2)
+            is_active = bool(m.group(3))
+            if is_active:
+                active_guid = guid
+            plans.append({"guid": guid, "name": name, "active": is_active})
+    return {"plans": plans, "active_guid": active_guid}
+
+def set_power_plan(guid):
+    try:
+        subprocess.run(f"powercfg /setactive {guid}", shell=True, check=True, timeout=2)
+        return {"success": True, "active_guid": guid}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 class ZenithHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
@@ -329,6 +514,14 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/stress/status":
             with stress_lock:
                 self.send_json(stress_state)
+        elif path == "/api/startup":
+            self.send_json(get_startup_apps())
+        elif path == "/api/cleaner/scan":
+            self.send_json(scan_junk_cleaner())
+        elif path == "/api/wifi":
+            self.send_json(get_wifi_diagnostics())
+        elif path == "/api/power/plans":
+            self.send_json(get_power_plans())
         elif path == "/api/ping":
             self.send_json({"status": "ok", "time": time.time()})
         elif path == "/api/open":
@@ -352,6 +545,20 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": True})
             except Exception as e:
                 self.send_json({"error": str(e)}, status=500)
+
+        elif self.path == "/api/startup/toggle":
+            name = data.get("name", "")
+            source = data.get("source", "HKCU")
+            enable = data.get("enable", True)
+            self.send_json(toggle_startup_app(name, source, enable))
+
+        elif self.path == "/api/cleaner/clean":
+            categories = data.get("categories", [])
+            self.send_json(clean_junk_categories(categories))
+
+        elif self.path == "/api/power/set":
+            guid = data.get("guid", "")
+            self.send_json(set_power_plan(guid))
 
         elif self.path == "/api/tweak":
             logs = apply_registry_tweaks(data)

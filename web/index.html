@@ -44,6 +44,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
           <span>Installed Apps</span>
         </button>
+        <button class="nav-item" data-tab="tab-startup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span>Startup Apps</span>
+        </button>
+        <button class="nav-item" data-tab="tab-cleaner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+          <span>Storage Cleaner</span>
+        </button>
         <button class="nav-item" data-tab="tab-search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <span>Instant Search</span>
@@ -55,6 +63,14 @@
         <button class="nav-item" data-tab="tab-tweaks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           <span>Windows Tweaks</span>
+        </button>
+        <button class="nav-item" data-tab="tab-network">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+          <span>Network & Wi-Fi</span>
+        </button>
+        <button class="nav-item" data-tab="tab-power">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"></rect><line x1="23" y1="11" x2="23" y2="13"></line></svg>
+          <span>Power Engine</span>
         </button>
         <button class="nav-item" data-tab="tab-diagnostics">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
@@ -297,6 +313,23 @@
             <div id="storage-list">
               <!-- Dynamically populated -->
             </div>
+          </div>
+        </div>
+
+        <!-- LIVE 60-SECOND PERFORMANCE STREAM -->
+        <div class="card glass-card mt-4">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-title">Real-Time Performance Stream (Last 60 Seconds)</span>
+              <span class="subtitle">Hardware telemetry canvas rendering at 60 FPS</span>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot cyan"></span> CPU Load (%)</span>
+              <span class="legend-item"><span class="legend-dot purple"></span> GPU Temp (°C)</span>
+            </div>
+          </div>
+          <div class="chart-canvas-wrapper mt-2">
+            <canvas id="live-performance-canvas" width="1000" height="160"></canvas>
           </div>
         </div>
       </section>
@@ -632,6 +665,138 @@
             <div class="readout-box">
               <span class="readout-num green" id="stress-result-text">Ready</span>
               <span class="readout-label">Stability Status</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 9: STARTUP APPS (AUTORUNS MANAGER) -->
+      <section class="tab-pane" id="tab-startup">
+        <div class="card glass-card">
+          <div class="task-manager-header">
+            <div class="task-search-box" style="width: 380px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="startup-search-input" placeholder="Search startup apps or commands...">
+            </div>
+            <div class="task-stats">
+              <span id="startup-stats-count">Loading startup items...</span>
+              <button class="btn btn-secondary" id="btn-refresh-startup">Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-container" style="max-height: 520px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Application Name</th>
+                  <th>Location / Registry</th>
+                  <th>Startup Command</th>
+                  <th>Impact</th>
+                  <th style="text-align: right;">Boot Status</th>
+                </tr>
+              </thead>
+              <tbody id="startup-tbody">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 10: STORAGE JUNK CLEANER -->
+      <section class="tab-pane" id="tab-cleaner">
+        <div class="card glass-card">
+          <div class="tweak-header">
+            <div>
+              <h3>Safe System Junk & Disk Optimizer</h3>
+              <p class="subtitle">Clean temporary cache, crash dumps, and Windows Update leftovers without background bloatware</p>
+            </div>
+            <div class="flex-actions" style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="btn-scan-cleaner">Scan Junk Now</button>
+              <button class="btn btn-primary" id="btn-run-cleaner">Clean Selected Items</button>
+            </div>
+          </div>
+
+          <div class="cleaner-hero-banner mt-3" id="cleaner-hero">
+            <div class="cleaner-stat">
+              <span class="cleaner-num" id="cleaner-total-size">0.0 MB</span>
+              <span class="cleaner-sub">Total Reclaimable Space</span>
+            </div>
+            <div class="cleaner-stat">
+              <span class="cleaner-num" id="cleaner-total-files">0</span>
+              <span class="cleaner-sub">Total Junk Files</span>
+            </div>
+            <div class="cleaner-stat">
+              <span class="cleaner-num green" id="cleaner-status-badge">Ready to Scan</span>
+              <span class="cleaner-sub">System Status</span>
+            </div>
+          </div>
+
+          <div class="cleaner-grid mt-4" id="cleaner-categories-grid">
+            <!-- Dynamically populated categories -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 11: WI-FI & NETWORK DEEP DIVE -->
+      <section class="tab-pane" id="tab-network">
+        <div class="grid-2">
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Wireless Connection Intelligence</span>
+              <span class="tag-pill blue" id="wifi-state-tag">Connected</span>
+            </div>
+            <div class="wifi-hero-gauge">
+              <div class="wifi-signal-readout">
+                <span class="big-num" id="wifi-signal-val">--</span>
+                <p class="subtitle mt-1" id="wifi-rssi-val">-- dBm Signal</p>
+              </div>
+            </div>
+            <div class="spec-table" id="wifi-spec-table">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Hardware Adapter Specifications</span>
+              <span class="tag-pill purple" id="wifi-band-tag">5 GHz / Wi-Fi 7</span>
+            </div>
+            <div class="spec-table" id="wifi-hw-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 12: POWER ENGINE & PLAN SWITCHER -->
+      <section class="tab-pane" id="tab-power">
+        <div class="card glass-card">
+          <div class="tweak-header">
+            <div>
+              <h3>Windows Power Scheme Manager</h3>
+              <p class="subtitle">Directly toggle Windows CPU scheduling algorithms and power profiles on the fly</p>
+            </div>
+          </div>
+          <div class="power-plans-grid mt-3" id="power-plans-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="card glass-card mt-4">
+          <h3 class="box-title">Battery Wear & Power Analytics</h3>
+          <div class="grid-3 mt-3">
+            <div class="readout-box">
+              <span class="readout-num green" id="pwr-health-readout">--</span>
+              <span class="readout-label">Factory Health Integrity</span>
+            </div>
+            <div class="readout-box">
+              <span class="readout-num" id="pwr-voltage-readout">--</span>
+              <span class="readout-label">Bus Voltage (V)</span>
+            </div>
+            <div class="readout-box">
+              <span class="readout-num purple" id="pwr-capacity-readout">--</span>
+              <span class="readout-label">Remaining Energy</span>
             </div>
           </div>
         </div>

@@ -7,6 +7,7 @@ let liveInterval = null;
 let lastClickTime = 0;
 let clickCount = 0;
 const activeKeys = new Set();
+const perfHistory = { cpu: [], gpu: [] };
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   startLiveMetrics();
   setupProcessManager();
   setupInstalledApps();
+  setupStartupApps();
+  setupJunkCleaner();
   setupInstantSearch();
   setupWinGetStore();
   setupTweaks();
@@ -44,6 +47,10 @@ function setupNavigation() {
 
       if (targetId === 'tab-processes') loadProcesses();
       if (targetId === 'tab-apps') loadInstalledApps();
+      if (targetId === 'tab-startup') loadStartupApps();
+      if (targetId === 'tab-cleaner') scanJunkCleaner();
+      if (targetId === 'tab-network') loadWifiDiagnostics();
+      if (targetId === 'tab-power') loadPowerPlans();
     });
   });
 }
@@ -215,6 +222,16 @@ function renderLiveStats(stats) {
     document.getElementById('net-up-speed').textContent = formatSpeed(stats.network.up_bytes_per_sec);
     document.getElementById('net-total-transfer').textContent = `${(stats.network.total_bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
+
+  // 5. UPDATE 60-SEC PERFORMANCE CANVAS
+  perfHistory.cpu.push(cpuPercent);
+  if (perfHistory.cpu.length > 60) perfHistory.cpu.shift();
+
+  const gpuVal = (stats.gpu && stats.gpu.available) ? stats.gpu.temp_c : 0;
+  perfHistory.gpu.push(gpuVal);
+  if (perfHistory.gpu.length > 60) perfHistory.gpu.shift();
+
+  drawPerformanceCanvas();
 }
 
 function setGaugeProgress(selector, percent) {
@@ -717,4 +734,323 @@ function setupCpuStressTest() {
     }
   });
 }
+
+// --- REAL-TIME 60-SEC PERFORMANCE CANVAS ---
+function drawPerformanceCanvas() {
+  const canvas = document.getElementById('live-performance-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Draw gridlines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 3; i++) {
+    const y = (h / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  const maxPoints = 60;
+  const step = w / (maxPoints - 1);
+
+  function drawSeries(data, color, fillColor, maxY = 100) {
+    if (data.length < 2) return;
+    const startIdx = maxPoints - data.length;
+
+    ctx.beginPath();
+    data.forEach((val, i) => {
+      const x = (startIdx + i) * step;
+      const y = h - (Math.min(val, maxY) / maxY) * (h - 24) - 12;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    if (fillColor) {
+      const lastX = (startIdx + data.length - 1) * step;
+      const firstX = startIdx * step;
+      ctx.lineTo(lastX, h);
+      ctx.lineTo(firstX, h);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+    }
+  }
+
+  // 1. Draw CPU Load Stream
+  const cpuGrad = ctx.createLinearGradient(0, 0, 0, h);
+  cpuGrad.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+  cpuGrad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+  drawSeries(perfHistory.cpu, '#06b6d4', cpuGrad, 100);
+
+  // 2. Draw GPU Temp Stream (Scale 100 °C)
+  const gpuGrad = ctx.createLinearGradient(0, 0, 0, h);
+  gpuGrad.addColorStop(0, 'rgba(139, 92, 246, 0.2)');
+  gpuGrad.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+  drawSeries(perfHistory.gpu, '#8b5cf6', gpuGrad, 100);
+}
+
+// --- STARTUP APPS MANAGER ---
+let startupAppsList = [];
+function setupStartupApps() {
+  const searchInput = document.getElementById('startup-search-input');
+  const refreshBtn = document.getElementById('btn-refresh-startup');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => filterAndRenderStartup(searchInput.value));
+  }
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', loadStartupApps);
+  }
+}
+
+async function loadStartupApps() {
+  const tbody = document.getElementById('startup-tbody');
+  const countLabel = document.getElementById('startup-stats-count');
+  if (tbody && tbody.children.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Scanning Windows Startup registry...</td></tr>';
+  }
+  try {
+    const res = await fetch('/api/startup');
+    if (!res.ok) return;
+    startupAppsList = await res.json();
+    const enabledCount = startupAppsList.filter(a => a.enabled).length;
+    if (countLabel) countLabel.textContent = `Total Startup Apps: ${startupAppsList.length} (${enabledCount} Enabled)`;
+    filterAndRenderStartup('');
+  } catch (e) {
+    console.error('Failed to load startup apps', e);
+  }
+}
+
+function filterAndRenderStartup(query) {
+  const tbody = document.getElementById('startup-tbody');
+  if (!tbody) return;
+  const q = query.toLowerCase();
+  const filtered = startupAppsList.filter(a => a.name.toLowerCase().includes(q) || a.command.toLowerCase().includes(q));
+
+  tbody.innerHTML = filtered.map(a => `
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td><span class="tag-pill">${a.source}</span></td>
+      <td><code style="font-size: 0.75rem; color: var(--text-muted);">${a.command.length > 55 ? a.command.slice(0, 55) + '...' : a.command}</code></td>
+      <td><span class="impact-pill ${a.impact.toLowerCase()}">${a.impact} Impact</span></td>
+      <td style="text-align: right;">
+        <label class="toggle-switch">
+          <input type="checkbox" ${a.enabled ? 'checked' : ''} onchange="toggleStartup('${encodeURIComponent(a.name)}', '${a.source}', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.toggleStartup = async function(encodedName, source, enable) {
+  const name = decodeURIComponent(encodedName);
+  try {
+    await fetch('/api/startup/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, source, enable })
+    });
+    const item = startupAppsList.find(a => a.name === name && a.source === source);
+    if (item) item.enabled = enable;
+    const countLabel = document.getElementById('startup-stats-count');
+    const enabledCount = startupAppsList.filter(a => a.enabled).length;
+    if (countLabel) countLabel.textContent = `Total Startup Apps: ${startupAppsList.length} (${enabledCount} Enabled)`;
+  } catch (e) {
+    alert('Failed to toggle startup app: ' + e.message);
+  }
+};
+
+// --- STORAGE JUNK CLEANER ---
+let cleanerData = null;
+function setupJunkCleaner() {
+  const scanBtn = document.getElementById('btn-scan-cleaner');
+  const cleanBtn = document.getElementById('btn-run-cleaner');
+  if (scanBtn) scanBtn.addEventListener('click', scanJunkCleaner);
+  if (cleanBtn) cleanBtn.addEventListener('click', runJunkCleaner);
+}
+
+async function scanJunkCleaner() {
+  const statusBadge = document.getElementById('cleaner-status-badge');
+  if (statusBadge) {
+    statusBadge.textContent = 'Scanning...';
+    statusBadge.className = 'cleaner-num';
+  }
+  try {
+    const res = await fetch('/api/cleaner/scan');
+    if (!res.ok) return;
+    cleanerData = await res.json();
+    renderCleanerResults(cleanerData);
+  } catch (e) {
+    console.error('Cleaner scan error', e);
+  }
+}
+
+function renderCleanerResults(data) {
+  document.getElementById('cleaner-total-size').textContent = `${data.total_mb >= 1024 ? (data.total_mb / 1024).toFixed(2) + ' GB' : data.total_mb.toFixed(1) + ' MB'}`;
+  document.getElementById('cleaner-total-files').textContent = data.total_files.toLocaleString();
+  const statusBadge = document.getElementById('cleaner-status-badge');
+  if (statusBadge) {
+    statusBadge.textContent = data.total_bytes > 0 ? 'Junk Found' : 'Clean & Optimized';
+    statusBadge.className = data.total_bytes > 0 ? 'cleaner-num' : 'cleaner-num green';
+  }
+
+  const grid = document.getElementById('cleaner-categories-grid');
+  if (!grid) return;
+  grid.innerHTML = data.categories.map(c => `
+    <div class="clean-item">
+      <div class="clean-item-left">
+        <input type="checkbox" class="cleaner-cat-cb" value="${c.id}" ${c.bytes > 0 ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--accent-cyan); cursor: pointer;">
+        <div>
+          <span class="clean-title">${c.name}</span>
+          <p class="clean-path">${c.path}</p>
+        </div>
+      </div>
+      <div class="clean-meta">
+        <span class="clean-size">${c.size_mb >= 1024 ? (c.size_mb / 1024).toFixed(1) + ' GB' : c.size_mb + ' MB'}</span>
+        <p class="clean-files">${c.files} files</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function runJunkCleaner() {
+  const checked = Array.from(document.querySelectorAll('.cleaner-cat-cb:checked')).map(cb => cb.value);
+  if (checked.length === 0) {
+    alert('Please select at least one junk category to clean.');
+    return;
+  }
+  if (!confirm(`Are you sure you want to safely clean ${checked.length} selected junk categories?`)) return;
+
+  const cleanBtn = document.getElementById('btn-run-cleaner');
+  cleanBtn.disabled = true;
+  cleanBtn.textContent = 'Cleaning...';
+
+  try {
+    const res = await fetch('/api/cleaner/clean', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categories: checked })
+    });
+    const result = await res.json();
+    alert(`✓ Successfully reclaimed ${result.reclaimed_mb} MB (${result.reclaimed_files} temporary files removed)!`);
+    await scanJunkCleaner();
+  } catch (e) {
+    alert('Cleaning error: ' + e.message);
+  } finally {
+    cleanBtn.disabled = false;
+    cleanBtn.textContent = 'Clean Selected Items';
+  }
+}
+
+// --- WI-FI & WIRELESS INTELLIGENCE ---
+async function loadWifiDiagnostics() {
+  try {
+    const res = await fetch('/api/wifi');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderWifiData(data);
+  } catch (e) {
+    console.error('Failed to load wifi diagnostics', e);
+  }
+}
+
+function renderWifiData(data) {
+  const signalVal = document.getElementById('wifi-signal-val');
+  const rssiVal = document.getElementById('wifi-rssi-val');
+  const stateTag = document.getElementById('wifi-state-tag');
+  const bandTag = document.getElementById('wifi-band-tag');
+
+  if (signalVal) signalVal.textContent = data.connected ? `${data.signal_percent}%` : 'Offline';
+  if (rssiVal) rssiVal.textContent = data.connected ? `${data.rssi_dbm || '--'} dBm RSSI (${data.ssid})` : 'No wireless connection';
+  if (stateTag) {
+    stateTag.textContent = data.connected ? 'Connected / Active' : 'Disconnected';
+    stateTag.className = data.connected ? 'tag-pill green' : 'tag-pill';
+  }
+  if (bandTag) bandTag.textContent = `${data.band || '--'} • ${data.radio_type || '--'}`;
+
+  const specTable = document.getElementById('wifi-spec-table');
+  if (specTable) {
+    specTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Connected SSID</span><span class="spec-value cyan">${data.ssid || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Access Point BSSID</span><span class="spec-value">${data.bssid || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Radio Band & Frequency</span><span class="spec-value purple">${data.band || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Operating Channel</span><span class="spec-value">${data.channel || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Wi-Fi Protocol / Standard</span><span class="spec-value">${data.radio_type || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Link Speeds</span><span class="spec-value green">↓ ${data.rx_rate_mbps || 0} Mbps / ↑ ${data.tx_rate_mbps || 0} Mbps</span></div>
+    `;
+  }
+
+  const hwTable = document.getElementById('wifi-hw-table');
+  if (hwTable) {
+    hwTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Adapter Hardware</span><span class="spec-value">${data.adapter || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Interface Status</span><span class="spec-value green">${data.state || '--'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Hardware Generation</span><span class="spec-value purple">Wi-Fi 7 (320MHz Ultra Band)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Carrier Latency (Gateway)</span><span class="spec-value cyan">&lt; 2 ms</span></div>
+    `;
+  }
+}
+
+// --- POWER ENGINE & PLANS ---
+async function loadPowerPlans() {
+  try {
+    const res = await fetch('/api/power/plans');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderPowerPlans(data);
+  } catch (e) {
+    console.error('Failed to load power plans', e);
+  }
+
+  if (hardwareData && hardwareData.battery) {
+    const bat = hardwareData.battery;
+    const health = ((bat.remaining_mwh / bat.design_capacity_mwh) * 100).toFixed(1);
+    document.getElementById('pwr-health-readout').textContent = `${health}%`;
+    document.getElementById('pwr-voltage-readout').textContent = `${(bat.voltage_mv / 1000).toFixed(2)} V`;
+    document.getElementById('pwr-capacity-readout').textContent = `${(bat.remaining_mwh / 1000).toFixed(1)} Wh`;
+  }
+}
+
+function renderPowerPlans(data) {
+  const grid = document.getElementById('power-plans-grid');
+  if (!grid) return;
+  grid.innerHTML = data.plans.map(p => `
+    <div class="power-plan-card ${p.active ? 'active' : ''}">
+      <div>
+        <h4 class="power-plan-title">${p.name}</h4>
+        <p class="power-plan-desc">${p.active ? 'Currently active Windows power & CPU scheduling scheme' : 'Click activate to switch Windows power profile'}</p>
+      </div>
+      <button class="btn ${p.active ? 'btn-secondary' : 'btn-primary'}" ${p.active ? 'disabled' : ''} onclick="switchPowerPlan('${p.guid}')">
+        ${p.active ? '✓ Active Plan' : 'Activate Scheme'}
+      </button>
+    </div>
+  `).join('');
+}
+
+window.switchPowerPlan = async function(guid) {
+  try {
+    await fetch('/api/power/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guid })
+    });
+    await loadPowerPlans();
+  } catch (e) {
+    alert('Failed to set power plan: ' + e.message);
+  }
+};
+
 

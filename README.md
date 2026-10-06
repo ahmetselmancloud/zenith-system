@@ -99,18 +99,33 @@ A 137 KB native C++ binary compiled with `-O3` optimizations. It directly utiliz
   * **Disable Feedback & Telemetry:** Stops background SIUF prompts and diagnostic reporting.
   * **Game Mode Scheduling Priority:** Enforces Windows GPU scheduling and thread priority during full-screen games and render workloads.
 
-### 6. Multi-Drive Lightning File Finder
+### 6. Windows Startup Apps & Autoruns Manager
+* Enumerates user (`HKCU`) and machine (`HKLM`) startup items across registry keys in <10ms.
+* Categorizes boot impact (High, Medium, Low) and allows one-click enabling/disabling via Windows `StartupApproved` binary flags without deleting original path keys.
+
+### 7. Safe System Junk & Storage Cleaner
+* Instantly calculates reclaimable disk storage across Windows Temp (`%TEMP%`, `C:\Windows\Temp`), Crash Dumps, Windows Update delivery caches, and Prefetch files.
+* Safe file removal mechanism that skips locked or in-use files, reclaiming gigabytes of disk space in seconds.
+
+### 8. Wireless & Wi-Fi Intelligence
+* Real-time network adapter telemetry detecting Wi-Fi 7 (320MHz Ultra Band) hardware, active SSID, BSSID, carrier signal strength (% and RSSI dBm), radio standards (802.11ac/ax/be), operating channel, and dynamic Tx/Rx link speeds.
+
+### 9. Windows Power Scheme Manager
+* On-the-fly toggling between Windows Power Schemes ("High Performance", "Balanced", etc.) and CPU scheduling profiles.
+* Detailed battery telemetry displaying factory health integrity, live bus voltage, and remaining energy.
+
+### 10. Multi-Drive Lightning File Finder
 * Instant multi-drive file search traversing user workspaces and desktop locations without waiting for indexing.
 * One-click direct explorer integration (`explorer.exe /select, ...`).
 
-### 7. Diagnostics Lab
+### 11. Diagnostics Lab
 * **Socket Ping & Bandwidth Check:** Ad-free, lightweight latency and throughput inspector.
 * **Display & Dead Pixel Wizard:** Fullscreen cycling test across pure RGB and monochrome test patterns.
 * **Keyboard & N-Key Rollover Tester:** Identifies ghosting, latency, and simultaneous key rollover.
 * **Mouse Double-Click & Sensor Chatter Inspector:** Detects failing hardware micro-switches and bounce times (< 80ms warning).
 * **15-Second Safe CPU Stress Benchmark:** Multithreaded mathematical burn test evaluating cooling response and thermal throttling.
 
-### 8. Compact Mini Mode & Spec Export
+### 12. Compact Mini Mode & Spec Export
 * **Mini Mode:** Toggles a streamlined compact floating layout for secondary monitors or in-game reference.
 * **Copy Specs Report:** Generates a formatted Markdown hardware spec report in one click for Reddit, Discord, or support forums.
 

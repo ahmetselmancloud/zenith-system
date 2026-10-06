@@ -908,3 +908,201 @@ body.compact-mode .top-header .subtitle {
 body.compact-mode .grid-5 {
   grid-template-columns: repeat(3, 1fr);
 }
+
+/* LIVE PERFORMANCE CANVAS CHART */
+.chart-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: rgba(4, 7, 14, 0.6);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot.cyan {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.legend-dot.purple {
+  background: var(--accent-purple);
+  box-shadow: 0 0 8px var(--accent-purple);
+}
+
+/* CLEANER HERO BANNER */
+.cleaner-hero-banner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.cleaner-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cleaner-num {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-cyan);
+}
+
+.cleaner-sub {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cleaner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.clean-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.clean-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-color-glow);
+}
+
+.clean-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clean-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.clean-path {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.clean-meta {
+  text-align: right;
+}
+
+.clean-size {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.clean-files {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* WI-FI HERO GAUGE */
+.wifi-hero-gauge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 0;
+}
+
+.wifi-signal-readout {
+  text-align: center;
+}
+
+/* POWER PLANS GRID */
+.power-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.power-plan-card {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.power-plan-card.active {
+  border-color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.05);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.power-plan-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.power-plan-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* STARTUP APPS */
+.impact-pill {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.impact-pill.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+}
+
+.impact-pill.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-amber);
+}
+
+.impact-pill.low {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+}
