@@ -1,6 +1,6 @@
 {
-  "timestamp": 1791285250.176204,
-  "scan_time_str": "2026-10-06 14:14:10",
+  "timestamp": 1791320691.5925076,
+  "scan_time_str": "2026-10-07 00:04:51",
   "overall_score": 100,
   "mil_status": "OFF",
   "summary": "Tüm donanım hatları, PCIe veri yolları ve USB/Ses portları kusursuz durumda.",
@@ -12,7 +12,7 @@
       "status": "clean",
       "score": 100,
       "details": "WHEA donanım logları temiz. İşlemci çekirdeği voltaj düşmesi (MCE) veya L1/L2 önbellek bozulması saptanmadı.",
-      "events_count": 1
+      "events_count": 0
     },
     "port_stability": {
       "title": "Kablo & Soket Kararlılığı (Flapping)",

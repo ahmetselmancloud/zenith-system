@@ -1,10 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "profiles": [
     {
       "id": "gamer",
-      "name": "🎮 Oyuncu Kurulumu",
-      "description": "Oyun launcher'ları, performans araçları, ses/görüntü ve DirectX bağımlılıkları",
+      "name": "🎮 Gamer Battlestation",
+      "description": "Game launchers, performance overlays, voice comms, and essential DirectX runtimes",
       "packages": [
         "Valve.Steam",
         "EpicGames.EpicGamesLauncher",
@@ -19,8 +19,8 @@
     },
     {
       "id": "developer",
-      "name": "💻 Geliştirici Kurulumu",
-      "description": "IDE, terminal, container, Python, Node.js ve geliştirme araçları",
+      "name": "💻 Full-Stack Developer",
+      "description": "IDE, terminals, container platforms, Python, Node.js, and core engineering CLI tools",
       "packages": [
         "Microsoft.VisualStudioCode",
         "Git.Git",
@@ -35,8 +35,8 @@
     },
     {
       "id": "privacy",
-      "name": "🔒 Gizlilik Öncelikli",
-      "description": "İzleme yapmayan tarayıcılar, parola yöneticisi, VPN ve şifreleme",
+      "name": "🔒 Privacy & Security Pro",
+      "description": "Zero-telemetry hardened browsers, password vault, encrypted containers, and VPN",
       "packages": [
         "Brave.Brave",
         "Mullvad.MullvadBrowser",
@@ -50,8 +50,8 @@
     },
     {
       "id": "creator",
-      "name": "🎬 İçerik Üretici",
-      "description": "Video montaj, ses kayıt, ekran yakalama ve 3D tasarım",
+      "name": "🎬 Content Creator Studio",
+      "description": "High-fidelity video editing, live streaming, screen capture, 3D and audio mastering",
       "packages": [
         "OBSProject.OBSStudio",
         "Audacity.Audacity",
@@ -65,14 +65,29 @@
       ]
     },
     {
+      "id": "it_admin",
+      "name": "🛠️ SysAdmin & IT Professional",
+      "description": "Multi-protocol remote access, virtualization, diagnostics, and network analysis",
+      "packages": [
+        "AnyDesk.AnyDesk",
+        "mRemoteNG.mRemoteNG",
+        "Termius.Termius",
+        "Oracle.VirtualBox",
+        "WiresharkFoundation.Wireshark",
+        "FreeFileSync.FreeFileSync",
+        "AOMEI.PartitionAssistant.Standard"
+      ]
+    },
+    {
       "id": "minimal",
-      "name": "🧹 Minimal Sistem",
-      "description": "Sadece olmazsa olmaz temel araçlar (arşivleyici, arama ve metin editörü)",
+      "name": "🧹 Minimalist Power User",
+      "description": "Ultra-light essentials: instant desktop search, modern shell, archiver, and PowerToys",
       "packages": [
         "7zip.7zip",
         "Microsoft.PowerToys",
         "voidtools.Everything",
         "Notepad++.Notepad++",
+        "Files-Files.Files",
         "Microsoft.VCRedist.2015+.x64"
       ]
     }

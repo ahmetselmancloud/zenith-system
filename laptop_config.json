@@ -3,7 +3,7 @@
   "f12_action": "fan_boost",
   "custom_cmd": "",
   "fan_profile": "balanced",
-  "rgb_color": "#ffffff",
+  "rgb_color": "#ef4444",
   "rgb_effect": "static",
   "rgb_brightness": 100,
   "rgb_speed": 5,
