@@ -1,0 +1,62 @@
+name: Zenith System CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  validate-and-test:
+    name: Backend & Catalog Integrity
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install psutil
+
+      - name: Validate Catalog JSON Integrity
+        run: |
+          python -c "import json, os; json.load(open('catalog/packages.json', 'r', encoding='utf-8')); json.load(open('catalog/profiles.json', 'r', encoding='utf-8')); print('Catalog JSON valid!')"
+
+      - name: Python Syntax Compilation Check
+        run: |
+          python -m py_compile src/zenith_server.py
+          python -m py_compile src/catalog_loader.py
+          python -m py_compile src/system_troubleshooter.py
+          python -m py_compile src/rule_engine.py
+          python -m py_compile src/obd_diagnostics.py
+          python -m py_compile src/laptop_provider.py
+          python -m py_compile src/report_generator.py
+          echo "All Python backend modules compiled successfully."
+
+      - name: Run Core Feature Verification
+        run: |
+          python scripts/test_all_features.py
+
+  build-native:
+    name: Native C++ Probe & Launcher Build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Compile zenith_probe.exe
+        run: |
+          g++ -O3 -std=c++17 src/zenith_probe.cpp -o bin/zenith_probe.exe -lsetupapi
+          dir bin/zenith_probe.exe
+
+      - name: Compile Zenith.exe Launcher
+        run: |
+          windres src/zenith.rc -O coff -o src/zenith.res
+          g++ -O3 -mwindows src/zenith_launcher.cpp src/zenith.res -o Zenith.exe -lws2_32
+          dir Zenith.exe

@@ -27,6 +27,7 @@ try:
     )
     from obd_diagnostics import get_obd_report, run_full_hardware_checkup, clear_dtc_codes
     from laptop_provider import laptop_hal
+    from report_generator import generate_system_html_report
 except ImportError:
     from src.catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
     from src.system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
@@ -37,16 +38,42 @@ except ImportError:
     )
     from src.obd_diagnostics import get_obd_report, run_full_hardware_checkup, clear_dtc_codes
     from src.laptop_provider import laptop_hal
+    from src.report_generator import generate_system_html_report
 
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
 # 100ms Registry Installed Apps Engine, WinGet Package Installer, and Safe CPU Benchmark.
 
 PORT = 49152
+ZENITH_VERSION = "v1.0.0"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB_DIR = os.path.join(BASE_DIR, "web")
 CACHE_FILE = os.path.join(BASE_DIR, "hardware_cache.json")
 PROBE_EXE = os.path.join(BASE_DIR, "bin", "zenith_probe.exe")
+
+def check_for_updates():
+    try:
+        url = "https://api.github.com/repos/ahmetselmancloud/zenith-system/releases/latest"
+        req = urllib.request.Request(url, headers={"User-Agent": "Zenith-System-Updater"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            latest = data.get("tag_name", "").strip()
+            html_url = data.get("html_url", "")
+            notes = data.get("body", "")
+            is_new = bool(latest and latest != ZENITH_VERSION)
+            return {
+                "update_available": is_new,
+                "current_version": ZENITH_VERSION,
+                "latest_version": latest,
+                "release_url": html_url,
+                "release_notes": notes
+            }
+    except Exception as e:
+        return {
+            "update_available": False,
+            "current_version": ZENITH_VERSION,
+            "error": str(e)
+        }
 
 CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
@@ -817,6 +844,71 @@ def get_wifi_diagnostics():
                     break
     return data
 
+def get_active_network_connections(limit=150):
+    try:
+        proc_names = {}
+        for p in psutil.process_iter(['name']):
+            try:
+                proc_names[p.pid] = p.info['name']
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        conns = []
+        for c in psutil.net_connections(kind='inet'):
+            if c.status == 'NONE' and not c.raddr:
+                continue
+            p_name = proc_names.get(c.pid, "System" if c.pid == 4 else "Bilinmiyor")
+            conns.append({
+                "pid": c.pid or 0,
+                "name": p_name,
+                "proto": "TCP" if c.type == socket.SOCK_STREAM else "UDP",
+                "local": f"{c.laddr.ip}:{c.laddr.port}" if c.laddr else "--",
+                "remote": f"{c.raddr.ip}:{c.raddr.port}" if c.raddr else "--",
+                "status": c.status or "CONNECTED"
+            })
+            if len(conns) >= limit:
+                break
+        return {"connections": conns, "count": len(conns)}
+    except Exception as e:
+        return {"connections": [], "count": 0, "error": str(e)}
+
+def get_prometheus_metrics():
+    try:
+        mem = psutil.virtual_memory()
+        cpu_pct = psutil.cpu_percent(interval=None)
+        gpu = get_gpu_live()
+        lines = [
+            "# HELP zenith_cpu_usage_percent CPU utilization percentage",
+            "# TYPE zenith_cpu_usage_percent gauge",
+            f"zenith_cpu_usage_percent {cpu_pct:.1f}",
+            "",
+            "# HELP zenith_memory_used_bytes System memory used in bytes",
+            "# TYPE zenith_memory_used_bytes gauge",
+            f"zenith_memory_used_bytes {mem.used}",
+            "",
+            "# HELP zenith_memory_total_bytes System memory total in bytes",
+            "# TYPE zenith_memory_total_bytes gauge",
+            f"zenith_memory_total_bytes {mem.total}",
+        ]
+        if gpu.get("available"):
+            lines.extend([
+                "",
+                "# HELP zenith_gpu_temp_celsius GPU temperature in degrees Celsius",
+                "# TYPE zenith_gpu_temp_celsius gauge",
+                f"zenith_gpu_temp_celsius {gpu.get('temp_c', 0)}",
+                "",
+                "# HELP zenith_gpu_usage_percent GPU utilization percentage",
+                "# TYPE zenith_gpu_usage_percent gauge",
+                f"zenith_gpu_usage_percent {gpu.get('util_gpu_percent', 0)}",
+                "",
+                "# HELP zenith_gpu_power_watts GPU power consumption in Watts",
+                "# TYPE zenith_gpu_power_watts gauge",
+                f"zenith_gpu_power_watts {gpu.get('power_w', 0)}",
+            ])
+        lines.append("")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"# Error collecting metrics: {e}\n"
+
 def get_power_plans():
     try:
         out = silent_check_output(["powercfg", "/list"], text=True, stderr=subprocess.DEVNULL, timeout=2)
@@ -1191,10 +1283,39 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/api/heartbeat":
             self.send_json({"status": "alive", "time": time.time()})
+        elif path == "/api/updates/check":
+            self.send_json(check_for_updates())
         elif path == "/api/hardware":
             self.send_json(get_hardware_info())
         elif path == "/api/live":
             self.send_json(get_live_metrics())
+        elif path == "/api/live/stream":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                while not _shutdown_event.is_set():
+                    metrics = get_live_metrics()
+                    msg = f"data: {json.dumps(metrics)}\n\n"
+                    self.wfile.write(msg.encode("utf-8"))
+                    self.wfile.flush()
+                    record_heartbeat()
+                    time.sleep(1.0)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            return
+        elif path == "/metrics":
+            prom_txt = get_prometheus_metrics()
+            raw_bytes = prom_txt.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+            self.send_header("Content-Length", str(len(raw_bytes)))
+            self.end_headers()
+            self.wfile.write(raw_bytes)
+            return
         elif path == "/api/processes":
             self.send_json(get_processes())
         elif path == "/api/apps":
@@ -1214,6 +1335,8 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(scan_junk_cleaner())
         elif path == "/api/wifi":
             self.send_json(get_wifi_diagnostics())
+        elif path == "/api/network/connections":
+            self.send_json(get_active_network_connections())
         elif path == "/api/power/plans":
             self.send_json(get_power_plans())
         elif path == "/api/storage":
@@ -1261,6 +1384,23 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(get_engine_data())
         elif path == "/api/obd/report":
             self.send_json(get_obd_report())
+        elif path == "/api/report/html":
+            try:
+                hw = get_hardware_info()
+                obd = get_obd_report()
+                gpu = get_gpu_live()
+                html_doc = generate_system_html_report(hw, obd, gpu)
+                raw_bytes = html_doc.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(raw_bytes)))
+                if "download" in query:
+                    self.send_header("Content-Disposition", 'attachment; filename="Zenith_System_Report.html"')
+                self.end_headers()
+                self.wfile.write(raw_bytes)
+            except Exception as e:
+                self.send_json({"error": str(e)}, status=500)
+            return
         elif path == "/hardware_cache.json":
             if os.path.exists(CACHE_FILE):
                 try:

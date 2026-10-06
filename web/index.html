@@ -23,7 +23,7 @@
         </div>
         <div class="brand-text">
           <h1>ZENITH</h1>
-          <span class="badge">SYSTEM V1.0</span>
+          <span class="badge" id="app-version-badge" title="Tıkla: Güncellemeleri Denetle" style="cursor: pointer;">SYSTEM V1.0</span>
         </div>
       </div>
 
@@ -132,6 +132,12 @@
           </div>
           <button class="btn btn-secondary" id="btn-copy-report" style="padding: 6px 12px; font-size: 0.8rem;">
             📋 Copy Specs
+          </button>
+          <button class="btn btn-secondary" id="btn-export-html-report" style="padding: 6px 12px; font-size: 0.8rem;" title="Detaylı Sistem & OBD Sağlık Raporunu Görüntüle / PDF Olarak Kaydet">
+            📄 Rapor İndir
+          </button>
+          <button class="btn btn-secondary" id="btn-theme-toggle" style="padding: 6px 12px; font-size: 0.8rem;" title="Tema Değiştir (Midnight / AMOLED / Cyber)">
+            🎨 <span id="theme-label">Midnight</span>
           </button>
           <button class="btn btn-secondary" id="btn-toggle-compact" style="padding: 6px 12px; font-size: 0.8rem;" title="Toggle compact layout">
             ⛶ Mini Mode
@@ -916,6 +922,7 @@
             <div style="display: flex; gap: 10px; align-items: center;">
               <button class="btn btn-secondary" id="btn-obd-clear-dtc" title="Arıza kodlarını sıfırla">Arıza Kodlarını Sıfırla</button>
               <button class="btn btn-secondary" id="btn-obd-export" title="Ekspertiz raporunu panoya kopyala">📋 Rapor Al</button>
+              <button class="btn btn-secondary" id="btn-obd-download-html" title="OBD Ekspertiz Raporunu HTML/PDF Olarak İndir">📄 HTML Rapor</button>
               <button class="btn btn-primary" id="btn-obd-scan-now">⚡ Derin Check-Up Başlat</button>
             </div>
           </div>
@@ -1088,6 +1095,36 @@
             <div class="spec-table" id="wifi-hw-table">
               <!-- Injected by JS -->
             </div>
+          </div>
+        </div>
+
+        <!-- ACTIVE TCP/UDP CONNECTIONS & SOCKET MONITOR -->
+        <div class="card glass-card mt-4">
+          <div class="card-header">
+            <div>
+              <span class="card-title">🌐 Canlı Ağ Bağlantıları & Port İzleyici</span>
+              <p class="subtitle">Hangi uygulamanın hangi uzak IP ve porta bağlı olduğunu anlık olarak listeler</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="net-conn-filter" placeholder="Uygulama veya IP ara..." style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; width: 220px;">
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-net-conns">🔄 Yenile</button>
+            </div>
+          </div>
+          <div style="max-height: 380px; overflow-y: auto; margin-top: 15px;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                  <th style="padding: 10px 12px;">Uygulama (PID)</th>
+                  <th style="padding: 10px 12px;">Protokol</th>
+                  <th style="padding: 10px 12px;">Yerel Port</th>
+                  <th style="padding: 10px 12px;">Hedef IP & Port</th>
+                  <th style="padding: 10px 12px;">Durum</th>
+                </tr>
+              </thead>
+              <tbody id="net-conns-tbody">
+                <tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">Bağlantılar yükleniyor...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

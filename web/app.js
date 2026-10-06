@@ -14,6 +14,7 @@ const perfHistory = { cpu: [], gpu: [] };
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupCompactMode();
+  setupThemeEngine();
   setupReportCopy();
   setupDashboardCardModals();
   loadHardwareIdentity();
@@ -31,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTroubleshooter();
   setupAutomationRules();
   setupHardwareObd();
+  setupNetworkConnectionsMonitor();
+  setupUpdateChecker();
   setupHeartbeatAndExitHandler();
 });
 
@@ -57,7 +60,7 @@ function setupNavigation() {
       if (targetId === 'tab-startup') loadStartupApps();
       if (targetId === 'tab-cleaner') scanJunkCleaner();
       if (targetId === 'tab-storage') loadStorageDiagnostics();
-      if (targetId === 'tab-network') loadWifiDiagnostics();
+      if (targetId === 'tab-network') { loadWifiDiagnostics(); loadActiveNetworkConnections(); }
       if (targetId === 'tab-power') loadPowerPlans();
       if (targetId === 'tab-laptop') loadLaptopStudioConfig();
       if (targetId === 'tab-troubleshoot') loadTroubleshootTools();
@@ -276,9 +279,32 @@ function renderHardwareStatic(data) {
   if (jsonViewer) jsonViewer.textContent = JSON.stringify(data, null, 2);
 }
 
-// --- LIVE METRICS STREAM (1000ms POLLING) ---
+// --- LIVE METRICS STREAM (REAL-TIME SSE + POLLING FALLBACK) ---
 function startLiveMetrics() {
   fetchLiveMetrics();
+
+  if (window.EventSource) {
+    try {
+      const sse = new EventSource('/api/live/stream');
+      sse.onmessage = (event) => {
+        try {
+          const stats = JSON.parse(event.data);
+          lastLiveMetrics = stats;
+          renderLiveStats(stats);
+        } catch (e) {}
+      };
+      sse.onerror = () => {
+        sse.close();
+        if (!liveInterval) {
+          liveInterval = setInterval(fetchLiveMetrics, 1000);
+        }
+      };
+      return;
+    } catch (e) {
+      console.warn('SSE fallback triggered:', e);
+    }
+  }
+
   liveInterval = setInterval(fetchLiveMetrics, 1000);
 }
 
@@ -739,6 +765,80 @@ function setupCompactMode() {
       btn.textContent = isCompact ? '⛶ Normal View' : '⛶ Mini Mode';
     });
   }
+}
+
+// --- THEME ENGINE ---
+function setupThemeEngine() {
+  const themes = [
+    { id: 'default', label: 'Midnight', cls: '' },
+    { id: 'amoled', label: 'AMOLED Pure', cls: 'theme-amoled' },
+    { id: 'cyber', label: 'Cyber Neon', cls: 'theme-cyber' }
+  ];
+
+  let currentIdx = 0;
+  const saved = localStorage.getItem('zenith-theme');
+  if (saved) {
+    const found = themes.findIndex(t => t.id === saved);
+    if (found !== -1) currentIdx = found;
+  }
+
+  const applyTheme = (idx) => {
+    const t = themes[idx];
+    document.body.classList.remove('theme-amoled', 'theme-cyber');
+    if (t.cls) document.body.classList.add(t.cls);
+    const labelEl = document.getElementById('theme-label');
+    if (labelEl) labelEl.textContent = t.label;
+    localStorage.setItem('zenith-theme', t.id);
+  };
+
+  applyTheme(currentIdx);
+
+  const toggleBtn = document.getElementById('btn-theme-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      currentIdx = (currentIdx + 1) % themes.length;
+      applyTheme(currentIdx);
+    });
+  }
+}
+
+// --- AUTO-UPDATE CHECKER ---
+function setupUpdateChecker() {
+  const badge = document.getElementById('app-version-badge');
+  if (!badge) return;
+
+  const runCheck = async (isManual = false) => {
+    try {
+      if (isManual) badge.textContent = 'Denetleniyor...';
+      const res = await fetch('/api/updates/check');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.update_available) {
+        badge.textContent = `⚡ GÜNCELLE (${data.latest_version})`;
+        badge.style.background = 'rgba(16, 185, 129, 0.2)';
+        badge.style.color = 'var(--accent-green)';
+        badge.style.border = '1px solid var(--accent-green)';
+        badge.style.animation = 'pulse-border 1.5s infinite';
+        badge.title = `Yeni sürüm mevcut (${data.latest_version})! İndirmek için tıklayın.`;
+        badge.onclick = () => {
+          if (data.release_url) window.open(data.release_url, '_blank');
+        };
+      } else {
+        if (isManual) {
+          badge.textContent = 'SYSTEM V1.0';
+          alert('Zenith System güncel! En son sürümü kullanıyorsunuz.');
+        }
+      }
+    } catch (e) {
+      if (isManual) {
+        badge.textContent = 'SYSTEM V1.0';
+        alert('Güncelleme kontrolü başarısız: ' + e.message);
+      }
+    }
+  };
+
+  badge.addEventListener('click', () => runCheck(true));
+  setTimeout(() => runCheck(false), 2500);
 }
 
 // --- WINGET APP STORE & CATALOG MANAGER ---
@@ -1256,6 +1356,13 @@ function setupReportCopy() {
       }, 2000);
     });
   });
+
+  const exportHtmlBtn = document.getElementById('btn-export-html-report');
+  if (exportHtmlBtn) {
+    exportHtmlBtn.addEventListener('click', () => {
+      window.open('/api/report/html', '_blank');
+    });
+  }
 }
 
 // --- CPU STRESS TEST ---
@@ -1575,6 +1682,87 @@ function renderWifiData(data) {
       <div class="hardware-spec-row"><span class="spec-name">Hardware Generation</span><span class="spec-value purple">Wi-Fi 7 (320MHz Ultra Band)</span></div>
       <div class="hardware-spec-row"><span class="spec-name">Carrier Latency (Gateway)</span><span class="spec-value cyan">&lt; 2 ms</span></div>
     `;
+  }
+}
+
+// --- ACTIVE NETWORK CONNECTIONS MONITOR ---
+let allNetworkConnections = [];
+
+async function loadActiveNetworkConnections() {
+  const tbody = document.getElementById('net-conns-tbody');
+  try {
+    const res = await fetch('/api/network/connections');
+    if (!res.ok) return;
+    const data = await res.json();
+    allNetworkConnections = data.connections || [];
+    renderNetworkConnections();
+  } catch (e) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--accent-red);">Ağ bağlantıları alınamadı: ${escapeHtml(e.message)}</td></tr>`;
+    }
+  }
+}
+
+function renderNetworkConnections() {
+  const tbody = document.getElementById('net-conns-tbody');
+  const filterInput = document.getElementById('net-conn-filter');
+  if (!tbody) return;
+
+  const q = (filterInput?.value || '').toLowerCase().trim();
+  const filtered = q
+    ? allNetworkConnections.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        String(c.pid).includes(q) ||
+        c.remote.toLowerCase().includes(q) ||
+        c.local.toLowerCase().includes(q)
+      )
+    : allNetworkConnections;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">Eşleşen aktif bağlantı bulunamadı.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const isListen = c.status === 'LISTEN';
+    const isEstablished = c.status === 'ESTABLISHED';
+    const badgeColor = isEstablished ? 'var(--accent-green)' : (isListen ? 'var(--accent-cyan)' : 'var(--text-muted)');
+    return `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-family: 'JetBrains Mono', monospace;">
+        <td style="padding: 8px 12px; font-weight: 600; color: #fff;">
+          ${escapeHtml(c.name)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(${c.pid})</span>
+        </td>
+        <td style="padding: 8px 12px; color: var(--accent-cyan); font-weight: 700;">${c.proto}</td>
+        <td style="padding: 8px 12px; color: var(--text-muted);">${escapeHtml(c.local)}</td>
+        <td style="padding: 8px 12px; color: #fff;">${escapeHtml(c.remote)}</td>
+        <td style="padding: 8px 12px;">
+          <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: ${badgeColor}; background: rgba(255,255,255,0.05);">
+            ${escapeHtml(c.status)}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function setupNetworkConnectionsMonitor() {
+  const refreshBtn = document.getElementById('btn-refresh-net-conns');
+  const filterInput = document.getElementById('net-conn-filter');
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = '⏳';
+      await loadActiveNetworkConnections();
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '🔄 Yenile';
+    });
+  }
+
+  if (filterInput) {
+    filterInput.addEventListener('input', () => {
+      renderNetworkConnections();
+    });
   }
 }
 
@@ -3135,6 +3323,13 @@ async function setupHardwareObd() {
         exportBtn.textContent = '✓ Kopyalandı!';
         setTimeout(() => { exportBtn.textContent = '📋 Rapor Al'; }, 2000);
       });
+    });
+  }
+
+  const obdHtmlBtn = document.getElementById('btn-obd-download-html');
+  if (obdHtmlBtn) {
+    obdHtmlBtn.addEventListener('click', () => {
+      window.open('/api/report/html', '_blank');
     });
   }
 }

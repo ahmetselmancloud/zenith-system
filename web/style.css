@@ -22,6 +22,25 @@
   --sidebar-w: 250px;
 }
 
+/* THEMES */
+body.theme-amoled {
+  --bg-dark: #000000;
+  --bg-card: rgba(10, 10, 10, 0.95);
+  --bg-card-hover: rgba(22, 22, 22, 1);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-glow: rgba(0, 240, 255, 0.25);
+}
+
+body.theme-cyber {
+  --bg-dark: #070314;
+  --bg-card: rgba(20, 12, 36, 0.88);
+  --bg-card-hover: rgba(35, 20, 60, 0.95);
+  --border-color: rgba(192, 132, 252, 0.18);
+  --border-color-glow: rgba(192, 132, 252, 0.45);
+  --accent-cyan: #00f0ff;
+  --accent-purple: #d946ef;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
