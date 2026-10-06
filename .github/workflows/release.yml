@@ -1,0 +1,59 @@
+name: Release Zenith System
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Publish Standalone Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup MSYS2 MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-binutils
+
+      - name: Compile Native C++ Probe
+        shell: msys2 {0}
+        run: |
+          g++ -O3 -std=c++17 src/zenith_probe.cpp -o bin/zenith_probe.exe -lsetupapi
+
+      - name: Compile Native Win32 Launcher
+        shell: msys2 {0}
+        run: |
+          windres src/zenith.rc -O coff -o src/zenith.res
+          g++ -O3 -mwindows src/zenith_launcher.cpp src/zenith.res -o Zenith.exe -lws2_32
+
+      - name: Build Distribution Archive (build_dist.ps1)
+        run: |
+          powershell -ExecutionPolicy Bypass -File build_dist.ps1
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Zenith System ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/Zenith-System-v1.0.0-win-x64.zip
+            Zenith.exe
+            install.ps1

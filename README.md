@@ -18,7 +18,7 @@
 Install and launch Zenith System on any Windows 10/11 machine with a single command:
 
 ```powershell
-irm https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/master/install.ps1 | iex
 ```
 
 > **What this command does:**

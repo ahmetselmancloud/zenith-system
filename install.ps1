@@ -20,8 +20,8 @@ Write-Host ""
 $InstallDir = Join-Path $env:LOCALAPPDATA "ZenithSystem"
 $RepoOwner = "ahmetselmancloud"
 $RepoName = "zenith-system"
-$ZipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/main.zip"
-$TempZip = Join-Path $env:TEMP "zenith-system-main.zip"
+$ZipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/master.zip"
+$TempZip = Join-Path $env:TEMP "zenith-system.zip"
 
 # 1. Check Python installation
 Write-Host "[1/5] Checking Python runtime..." -ForegroundColor Yellow
@@ -88,7 +88,10 @@ if ($CurrentScriptDir -and (Test-Path (Join-Path $CurrentScriptDir "start_zenith
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
         Invoke-WebRequest -Uri $ZipUrl -OutFile $TempZip -UseBasicParsing
         Expand-Archive -Path $TempZip -DestinationPath $env:TEMP -Force
-        $ExtractedFolder = Join-Path $env:TEMP "zenith-system-main"
+        $ExtractedFolder = Join-Path $env:TEMP "zenith-system-master"
+        if (-not (Test-Path $ExtractedFolder)) {
+            $ExtractedFolder = Join-Path $env:TEMP "zenith-system-main"
+        }
         Copy-Item -Path "$ExtractedFolder\*" -Destination $InstallDir -Recurse -Force
         Remove-Item -Path $TempZip -Force -ErrorAction SilentlyContinue
         Remove-Item -Path $ExtractedFolder -Recurse -Force -ErrorAction SilentlyContinue
