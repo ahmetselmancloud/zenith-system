@@ -1,0 +1,191 @@
+{
+  "enabled": true,
+  "rules": [
+    {
+      "id": "preset_game_mode",
+      "name": "🎮 Akıllı Oyun & 3D Modu",
+      "description": "Oyun veya 3D yazılım açıldığında Fanı Turbo'ya al, Yüksek Performans güç planına geç, Win tuşunu kilitle. Oyundan çıkınca eski ayarlara dön.",
+      "icon": "🎮",
+      "enabled": true,
+      "is_preset": true,
+      "auto_revert": true,
+      "cooldown_sec": 5,
+      "trigger": {
+        "type": "foreground_game",
+        "process_list": [
+          "Cyberpunk2077.exe",
+          "cs2.exe",
+          "csgo.exe",
+          "Valorant.exe",
+          "VALORANT-Win64-Shipping.exe",
+          "FortniteClient-Win64-Shipping.exe",
+          "GTA5.exe",
+          "RDR2.exe",
+          "Overwatch.exe",
+          "League of Legends.exe",
+          "LeagueClient.exe",
+          "Dota2.exe",
+          "APEX.exe",
+          "r5apex.exe",
+          "RainbowSix.exe",
+          "ModernWarfare.exe",
+          "cod.exe",
+          "Minecraft.Windows.exe",
+          "javaw.exe",
+          "Starfield.exe",
+          "Witcher3.exe",
+          "BaldursGate3.exe",
+          "bg3.exe",
+          "EldenRing.exe",
+          "Destiny2.exe",
+          "RustClient.exe",
+          "PUBG.exe",
+          "TslGame.exe",
+          "GenshinImpact.exe",
+          "HonkaiStarRail.exe",
+          "RocketLeague.exe",
+          "ForzaHorizon5.exe",
+          "HellDivers2.exe",
+          "FlightSimulator.exe",
+          "NeedForSpeed.exe",
+          "FIFA23.exe",
+          "FC24.exe",
+          "FC25.exe",
+          "Blender.exe",
+          "3dsmax.exe",
+          "maya.exe",
+          "Cinema 4D.exe",
+          "UnrealEditor.exe",
+          "Unity.exe"
+        ]
+      },
+      "actions": [
+        {
+          "type": "set_fan_profile",
+          "param": "turbo",
+          "label": "Fan Profilini 'Turbo' Yap"
+        },
+        {
+          "type": "set_power_plan",
+          "param": "high_performance",
+          "label": "Yüksek Performans Güç Planına Geç"
+        },
+        {
+          "type": "set_winkey",
+          "param": "locked",
+          "label": "Windows Tuşunu Kilitle"
+        }
+      ],
+      "state": {
+        "is_active": false,
+        "last_evaluated": 0,
+        "saved_state": {}
+      }
+    },
+    {
+      "id": "preset_thermal_guard",
+      "name": "🔥 Termal Koruma & Aşırı Isınma Kalkanı",
+      "description": "GPU sıcaklığı 82°C'yi aşarsa anında Cooler Boost / Turbo fana geç ve masaüstü uyarısı gönder. 74°C altına inince normale dön.",
+      "icon": "🔥",
+      "enabled": true,
+      "is_preset": true,
+      "auto_revert": true,
+      "cooldown_sec": 15,
+      "trigger": {
+        "type": "gpu_temp_gte",
+        "threshold": 82,
+        "hysteresis": 74
+      },
+      "actions": [
+        {
+          "type": "set_fan_profile",
+          "param": "cooler_boost",
+          "label": "Fanı 'Cooler Boost' (Maksimum) Moduna Al"
+        },
+        {
+          "type": "notify",
+          "param": "⚠️ GPU 82°C sıcaklığı aştı! Fanlar maksimum soğutmaya alındı.",
+          "label": "Masaüstü Uyarısı Gönder"
+        }
+      ],
+      "state": {
+        "is_active": false,
+        "last_evaluated": 0,
+        "saved_state": {}
+      }
+    },
+    {
+      "id": "preset_battery_saver",
+      "name": "🔋 Akıllı Pil Koruyucu",
+      "description": "Laptop prizden çıkarıldığında ve pil <%25 seviyesine indiğinde Güç Tasarrufu planına geç ve fanı Sessiz moda al.",
+      "icon": "🔋",
+      "enabled": true,
+      "is_preset": true,
+      "auto_revert": true,
+      "cooldown_sec": 30,
+      "trigger": {
+        "type": "battery_lte",
+        "threshold": 25,
+        "require_discharging": true
+      },
+      "actions": [
+        {
+          "type": "set_power_plan",
+          "param": "power_saver",
+          "label": "Güç Tasarrufu Planına Geç"
+        },
+        {
+          "type": "set_fan_profile",
+          "param": "silent",
+          "label": "Fan Profilini 'Sessiz' Yap"
+        },
+        {
+          "type": "notify",
+          "param": "🔋 Pil kritik seviyede (%25). Güç Tasarrufu modu devreye alındı.",
+          "label": "Bildirim Gönder"
+        }
+      ],
+      "state": {
+        "is_active": false,
+        "last_evaluated": 0,
+        "saved_state": {}
+      }
+    },
+    {
+      "id": "preset_night_quiet",
+      "name": "🌙 Gece Sessiz Modu",
+      "description": "Gece 23:00 ile 08:00 saatleri arasında fan profilini Sessiz moda alarak sessiz bir çalışma ortamı sağlar.",
+      "icon": "🌙",
+      "enabled": true,
+      "is_preset": true,
+      "auto_revert": true,
+      "cooldown_sec": 60,
+      "trigger": {
+        "type": "time_range",
+        "start_hour": 23,
+        "end_hour": 8
+      },
+      "actions": [
+        {
+          "type": "set_fan_profile",
+          "param": "silent",
+          "label": "Fan Profilini 'Sessiz' Yap"
+        }
+      ],
+      "state": {
+        "is_active": false,
+        "last_evaluated": 0,
+        "saved_state": {}
+      }
+    }
+  ],
+  "history": [
+    {
+      "timestamp": 1791284505.3389366,
+      "time_str": "14:01:45",
+      "rule_name": "🌙 Gece Sessiz Modu",
+      "event_type": "trigger",
+      "message": "Kural aktif edildi."
+    }
+  ]
+}

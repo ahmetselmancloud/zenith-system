@@ -18,9 +18,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
     from system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
+    from rule_engine import (
+        register_callbacks, start_engine_thread, get_engine_data,
+        set_engine_master_state, toggle_rule_state, save_custom_rule,
+        delete_rule, clear_history_log, evaluate_all_rules
+    )
 except ImportError:
     from src.catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
     from src.system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
+    from src.rule_engine import (
+        register_callbacks, start_engine_thread, get_engine_data,
+        set_engine_master_state, toggle_rule_state, save_custom_rule,
+        delete_rule, clear_history_log, evaluate_all_rules
+    )
 
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
@@ -817,6 +827,11 @@ def trigger_f12_action(action, custom_cmd):
         if custom_cmd:
             subprocess.Popen(custom_cmd, shell=True)
 
+def set_winkey_state(locked):
+    with laptop_lock:
+        laptop_state["winkey_locked"] = bool(locked)
+    save_laptop_config()
+
 _c_hook_proc = None
 
 def keyboard_hook_thread():
@@ -1102,6 +1117,8 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(get_troubleshoot_tools())
         elif path == "/api/troubleshoot/status":
             self.send_json(get_troubleshooter_status())
+        elif path == "/api/rules":
+            self.send_json(get_engine_data())
         elif path == "/hardware_cache.json":
             if os.path.exists(CACHE_FILE):
                 try:
@@ -1194,6 +1211,25 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json(execute_fix(tool_id))
             else:
                 self.send_json({"error": "No tool_id specified"}, status=400)
+
+        elif self.path == "/api/rules/toggle_master":
+            self.send_json(set_engine_master_state(data.get("enabled", True)))
+
+        elif self.path == "/api/rules/toggle_rule":
+            self.send_json(toggle_rule_state(data.get("rule_id", ""), data.get("enabled", True)))
+
+        elif self.path == "/api/rules/save":
+            self.send_json(save_custom_rule(data.get("rule", {})))
+
+        elif self.path == "/api/rules/delete":
+            self.send_json(delete_rule(data.get("rule_id", "")))
+
+        elif self.path == "/api/rules/clear_history":
+            self.send_json(clear_history_log())
+
+        elif self.path == "/api/rules/evaluate":
+            evaluate_all_rules()
+            self.send_json({"success": True})
 
         elif self.path == "/api/stress/start":
             duration = int(data.get("duration", 15))
@@ -1299,6 +1335,16 @@ def start_server():
         t_proc.start()
         t_hook = threading.Thread(target=keyboard_hook_thread, daemon=True)
         t_hook.start()
+        # Register rule engine callbacks and start intelligent automation thread
+        register_callbacks(
+            get_gpu_live=get_gpu_live,
+            get_laptop_state=lambda: dict(laptop_state),
+            set_fan_profile=apply_fan_profile,
+            set_winkey=set_winkey_state,
+            get_power_plans=get_power_plans,
+            set_power_plan=set_power_plan
+        )
+        start_engine_thread()
         with socketserver.TCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
             print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
             httpd.serve_forever()

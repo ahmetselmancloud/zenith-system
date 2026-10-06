@@ -2165,4 +2165,186 @@ body.compact-mode .grid-5 {
   color: #d1d5db;
 }
 
+/* ==========================================================================
+   AUTOMATION RULES ENGINE STYLES (FAZ 3)
+   ========================================================================== */
+.rule-item-card {
+  background: rgba(22, 27, 34, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.rule-item-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.rule-item-card.is-firing {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.05);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+}
+
+.rule-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-icon-box {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rule-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.rule-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.rule-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.rule-logic-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+}
+
+.rule-flow-pill {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rule-flow-pill.trigger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.rule-flow-pill.action {
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.rule-flow-arrow {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.rule-item-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+/* Modern Toggle Switch */
+.zenith-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.zenith-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.zenith-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: 0.3s;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.zenith-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.zenith-toggle input:checked + .zenith-toggle-slider {
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.zenith-toggle input:checked + .zenith-toggle-slider:before {
+  transform: translateX(20px);
+  background-color: #000;
+}
+
+.rule-delete-btn {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.rule-delete-btn:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+
 

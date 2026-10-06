@@ -87,6 +87,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path></svg>
           <span>Laptop & Keys</span>
         </button>
+        <button class="nav-item" data-tab="tab-rules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          <span>Automation Rules</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -829,6 +833,72 @@
         </div>
       </section>
 
+      <!-- TAB: AUTOMATION RULES & EVENT ENGINE (FAZ 3) -->
+      <section class="tab-pane" id="tab-rules">
+        <!-- HEADER & ENGINE STATUS CARD -->
+        <div class="card glass-card mb-4">
+          <div class="tweak-header" style="margin-bottom: 16px;">
+            <div>
+              <h3>⚡ Zenith Intelligent Automation Rules Engine</h3>
+              <p class="subtitle">Sisteminizi arka planda izleyen akıllı IF/THEN kuralları. Oyun açılınca fanı ve güç planını yönetir, aşırı ısınmayı önler ve pil tasarrufu sağlar.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn btn-secondary" id="btn-eval-rules-now" title="Kuralları hemen kontrol et">⚡ Şimdi Değerlendir</button>
+              <button class="btn btn-secondary" id="btn-open-create-rule" style="background: rgba(0, 240, 255, 0.1); border-color: var(--accent-cyan); color: var(--accent-cyan);">+ Yeni Kural Ekle</button>
+              <button class="btn btn-primary" id="btn-toggle-engine-master">
+                <span id="engine-master-status-text">⚡ Motor: Aktif</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div class="quick-chip">
+              <span class="chip-label">Aktif Kurallar</span>
+              <span class="chip-val" id="rules-active-count">0 / 0</span>
+            </div>
+            <div class="quick-chip">
+              <span class="chip-label">Çalışma Döngüsü</span>
+              <span class="chip-val" style="color: var(--accent-cyan);">2.5s Polling (Zero Overhead)</span>
+            </div>
+            <div class="quick-chip">
+              <span class="chip-label">Otomatik Geri Dönüş</span>
+              <span class="chip-val" style="color: var(--accent-green);">✓ Auto-Revert Etkin</span>
+            </div>
+            <div class="quick-chip">
+              <span class="chip-label">Son Olay</span>
+              <span class="chip-val" id="rules-last-event-chip" style="color: var(--text-dim);">Bekleniyor...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RULES LIST CONTAINER -->
+        <div class="card glass-card mb-4">
+          <div class="tweak-header" style="margin-bottom: 16px;">
+            <div>
+              <h4 style="margin: 0; font-size: 1.05rem; color: #fff;">Sistem Otomasyon Kuralları</h4>
+              <span class="subtitle">Aktif kurallar arka planda otomatik olarak tetiklenir ve koşul sona erdiğinde sistemi eski durumuna döndürür</span>
+            </div>
+          </div>
+          <div id="rules-list-container">
+            <div style="padding: 30px; text-align: center; color: var(--text-dim);">Kurallar yükleniyor...</div>
+          </div>
+        </div>
+
+        <!-- AUTOMATION ACTIVITY & EVENT LOG -->
+        <div class="card glass-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.1rem;">📜</span>
+              <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">Otomasyon Etkinlik & Tetikleme Günlüğü</h4>
+            </div>
+            <button class="btn btn-secondary" id="btn-clear-rules-history" style="padding: 4px 10px; font-size: 0.75rem;">Günlüğü Temizle</button>
+          </div>
+          <div class="winget-terminal" id="rules-history-log" style="max-height: 180px; min-height: 90px;">
+            <div class="terminal-line text-dim">Henüz bir kural tetiklenmedi...</div>
+          </div>
+        </div>
+      </section>
+
       <!-- TAB 9: STARTUP APPS (AUTORUNS MANAGER) -->
       <section class="tab-pane" id="tab-startup">
         <div class="card glass-card">
@@ -1241,6 +1311,70 @@
       </div>
       <div class="modal-body" id="modal-body">
         <!-- Injected dynamically by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE CUSTOM AUTOMATION RULE -->
+  <div id="modal-create-rule" class="modal-overlay hidden">
+    <div class="modal-container" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon">⚡</div>
+          <div>
+            <h3>Yeni Otomasyon Kuralı Oluştur</h3>
+            <span class="subtitle">Sistem koşullarına göre otomatik aksiyon tetikleyen kural tanımlayın</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="modal-create-rule-close" title="Kapat (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Kural Adı:</label>
+            <input type="text" id="new-rule-name" placeholder="Örn: Render Modu (Blender)" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Tetikleyici Koşul (IF):</label>
+            <select id="new-rule-trigger-type" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
+              <option value="gpu_temp_gte">GPU Sıcaklığı Belirli Eşiği Aşınca (°C)</option>
+              <option value="cpu_load_gte">CPU Yükü Belirli Eşiği Aşınca (%)</option>
+              <option value="battery_lte">Pil Seviyesi Belirli Eşiğin Altına İnince (%)</option>
+              <option value="foreground_game">Belirli Bir Uygulama / .exe Aktif Olunca</option>
+              <option value="time_range">Gece Saat Aralığı (Örn: 23:00 - 08:00)</option>
+            </select>
+          </div>
+          <div id="new-rule-trigger-param-container">
+            <label id="new-rule-param-label" style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Eşik Değeri (°C):</label>
+            <input type="text" id="new-rule-trigger-val" value="80" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Yürütülecek Eylem (THEN):</label>
+            <select id="new-rule-action-type" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
+              <option value="set_fan_profile">Fan Profilini Değiştir</option>
+              <option value="set_power_plan">Güç Planını Değiştir</option>
+              <option value="set_winkey">Windows Tuşunu Kilitle</option>
+              <option value="notify">Masaüstü Bildirimi Gönder</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Eylem Parametresi:</label>
+            <select id="new-rule-action-val" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
+              <option value="turbo">Fan: Turbo (Yüksek Performans)</option>
+              <option value="cooler_boost">Fan: Cooler Boost (Maksimum %100)</option>
+              <option value="silent">Fan: Sessiz (Düşük Gürültü)</option>
+              <option value="auto">Fan: Otomatik (Dengeli)</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <input type="checkbox" id="new-rule-auto-revert" checked style="accent-color: var(--accent-cyan); width: 16px; height: 16px;">
+            <label for="new-rule-auto-revert" style="font-size: 0.82rem; color: var(--text-muted); cursor: pointer;">Koşul sona erdiğinde sistemi otomatik olarak önceki ayarlara geri döndür (Auto-Revert)</label>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+            <button class="btn btn-secondary" id="btn-cancel-create-rule">İptal</button>
+            <button class="btn btn-primary" id="btn-submit-create-rule">Kuralı Kaydet</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCpuStressTest();
   setupLaptopStudio();
   setupTroubleshooter();
+  setupAutomationRules();
 });
 
 // --- NAVIGATION ---
@@ -58,6 +59,7 @@ function setupNavigation() {
       if (targetId === 'tab-power') loadPowerPlans();
       if (targetId === 'tab-laptop') loadLaptopStudioConfig();
       if (targetId === 'tab-troubleshoot') loadTroubleshootTools();
+      if (targetId === 'tab-rules') loadAutomationRules();
     });
   });
 }
@@ -2685,3 +2687,364 @@ function startTroubleshootPolling(activeToolId = null) {
     }
   }, 1000);
 }
+
+// ==========================================================================
+// INTELLIGENT AUTOMATION RULES ENGINE (FAZ 3)
+// ==========================================================================
+let rulesEngineData = { enabled: true, rules: [], history: [] };
+let rulesPollInterval = null;
+
+async function setupAutomationRules() {
+  const masterBtn = document.getElementById('btn-toggle-engine-master');
+  const evalNowBtn = document.getElementById('btn-eval-rules-now');
+  const clearHistBtn = document.getElementById('btn-clear-rules-history');
+  const openModalBtn = document.getElementById('btn-open-create-rule');
+  const closeModalBtn = document.getElementById('modal-create-rule-close');
+  const cancelModalBtn = document.getElementById('btn-cancel-create-rule');
+  const submitRuleBtn = document.getElementById('btn-submit-create-rule');
+  const modalOverlay = document.getElementById('modal-create-rule');
+  const triggerTypeSelect = document.getElementById('new-rule-trigger-type');
+  const actionTypeSelect = document.getElementById('new-rule-action-type');
+
+  if (masterBtn) {
+    masterBtn.addEventListener('click', toggleEngineMaster);
+  }
+
+  if (evalNowBtn) {
+    evalNowBtn.addEventListener('click', async () => {
+      evalNowBtn.textContent = '⏳ Kontrol Ediliyor...';
+      try {
+        await fetch('/api/rules/evaluate', { method: 'POST' });
+        await loadAutomationRules();
+      } finally {
+        setTimeout(() => { evalNowBtn.textContent = '⚡ Şimdi Değerlendir'; }, 1000);
+      }
+    });
+  }
+
+  if (clearHistBtn) {
+    clearHistBtn.addEventListener('click', async () => {
+      try {
+        await fetch('/api/rules/clear_history', { method: 'POST' });
+        await loadAutomationRules();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+
+  // Modal openers and closers
+  if (openModalBtn && modalOverlay) {
+    openModalBtn.addEventListener('click', () => {
+      modalOverlay.classList.remove('hidden');
+    });
+  }
+
+  const closeModal = () => {
+    if (modalOverlay) modalOverlay.classList.add('hidden');
+  };
+
+  if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+  if (cancelModalBtn) cancelModalBtn.addEventListener('click', closeModal);
+
+  // Dynamic Trigger Options
+  if (triggerTypeSelect) {
+    triggerTypeSelect.addEventListener('change', () => {
+      const val = triggerTypeSelect.value;
+      const label = document.getElementById('new-rule-param-label');
+      const input = document.getElementById('new-rule-trigger-val');
+      if (!label || !input) return;
+
+      if (val === 'gpu_temp_gte') {
+        label.textContent = 'Eşik Değeri (°C):';
+        input.value = '80';
+        input.placeholder = '80';
+      } else if (val === 'cpu_load_gte') {
+        label.textContent = 'CPU Yük Eşiği (%):';
+        input.value = '85';
+        input.placeholder = '85';
+      } else if (val === 'battery_lte') {
+        label.textContent = 'Pil Seviye Eşiği (%):';
+        input.value = '25';
+        input.placeholder = '25';
+      } else if (val === 'foreground_game') {
+        label.textContent = 'Hedef Uygulama Exe Adı:';
+        input.value = 'Cyberpunk2077.exe';
+        input.placeholder = 'Ornek.exe veya virgülle ayrılmış liste';
+      } else if (val === 'time_range') {
+        label.textContent = 'Saat Aralığı (Başlangıç-Bitiş):';
+        input.value = '23-08';
+        input.placeholder = '23-08';
+      }
+    });
+  }
+
+  // Dynamic Action Options
+  if (actionTypeSelect) {
+    actionTypeSelect.addEventListener('change', () => {
+      const actVal = actionTypeSelect.value;
+      const actionParamSelect = document.getElementById('new-rule-action-val');
+      if (!actionParamSelect) return;
+
+      if (actVal === 'set_fan_profile') {
+        actionParamSelect.innerHTML = `
+          <option value="turbo">Fan: Turbo (Yüksek Performans)</option>
+          <option value="cooler_boost">Fan: Cooler Boost (Maksimum %100)</option>
+          <option value="silent">Fan: Sessiz (Düşük Gürültü)</option>
+          <option value="auto">Fan: Otomatik (Dengeli)</option>
+        `;
+      } else if (actVal === 'set_power_plan') {
+        actionParamSelect.innerHTML = `
+          <option value="high_performance">Yüksek Performans Planı</option>
+          <option value="balanced">Dengeli Güç Planı</option>
+          <option value="power_saver">Güç Tasarrufu Planı</option>
+        `;
+      } else if (actVal === 'set_winkey') {
+        actionParamSelect.innerHTML = `
+          <option value="locked">Windows Tuşunu Kilitle</option>
+          <option value="unlocked">Windows Tuşunun Kilidini Aç</option>
+        `;
+      } else if (actVal === 'notify') {
+        actionParamSelect.innerHTML = `
+          <option value="custom_msg">Masaüstü Bildirimi Gönder</option>
+        `;
+      }
+    });
+  }
+
+  // Submit New Rule
+  if (submitRuleBtn) {
+    submitRuleBtn.addEventListener('click', async () => {
+      const name = (document.getElementById('new-rule-name')?.value || '').trim();
+      const triggerType = document.getElementById('new-rule-trigger-type')?.value;
+      const triggerVal = (document.getElementById('new-rule-trigger-val')?.value || '').trim();
+      const actionType = document.getElementById('new-rule-action-type')?.value;
+      const actionVal = document.getElementById('new-rule-action-val')?.value;
+      const autoRevert = document.getElementById('new-rule-auto-revert')?.checked ?? true;
+
+      if (!name) {
+        alert('Lütfen kural için bir isim belirleyin.');
+        return;
+      }
+
+      let triggerObj = { type: triggerType };
+      if (triggerType === 'gpu_temp_gte' || triggerType === 'cpu_load_gte' || triggerType === 'battery_lte') {
+        triggerObj.threshold = parseInt(triggerVal) || 80;
+      } else if (triggerType === 'foreground_game') {
+        triggerObj.process_list = triggerVal.split(',').map(s => s.trim()).filter(Boolean);
+      } else if (triggerType === 'time_range') {
+        const parts = triggerVal.split('-');
+        triggerObj.start_hour = parseInt(parts[0]) || 23;
+        triggerObj.end_hour = parseInt(parts[1]) || 8;
+      }
+
+      const ruleObj = {
+        name,
+        description: `Özel Tanımlı Kural (${triggerType} ➔ ${actionType})`,
+        icon: '⚡',
+        enabled: true,
+        auto_revert: autoRevert,
+        cooldown_sec: 10,
+        trigger: triggerObj,
+        actions: [{ type: actionType, param: actionVal, label: `${actionType}: ${actionVal}` }]
+      };
+
+      try {
+        submitRuleBtn.disabled = true;
+        const res = await fetch('/api/rules/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rule: ruleObj })
+        });
+        if (res.ok) {
+          closeModal();
+          document.getElementById('new-rule-name').value = '';
+          await loadAutomationRules();
+        }
+      } catch (e) {
+        alert('Kural kaydedilemedi: ' + e.message);
+      } finally {
+        submitRuleBtn.disabled = false;
+      }
+    });
+  }
+}
+
+async function loadAutomationRules() {
+  const container = document.getElementById('rules-list-container');
+  const activeCountEl = document.getElementById('rules-active-count');
+  const lastEventChip = document.getElementById('rules-last-event-chip');
+  const masterText = document.getElementById('engine-master-status-text');
+  const masterBtn = document.getElementById('btn-toggle-engine-master');
+  const historyLog = document.getElementById('rules-history-log');
+
+  try {
+    const res = await fetch('/api/rules');
+    if (!res.ok) throw new Error('API yanıt vermedi: ' + res.status);
+    rulesEngineData = await res.json();
+
+    // 1. Update Master Toggle Button & Stats
+    const isMasterOn = rulesEngineData.enabled;
+    if (masterText) {
+      masterText.textContent = isMasterOn ? '⚡ Motor: Aktif' : '⏸️ Motor: Duraklatıldı';
+    }
+    if (masterBtn) {
+      if (isMasterOn) {
+        masterBtn.className = 'btn btn-primary';
+      } else {
+        masterBtn.className = 'btn btn-secondary';
+        masterBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+        masterBtn.style.borderColor = 'var(--accent-red)';
+      }
+    }
+
+    if (activeCountEl) {
+      activeCountEl.textContent = `${rulesEngineData.active_rules_count || 0} / ${rulesEngineData.total_rules_count || 0}`;
+    }
+
+    // 2. Render Rules List
+    renderAutomationRules(rulesEngineData.rules || []);
+
+    // 3. Render Activity Logs
+    if (historyLog) {
+      const history = rulesEngineData.history || [];
+      if (history.length === 0) {
+        historyLog.innerHTML = '<div class="terminal-line text-dim">Henüz bir otomasyon olayı tetiklenmedi...</div>';
+      } else {
+        historyLog.innerHTML = history.map(item => {
+          const color = item.event_type === 'trigger' ? 'var(--accent-green)' : (item.event_type === 'revert' ? 'var(--accent-cyan)' : 'var(--accent-red)');
+          const icon = item.event_type === 'trigger' ? '🚀' : '↩️';
+          return `<div class="terminal-line">
+            <span style="color: var(--text-dim);">[${item.time_str || ''}]</span>
+            <strong style="color: ${color}; margin: 0 4px;">${icon} [${escapeTroubleshootHtml(item.rule_name)}]</strong>
+            <span style="color: #d1d5db;">${escapeTroubleshootHtml(item.message)}</span>
+          </div>`;
+        }).join('');
+      }
+
+      if (lastEventChip && history.length > 0) {
+        const latest = history[0];
+        lastEventChip.textContent = `${latest.rule_name} (${latest.time_str})`;
+        lastEventChip.style.color = latest.event_type === 'trigger' ? 'var(--accent-green)' : 'var(--accent-cyan)';
+      }
+    }
+
+    // Start auto polling if on rules tab
+    if (!rulesPollInterval) {
+      rulesPollInterval = setInterval(async () => {
+        const rulesPane = document.getElementById('tab-rules');
+        if (rulesPane && rulesPane.classList.contains('active')) {
+          await loadAutomationRules();
+        }
+      }, 3500);
+    }
+  } catch (e) {
+    console.error('Error loading automation rules:', e);
+    if (container) {
+      container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--accent-red);">Kurallar yüklenemedi: ${escapeTroubleshootHtml(e.message)}</div>`;
+    }
+  }
+}
+
+function renderAutomationRules(rules) {
+  const container = document.getElementById('rules-list-container');
+  if (!container) return;
+
+  if (rules.length === 0) {
+    container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim);">Tanımlı kural bulunmuyor.</div>';
+    return;
+  }
+
+  container.innerHTML = rules.map(rule => {
+    const isFiring = rule.state && rule.state.is_active;
+    const triggerLabel = formatRuleTriggerText(rule.trigger);
+    const actionsLabel = (rule.actions || []).map(a => a.label || a.type).join(' • ');
+
+    return `
+      <div class="rule-item-card ${isFiring ? 'is-firing' : ''}" id="rule-card-${rule.id}">
+        <div class="rule-item-left">
+          <div class="rule-icon-box">${rule.icon || '⚡'}</div>
+          <div class="rule-details">
+            <div class="rule-header-row">
+              <span class="rule-title">${escapeTroubleshootHtml(rule.name)}</span>
+              ${isFiring ? '<span class="repair-status-pill running">🔥 Tetiklendi / Aktif</span>' : (rule.enabled ? '<span class="repair-status-pill success">İzlemede</span>' : '<span class="repair-status-pill idle">Devre Dışı</span>')}
+              ${rule.is_preset ? '<span class="tag-pill blue" style="font-size: 0.65rem;">Ön Tanımlı</span>' : '<span class="tag-pill purple" style="font-size: 0.65rem;">Özel Kural</span>'}
+            </div>
+            <div class="rule-desc">${escapeTroubleshootHtml(rule.description || '')}</div>
+            <div class="rule-logic-flow">
+              <span class="rule-flow-pill trigger">IF: ${escapeTroubleshootHtml(triggerLabel)}</span>
+              <span class="rule-flow-arrow">➔</span>
+              <span class="rule-flow-pill action">THEN: ${escapeTroubleshootHtml(actionsLabel)}</span>
+              ${rule.auto_revert ? '<span style="font-size: 0.7rem; color: var(--text-dim); margin-left: 6px;">(Auto-Revert ✓)</span>' : ''}
+            </div>
+          </div>
+        </div>
+        <div class="rule-item-right">
+          <label class="zenith-toggle" title="${rule.enabled ? 'Kuralı Kapat' : 'Kuralı Aç'}">
+            <input type="checkbox" ${rule.enabled ? 'checked' : ''} onchange="toggleRuleState('${rule.id}', this.checked)">
+            <span class="zenith-toggle-slider"></span>
+          </label>
+          ${!rule.is_preset ? `
+            <button class="rule-delete-btn" onclick="deleteCustomRule('${rule.id}')" title="Kuralı Sil">Sil</button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatRuleTriggerText(trigger) {
+  if (!trigger) return 'Koşul Yok';
+  const t = trigger.type;
+  if (t === 'foreground_game') {
+    const procs = trigger.process_list || [];
+    return procs.length > 3 ? `Oyun / 3D Uygulama (${procs.length} Yazılım)` : procs.join(', ');
+  }
+  if (t === 'gpu_temp_gte') return `GPU ≥ ${trigger.threshold}°C (Soğuma: ${trigger.hysteresis || trigger.threshold - 6}°C)`;
+  if (t === 'cpu_load_gte') return `CPU Yükü ≥ %${trigger.threshold}`;
+  if (t === 'battery_lte') return `Pil ≤ %${trigger.threshold} (${trigger.require_discharging ? 'Prizden Çıkarılınca' : ''})`;
+  if (t === 'time_range') return `Saat ${trigger.start_hour}:00 - ${trigger.end_hour}:00`;
+  return t;
+}
+
+window.toggleRuleState = async function(ruleId, enabled) {
+  try {
+    await fetch('/api/rules/toggle_rule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rule_id: ruleId, enabled: enabled })
+    });
+    await loadAutomationRules();
+  } catch (e) {
+    console.error('Error toggling rule:', e);
+  }
+};
+
+window.toggleEngineMaster = async function() {
+  const current = rulesEngineData.enabled;
+  try {
+    await fetch('/api/rules/toggle_master', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: !current })
+    });
+    await loadAutomationRules();
+  } catch (e) {
+    console.error('Error toggling master engine:', e);
+  }
+};
+
+window.deleteCustomRule = async function(ruleId) {
+  if (!confirm('Bu kuralı silmek istediğinize emin misiniz?')) return;
+  try {
+    await fetch('/api/rules/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rule_id: ruleId })
+    });
+    await loadAutomationRules();
+  } catch (e) {
+    console.error('Error deleting rule:', e);
+  }
+};
+
