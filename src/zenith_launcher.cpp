@@ -50,6 +50,25 @@ bool fileExists(const std::wstring& path) {
     return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
+bool runProcessSafe(const std::wstring& cmd, const std::wstring& workDir = L"", DWORD flags = 0, WORD showCmd = SW_SHOWNORMAL, DWORD waitMs = 0) {
+    std::vector<wchar_t> cmdBuf(cmd.begin(), cmd.end());
+    cmdBuf.push_back(L'\0');
+    STARTUPINFOW si = { sizeof(si) };
+    PROCESS_INFORMATION pi = { 0 };
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = showCmd;
+    LPCWSTR pDir = workDir.empty() ? NULL : workDir.c_str();
+    if (CreateProcessW(NULL, cmdBuf.data(), NULL, NULL, FALSE, flags, NULL, pDir, &si, &pi)) {
+        if (waitMs > 0) {
+            WaitForSingleObject(pi.hProcess, waitMs);
+        }
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        return true;
+    }
+    return false;
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // Get application directory
     wchar_t exePath[MAX_PATH];
@@ -67,28 +86,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         std::wstring cachePath = appDir + L"\\hardware_cache.json";
         std::wstring probePath = appDir + L"\\bin\\zenith_probe.exe";
         if (!fileExists(cachePath) && fileExists(probePath)) {
-            STARTUPINFOW si = { sizeof(si) };
-            PROCESS_INFORMATION pi = { 0 };
-            si.dwFlags = STARTF_USESHOWWINDOW;
-            si.wShowWindow = SW_HIDE;
-            if (CreateProcessW(NULL, const_cast<wchar_t*>(probePath.c_str()), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, appDir.c_str(), &si, &pi)) {
-                WaitForSingleObject(pi.hProcess, 3000);
-                CloseHandle(pi.hProcess);
-                CloseHandle(pi.hThread);
-            }
+            runProcessSafe(probePath, appDir, CREATE_NO_WINDOW, SW_HIDE, 3000);
         }
 
-        // Start python server in background
+        // Start python server in background (with py fallback)
         std::wstring serverCmd = L"python src\\zenith_server.py";
-        STARTUPINFOW si = { sizeof(si) };
-        PROCESS_INFORMATION pi = { 0 };
-        si.dwFlags = STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_HIDE;
-        if (CreateProcessW(NULL, const_cast<wchar_t*>(serverCmd.c_str()), NULL, NULL, FALSE, CREATE_NO_WINDOW | DETACHED_PROCESS, NULL, appDir.c_str(), &si, &pi)) {
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
-            Sleep(400);
+        if (!runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW | DETACHED_PROCESS, SW_HIDE)) {
+            serverCmd = L"py src\\zenith_server.py";
+            runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW | DETACHED_PROCESS, SW_HIDE);
         }
+        Sleep(400);
     }
 
     // Locate preferred Chromium browser
@@ -119,20 +126,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::wstring appUrl = L"http://127.0.0.1:49152";
     std::wstring windowSize = L"1240,820";
 
-    if (lpCmdLine && (strstr(lpCmdLine, "--hud") || strstr(lpCmdLine, "-hud") || strstr(lpCmdLine, "/hud"))) {
+    // Case-insensitive command line argument check
+    std::string cmdLower = lpCmdLine ? lpCmdLine : "";
+    for (char& c : cmdLower) c = (char)tolower((unsigned char)c);
+    if (cmdLower.find("--hud") != std::string::npos || 
+        cmdLower.find("-hud") != std::string::npos || 
+        cmdLower.find("/hud") != std::string::npos) {
         appUrl = L"http://127.0.0.1:49152/hud.html";
         windowSize = L"340,145";
     }
 
     if (!chosenBrowser.empty()) {
         std::wstring fullCmd = L"\"" + chosenBrowser + L"\" --app=\"" + appUrl + L"\" --window-size=" + windowSize;
-        STARTUPINFOW si = { sizeof(si) };
-        PROCESS_INFORMATION pi = { 0 };
-        si.dwFlags = STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_SHOWNORMAL;
-        if (CreateProcessW(NULL, const_cast<wchar_t*>(fullCmd.c_str()), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
+        if (runProcessSafe(fullCmd, L"", 0, SW_SHOWNORMAL)) {
             return 0;
         }
     }

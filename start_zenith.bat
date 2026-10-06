@@ -2,6 +2,25 @@
 title Zenith System
 cd /d "%~dp0"
 
+:: Verify Python is installed and accessible
+where python >nul 2>nul
+if errorlevel 1 (
+    where py >nul 2>nul
+    if errorlevel 1 (
+        echo ==========================================================
+        echo [HATA] Python bulunamadi!
+        echo Zenith System icin Python 3.10+ gereklidir.
+        echo Kurulum icin terminalden su komutu calistirabilirsiniz:
+        echo   winget install Python.Python.3.12
+        echo ==========================================================
+        pause
+        exit /b 1
+    )
+    set "PYTHON_CMD=py"
+) else (
+    set "PYTHON_CMD=python"
+)
+
 :: Check if server is already running on port 49152
 netstat -ano | findstr 127.0.0.1:49152 | findstr LISTENING > nul
 if errorlevel 1 (
@@ -12,7 +31,7 @@ if errorlevel 1 (
         )
     )
     :: Start python backend server silently
-    start /b "" python "src\zenith_server.py"
+    start /b "" %PYTHON_CMD% "src\zenith_server.py"
     :: Brief delay for port bind
     powershell -nop -c "Start-Sleep -Milliseconds 400"
 )

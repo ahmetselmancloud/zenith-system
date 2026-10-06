@@ -1431,15 +1431,27 @@ body.compact-mode .grid-5 {
 .sortable-th {
   cursor: pointer;
   user-select: none;
-  transition: color 0.15s;
+  transition: color 0.15s, background-color 0.15s;
+  white-space: nowrap;
 }
 
 .sortable-th:hover {
   color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.04);
 }
 
 .sortable-th.active {
   color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+  vertical-align: middle;
+  min-width: 10px;
 }
 
 .user-badge {

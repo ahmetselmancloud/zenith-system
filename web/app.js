@@ -61,16 +61,28 @@ function setupNavigation() {
 }
 
 // --- HARDWARE IDENTITY PROBE ---
-async function loadHardwareIdentity() {
+async function loadHardwareIdentity(forceRefresh = false) {
   try {
-    const res = await fetch('/api/hardware');
-    if (!res.ok) throw new Error('API error');
+    const url = forceRefresh ? '/api/hardware/refresh' : '/api/hardware';
+    const method = forceRefresh ? 'POST' : 'GET';
+    const res = await fetch(url, { method });
+    if (!res.ok) throw new Error('API error ' + res.status);
     hardwareData = await res.json();
     renderHardwareStatic(hardwareData);
   } catch (err) {
-    console.warn('Using fallback local cache:', err);
-    // Fallback display if server is starting
-    document.getElementById('cpu-chip-val').textContent = 'Core Ultra 7';
+    console.warn('Hardware fetch error, trying direct cache fallback:', err);
+    try {
+      const fbRes = await fetch('/hardware_cache.json');
+      if (fbRes.ok) {
+        hardwareData = await fbRes.json();
+        renderHardwareStatic(hardwareData);
+        return;
+      }
+    } catch (_) {}
+    const chip = document.getElementById('cpu-chip-val');
+    if (chip && (chip.textContent === '--' || !chip.textContent)) {
+      chip.textContent = 'Hardware Ready';
+    }
   }
 }
 
@@ -1370,9 +1382,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const miniBtn = document.getElementById('btn-toggle-compact');
-  if (miniBtn) {
-    miniBtn.addEventListener('click', () => {
+  const hudBtn = document.getElementById('btn-open-hud');
+  if (hudBtn) {
+    hudBtn.addEventListener('click', () => {
       window.open('/hud.html', 'ZenithHUD', 'width=340,height=145,menubar=no,toolbar=no,location=no,status=no,resizable=no');
     });
   }
@@ -1381,9 +1393,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const refreshHwBtn = document.getElementById('btn-refresh-hw');
   if (refreshHwBtn) {
     refreshHwBtn.addEventListener('click', async () => {
-      refreshHwBtn.textContent = '⏳ Scanning...';
+      refreshHwBtn.textContent = '⏳ Scanning Hardware...';
       try {
-        await loadHardwareIdentity();
+        await loadHardwareIdentity(true);
       } finally {
         refreshHwBtn.textContent = '🔄 Re-Scan Hardware';
       }

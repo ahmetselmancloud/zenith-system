@@ -47,20 +47,55 @@ stress_state = {
     "status": "idle" # "idle", "running", "completed"
 }
 
-def get_hardware_info():
+def get_hardware_info(force_refresh=False):
+    max_cache_age_sec = 7 * 86400  # 7 days expiry
+    if not force_refresh and os.path.exists(CACHE_FILE):
+        try:
+            mtime = os.path.getmtime(CACHE_FILE)
+            if (time.time() - mtime) < max_cache_age_sec:
+                with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception:
+            pass
+
+    # Run native probe or deep probe script
+    data = {}
+    probe_ps1 = os.path.join(BASE_DIR, "src", "probe_deep.ps1")
+    if os.path.exists(probe_ps1):
+        try:
+            p = subprocess.run(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", probe_ps1],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5
+            )
+            if p.returncode == 0 and p.stdout.strip():
+                data = json.loads(p.stdout.strip())
+        except Exception as e:
+            print("Deep probe error:", e)
+
+    if os.path.exists(PROBE_EXE):
+        try:
+            p2 = subprocess.run([PROBE_EXE], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3)
+            if p2.returncode == 0 and p2.stdout.strip():
+                native = json.loads(p2.stdout.strip())
+                data.update({k: v for k, v in native.items() if k not in data or not data[k]})
+        except Exception as e:
+            print("Native probe error:", e)
+
+    if data:
+        data["last_scanned"] = time.time()
+        try:
+            with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+        return data
+
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             pass
-    if os.path.exists(PROBE_EXE):
-        try:
-            p = subprocess.run([PROBE_EXE], capture_output=True, text=True, timeout=2)
-            if p.returncode == 0:
-                return json.loads(p.stdout)
-        except Exception as e:
-            print("Probe error:", e)
     return {"error": "Probe not available"}
 
 def get_gpu_live():
@@ -140,34 +175,33 @@ def get_installed_apps():
 
     for root, path in keys:
         try:
-            k = winreg.OpenKey(root, path)
-            for i in range(winreg.QueryInfoKey(k)[0]):
-                try:
-                    sub = winreg.EnumKey(k, i)
-                    sk = winreg.OpenKey(k, sub)
-                    def val(name):
-                        try:
-                            return winreg.QueryValueEx(sk, name)[0]
-                        except:
-                            return None
-                    name = val("DisplayName")
-                    if name and name not in seen:
-                        # Filter out basic updates or components without names
-                        seen.add(name)
-                        size_raw = val("EstimatedSize") or 0
-                        apps.append({
-                            "name": name,
-                            "version": val("DisplayVersion") or "",
-                            "publisher": val("Publisher") or "Unknown",
-                            "size_mb": round(size_raw / 1024, 1),
-                            "install_date": val("InstallDate") or "",
-                            "uninstall_string": val("UninstallString") or ""
-                        })
-                    sk.Close()
-                except:
-                    pass
-            k.Close()
-        except:
+            with winreg.OpenKey(root, path) as k:
+                num_subkeys = winreg.QueryInfoKey(k)[0]
+                for i in range(num_subkeys):
+                    try:
+                        sub = winreg.EnumKey(k, i)
+                        with winreg.OpenKey(k, sub) as sk:
+                            def val(name):
+                                try:
+                                    return winreg.QueryValueEx(sk, name)[0]
+                                except Exception:
+                                    return None
+                            name = val("DisplayName")
+                            if name and name not in seen:
+                                # Filter out basic updates or components without names
+                                seen.add(name)
+                                size_raw = val("EstimatedSize") or 0
+                                apps.append({
+                                    "name": name,
+                                    "version": val("DisplayVersion") or "",
+                                    "publisher": val("Publisher") or "Unknown",
+                                    "size_mb": round(size_raw / 1024, 1),
+                                    "install_date": val("InstallDate") or "",
+                                    "uninstall_string": val("UninstallString") or ""
+                                })
+                    except Exception:
+                        pass
+        except Exception:
             pass
 
     apps.sort(key=lambda x: x["name"].lower())
@@ -237,10 +271,20 @@ def update_process_snapshot():
 
     procs.sort(key=lambda x: x['ram_mb'], reverse=True)
 
+    top_procs = procs[:180]
+    # Safely compute real Disk I/O for top active processes so disk_mb is never fake 0.0
+    for p_entry in top_procs[:30]:
+        try:
+            p_obj = psutil.Process(p_entry['pid'])
+            io = p_obj.io_counters()
+            p_entry['disk_mb'] = round((io.read_bytes + io.write_bytes) / (1024 * 1024), 1)
+        except Exception:
+            pass
+
     payload = {
         "total_processes": len(procs),
         "total_threads": total_threads,
-        "processes": procs[:180]
+        "processes": top_procs
     }
 
     with process_cache_lock:
@@ -270,10 +314,12 @@ def search_files(query):
         os.path.join(user_prof, "Desktop"),
         os.path.join(user_prof, "OneDrive", "Desktop"),
         os.path.join(user_prof, "OneDrive", "Masaüstü"),
-        "D:\\Antigravity"
+        os.path.join(user_prof, "Downloads"),
+        os.path.join(user_prof, "Documents"),
+        BASE_DIR
     ]
     for sdir in search_dirs:
-        if not os.path.exists(sdir):
+        if not sdir or not os.path.exists(sdir):
             continue
         for root, _, files in os.walk(sdir):
             for f in files:
@@ -303,7 +349,7 @@ def run_winget_worker(package_ids):
 
         cmd = [
             "winget", "install", "--id", pkg_id, "-e",
-            "--silent", "--accept-package-agreements", "--accept-source-agreements"
+            "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"
         ]
         try:
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -332,15 +378,22 @@ def cpu_stress_worker(duration=15):
         stress_state["max_seconds"] = duration
         stress_state["max_cpu_percent"] = 0.0
 
-    stop_event = threading.Event()
-    def burn():
-        while not stop_event.is_set():
-            # Light compute burn (sqrt math)
-            _ = [x**0.5 for x in range(10000)]
-
-    threads = [threading.Thread(target=burn, daemon=True) for _ in range(os.cpu_count() or 4)]
-    for t in threads:
-        t.start()
+    # True multi-core stress engine that bypasses Python GIL by spawning OS worker processes
+    num_cores = os.cpu_count() or 4
+    burn_code = f"""
+import time, math
+end_t = time.time() + {duration}
+while time.time() < end_t:
+    for x in range(100000):
+        _ = math.sqrt(x)
+"""
+    workers = []
+    for _ in range(num_cores):
+        try:
+            p = subprocess.Popen([sys.executable, "-c", burn_code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            workers.append(p)
+        except Exception:
+            pass
 
     start_t = time.time()
     while time.time() - start_t < duration:
@@ -351,9 +404,12 @@ def cpu_stress_worker(duration=15):
             if cur_cpu > stress_state["max_cpu_percent"]:
                 stress_state["max_cpu_percent"] = cur_cpu
 
-    stop_event.set()
-    for t in threads:
-        t.join(timeout=0.2)
+    # Ensure all stress workers terminate
+    for p in workers:
+        try:
+            p.kill()
+        except Exception:
+            pass
 
     with stress_lock:
         stress_state["active"] = False
@@ -510,29 +566,78 @@ def clean_junk_categories(selected_ids):
 
 def get_wifi_diagnostics():
     try:
-        out = subprocess.check_output(["netsh", "wlan", "show", "interfaces"], text=True, stderr=subprocess.DEVNULL, timeout=2)
+        out = subprocess.check_output(
+            ["netsh", "wlan", "show", "interfaces"],
+            text=True, stderr=subprocess.DEVNULL, timeout=2,
+            encoding='utf-8', errors='replace'
+        )
     except Exception as e:
         return {"connected": False, "error": str(e)}
 
-    data = {"connected": False, "adapter": "Wireless Interface", "signal_percent": 0, "band": "--", "channel": "--", "radio_type": "--", "ssid": "Disconnected"}
+    data = {
+        "connected": False,
+        "adapter": "Wireless Interface",
+        "signal_percent": 0,
+        "rssi_dbm": 0,
+        "band": "--",
+        "channel": "--",
+        "radio_type": "--",
+        "ssid": "Disconnected",
+        "bssid": "--",
+        "rx_rate_mbps": 0.0,
+        "tx_rate_mbps": 0.0,
+        "state": "disconnected"
+    }
+
+    KEY_MAP = {
+        'adapter': ['description', 'açıklama', 'tanım', 'aygıt'],
+        'state': ['state', 'durum'],
+        'ssid': ['ssid'],
+        'bssid': ['bssid', 'ap bssid'],
+        'band': ['band', 'bant'],
+        'channel': ['channel', 'kanal'],
+        'radio_type': ['radio type', 'radyo türü', 'radyo tipi'],
+        'signal_percent': ['signal', 'sinyal'],
+        'rssi_dbm': ['rssi'],
+        'rx_rate_mbps': ['receive rate', 'alım hızı', 'alma hızı'],
+        'tx_rate_mbps': ['transmit rate', 'iletim hızı', 'gönderme hızı']
+    }
+
     for line in out.splitlines():
         if ":" in line:
             k, v = line.split(":", 1)
             k = k.strip().lower()
             v = v.strip()
-            if "description" in k: data["adapter"] = v
-            elif "state" in k:
-                data["state"] = v
-                if "connected" in v.lower(): data["connected"] = True
-            elif "ssid" in k and "bssid" not in k: data["ssid"] = v
-            elif "bssid" in k: data["bssid"] = v
-            elif "band" in k: data["band"] = v
-            elif "channel" in k: data["channel"] = v
-            elif "radio type" in k: data["radio_type"] = v
-            elif "signal" in k: data["signal_percent"] = int(v.replace("%", "").strip() or 0)
-            elif "rssi" in k: data["rssi_dbm"] = int(v.strip() or 0)
-            elif "receive rate" in k: data["rx_rate_mbps"] = float(v.strip() or 0)
-            elif "transmit rate" in k: data["tx_rate_mbps"] = float(v.strip() or 0)
+
+            for target_field, keywords in KEY_MAP.items():
+                if any(kw == k or kw in k for kw in keywords):
+                    if target_field == 'signal_percent':
+                        try:
+                            data['signal_percent'] = int(v.replace("%", "").strip() or 0)
+                        except ValueError:
+                            pass
+                    elif target_field == 'rssi_dbm':
+                        try:
+                            data['rssi_dbm'] = int(v.strip() or 0)
+                        except ValueError:
+                            pass
+                    elif target_field in ('rx_rate_mbps', 'tx_rate_mbps'):
+                        try:
+                            data[target_field] = float(v.strip() or 0)
+                        except ValueError:
+                            pass
+                    elif target_field == 'state':
+                        data['state'] = v
+                        if any(conn_word in v.lower() for conn_word in ['connected', 'bağlı', 'bagli']):
+                            data['connected'] = True
+                    else:
+                        if target_field == 'bssid' and 'ap bssid' in k:
+                            data['bssid'] = v
+                        elif target_field == 'ssid' and 'bssid' not in k:
+                            data['ssid'] = v
+                        else:
+                            data[target_field] = v
+                    break
     return data
 
 def get_power_plans():
@@ -556,6 +661,9 @@ def get_power_plans():
     return {"plans": plans, "active_guid": active_guid}
 
 def set_power_plan(guid):
+    # Validate GUID to prevent command injection
+    if not re.match(r'^[a-f0-9\-]{36}$', guid, re.IGNORECASE):
+        return {"success": False, "error": "Invalid power scheme GUID"}
     try:
         subprocess.run(f"powercfg /setactive {guid}", shell=True, check=True, timeout=2)
         return {"success": True, "active_guid": guid}
@@ -625,6 +733,8 @@ def toggle_microphone_mute():
     try:
         user32 = ctypes.windll.user32
         hwnd = user32.GetForegroundWindow()
+        # APPCOMMAND_MICROPHONE_VOLUME_MUTE = 24
+        user32.SendMessageW(hwnd, 0x0319, hwnd, 24 << 16)
         user32.SendMessageW(hwnd, 0x0319, hwnd, 44 << 16)
         return True
     except Exception as e:
@@ -971,6 +1081,15 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/laptop/config":
             with laptop_lock:
                 self.send_json(dict(laptop_state))
+        elif path == "/hardware_cache.json":
+            if os.path.exists(CACHE_FILE):
+                try:
+                    with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                        self.send_json(json.load(f))
+                        return
+                except Exception:
+                    pass
+            self.send_json({"error": "Hardware cache not found"}, status=404)
         else:
             super().do_GET()
 
@@ -1091,11 +1210,14 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 cnt = laptop_state["f12_press_count"]
             self.send_json({"success": True, "action": action, "count": cnt})
 
+        elif self.path == "/api/hardware/refresh":
+            self.send_json(get_hardware_info(force_refresh=True))
+
         else:
             self.send_error(404)
 
     def send_json(self, obj, status=200):
-        data = json.dumps(obj).encode('utf-8')
+        data = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(data)))
@@ -1109,7 +1231,12 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
 def start_server():
     try:
         psutil.cpu_percent(interval=None)
+        # Prime process CPU counters so first reading is never 0.0%
+        for p in psutil.process_iter(['pid', 'cpu_percent']):
+            pass
+        time.sleep(0.1)
         load_laptop_config()
+        update_process_snapshot()
         t_proc = threading.Thread(target=process_cache_worker, daemon=True)
         t_proc.start()
         t_hook = threading.Thread(target=keyboard_hook_thread, daemon=True)

@@ -69,6 +69,33 @@ struct NpuInfo {
     std::string status = "";
 };
 
+static std::string escape_json(const std::string& s) {
+    std::string o;
+    o.reserve(s.size() + 8);
+    for (char c : s) {
+        switch (c) {
+            case '"':  o += "\\\""; break;
+            case '\\': o += "\\\\"; break;
+            case '\b': o += "\\b"; break;
+            case '\f': o += "\\f"; break;
+            case '\n': o += "\\n"; break;
+            case '\r': o += "\\r"; break;
+            case '\t': o += "\\t"; break;
+            default:
+                if (static_cast<unsigned char>(c) < 0x20) {
+                    char buf[8];
+                    snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
+                    o += buf;
+                } else {
+                    o += c;
+                }
+                break;
+        }
+    }
+    return o;
+}
+
+
 // --- BATTERY PROBE ---
 BatteryInfo probeBattery() {
     BatteryInfo info;
@@ -164,7 +191,20 @@ CpuInfo probeCpu() {
         std::vector<BYTE> buf(len);
         PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX infoEx = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buf.data();
         if (GetLogicalProcessorInformationEx(RelationProcessorCore, infoEx, &len)) {
+            BYTE maxEff = 0;
+            BYTE minEff = 255;
             BYTE* ptr = buf.data();
+            while (ptr < buf.data() + len) {
+                PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX cur = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)ptr;
+                if (cur->Relationship == RelationProcessorCore) {
+                    if (cur->Processor.EfficiencyClass > maxEff) maxEff = cur->Processor.EfficiencyClass;
+                    if (cur->Processor.EfficiencyClass < minEff) minEff = cur->Processor.EfficiencyClass;
+                }
+                ptr += cur->Size;
+            }
+            bool isHybrid = (maxEff > minEff);
+
+            ptr = buf.data();
             while (ptr < buf.data() + len) {
                 PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX cur = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)ptr;
                 if (cur->Relationship == RelationProcessorCore) {
@@ -174,10 +214,14 @@ CpuInfo probeCpu() {
                     } else {
                         info.totalThreads += 1;
                     }
-                    if (cur->Processor.EfficiencyClass > 0) {
-                        info.pCores++;
+                    if (isHybrid) {
+                        if (cur->Processor.EfficiencyClass == maxEff) {
+                            info.pCores++;
+                        } else {
+                            info.eCores++;
+                        }
                     } else {
-                        info.eCores++;
+                        info.pCores++;
                     }
                 }
                 ptr += cur->Size;
@@ -260,10 +304,12 @@ NpuInfo probeNpu() {
 // --- PHYSICAL DRIVES PROBE ---
 std::vector<DiskInfo> probeDisks() {
     std::vector<DiskInfo> disks;
-    for (int i = 0; i < 8; i++) {
+    int consecutiveFailures = 0;
+    for (int i = 0; i < 32; i++) {
         std::string path = "\\\\.\\PhysicalDrive" + std::to_string(i);
         HANDLE hDisk = CreateFileA(path.c_str(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
         if (hDisk != INVALID_HANDLE_VALUE) {
+            consecutiveFailures = 0;
             STORAGE_PROPERTY_QUERY query = { StorageDeviceProperty, PropertyStandardQuery };
             BYTE buffer[1024] = { 0 };
             DWORD bytesReturned = 0;
@@ -276,7 +322,7 @@ std::vector<DiskInfo> probeDisks() {
                 if (desc->ProductIdOffset > 0 && desc->ProductIdOffset < bytesReturned) {
                     disk.model = (char*)(buffer + desc->ProductIdOffset);
                     // Trim trailing spaces
-                    while (!disk.model.empty() && isspace(disk.model.back())) disk.model.pop_back();
+                    while (!disk.model.empty() && isspace(static_cast<unsigned char>(disk.model.back()))) disk.model.pop_back();
                 }
 
                 switch (desc->BusType) {
@@ -295,6 +341,11 @@ std::vector<DiskInfo> probeDisks() {
                 disks.push_back(disk);
             }
             CloseHandle(hDisk);
+        } else {
+            consecutiveFailures++;
+            if (i >= 4 && consecutiveFailures >= 4) {
+                break;
+            }
         }
     }
     return disks;
@@ -318,7 +369,7 @@ int main(int argc, char* argv[]) {
     json << "  \"engine\": \"Zenith Native Hardware Probe V1.0\",\n";
     json << "  \"execution_time_ms\": " << elapsedMs << ",\n";
     json << "  \"cpu\": {\n";
-    json << "    \"model\": \"" << cpu.modelName << "\",\n";
+    json << "    \"model\": \"" << escape_json(cpu.modelName) << "\",\n";
     json << "    \"total_cores\": " << cpu.totalCores << ",\n";
     json << "    \"total_threads\": " << cpu.totalThreads << ",\n";
     json << "    \"p_cores\": " << cpu.pCores << ",\n";
@@ -326,8 +377,8 @@ int main(int argc, char* argv[]) {
     json << "  },\n";
     json << "  \"npu\": {\n";
     json << "    \"detected\": " << (npu.detected ? "true" : "false") << ",\n";
-    json << "    \"name\": \"" << npu.name << "\",\n";
-    json << "    \"status\": \"" << npu.status << "\"\n";
+    json << "    \"name\": \"" << escape_json(npu.name) << "\",\n";
+    json << "    \"status\": \"" << escape_json(npu.status) << "\"\n";
     json << "  },\n";
     json << "  \"memory\": {\n";
     json << "    \"total_gb\": " << (mem.totalPhysicalBytes / (1024.0 * 1024.0 * 1024.0)) << ",\n";
@@ -337,7 +388,7 @@ int main(int argc, char* argv[]) {
     json << "  \"displays\": [\n";
     for (size_t i = 0; i < gpus.size(); i++) {
         json << "    {\n";
-        json << "      \"adapter\": \"" << gpus[i].adapterName << "\",\n";
+        json << "      \"adapter\": \"" << escape_json(gpus[i].adapterName) << "\",\n";
         json << "      \"resolution\": \"" << gpus[i].currentWidth << "x" << gpus[i].currentHeight << "\",\n";
         json << "      \"refresh_rate_hz\": " << gpus[i].refreshRateHz << ",\n";
         json << "      \"bpp\": " << gpus[i].bitsPerPixel << "\n";
@@ -348,15 +399,16 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < disks.size(); i++) {
         json << "    {\n";
         json << "      \"drive_index\": " << disks[i].driveIndex << ",\n";
-        json << "      \"model\": \"" << disks[i].model << "\",\n";
-        json << "      \"bus_type\": \"" << disks[i].busType << "\",\n";
+        json << "      \"model\": \"" << escape_json(disks[i].model) << "\",\n";
+        json << "      \"bus_type\": \"" << escape_json(disks[i].busType) << "\",\n";
         json << "      \"size_gb\": " << (disks[i].sizeBytes / (1000.0 * 1000.0 * 1000.0)) << "\n";
         json << "    }" << (i + 1 < disks.size() ? "," : "") << "\n";
     }
     json << "  ],\n";
     json << "  \"battery\": {\n";
     json << "    \"has_battery\": " << (bat.hasBattery ? "true" : "false") << ",\n";
-    json << "    \"device_name\": \"" << bat.deviceName << "\",\n";
+    json << "    \"device_name\": \"" << escape_json(bat.deviceName) << "\",\n";
+    json << "    \"chemistry\": \"" << escape_json(bat.chemistry) << "\",\n";
     json << "    \"design_capacity_mwh\": " << bat.designCapacityMWh << ",\n";
     json << "    \"cycle_count\": " << bat.cycleCount << ",\n";
     json << "    \"is_charging\": " << (bat.isCharging ? "true" : "false") << ",\n";

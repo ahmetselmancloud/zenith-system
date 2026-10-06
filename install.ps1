@@ -27,11 +27,32 @@ $TempZip = Join-Path $env:TEMP "zenith-system-main.zip"
 Write-Host "[1/5] Checking Python runtime..." -ForegroundColor Yellow
 $PythonCmd = Get-Command python -ErrorAction SilentlyContinue
 if (-not $PythonCmd) {
+    $PythonCmd = Get-Command py -ErrorAction SilentlyContinue
+}
+
+if (-not $PythonCmd) {
     Write-Host "      Python not found. Attempting silent installation via WinGet..." -ForegroundColor Gray
     try {
-        winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
+        winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-        $PythonCmd = Get-Command python -ErrorAction Stop
+        $PythonCmd = Get-Command python -ErrorAction SilentlyContinue
+        if (-not $PythonCmd) {
+            $PythonCmd = Get-Command py -ErrorAction SilentlyContinue
+        }
+        if (-not $PythonCmd) {
+            $CandidatePaths = @(
+                "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe",
+                "$env:ProgramFiles\Python312\python.exe"
+            )
+            foreach ($cand in $CandidatePaths) {
+                if (Test-Path $cand) {
+                    $env:Path += ";$(Split-Path $cand)"
+                    $PythonCmd = Get-Command $cand -ErrorAction SilentlyContinue
+                    break
+                }
+            }
+        }
+        if (-not $PythonCmd) { throw "Python command not available after installation." }
         Write-Host "      [OK] Python installed successfully." -ForegroundColor Green
     } catch {
         Write-Warning "Failed to auto-install Python. Please install Python 3.10+ from https://python.org and re-run."
@@ -44,7 +65,8 @@ if (-not $PythonCmd) {
 # 2. Check and install Python dependencies
 Write-Host "[2/5] Ensuring required Python libraries (psutil)..." -ForegroundColor Yellow
 try {
-    & python -m pip install --quiet psutil
+    $PyExec = if ($PythonCmd) { $PythonCmd.Source } else { "python" }
+    & $PyExec -m pip install --quiet psutil
     Write-Host "      [OK] Dependencies up to date." -ForegroundColor Green
 } catch {
     Write-Warning "Could not install psutil via pip. Telemetry may be limited."
@@ -91,12 +113,12 @@ try {
     $Shortcut = $WshShell.CreateShortcut($DesktopLnk)
     $Shortcut.TargetPath = $TargetApp
     $Shortcut.WorkingDirectory = $InstallDir
-    $Shortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Z)"
-    $Shortcut.Hotkey = "CTRL+ALT+Z"
+    $Shortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Shift+Z)"
+    $Shortcut.Hotkey = "CTRL+ALT+SHIFT+Z"
     $Shortcut.WindowStyle = 1
     $Shortcut.IconLocation = $IconPath
     $Shortcut.Save()
-    Write-Host "      [OK] Desktop shortcut created (Hotkey: Ctrl+Alt+Z): $DesktopLnk" -ForegroundColor Green
+    Write-Host "      [OK] Desktop shortcut created (Hotkey: Ctrl+Alt+Shift+Z): $DesktopLnk" -ForegroundColor Green
 
     # Desktop Mini HUD Shortcut
     $HudLnk = Join-Path $DesktopFolder "Zenith Mini HUD.lnk"
@@ -104,12 +126,12 @@ try {
     $HudShortcut.TargetPath = $TargetApp
     $HudShortcut.Arguments = "--hud"
     $HudShortcut.WorkingDirectory = $InstallDir
-    $HudShortcut.Description = "Zenith Mini HUD - Floating Desktop Hardware Widget (Hotkey: Ctrl+Alt+H)"
-    $HudShortcut.Hotkey = "CTRL+ALT+H"
+    $HudShortcut.Description = "Zenith Mini HUD - Floating Desktop Hardware Widget (Hotkey: Ctrl+Alt+Shift+H)"
+    $HudShortcut.Hotkey = "CTRL+ALT+SHIFT+H"
     $HudShortcut.WindowStyle = 1
     $HudShortcut.IconLocation = $IconPath
     $HudShortcut.Save()
-    Write-Host "      [OK] Mini HUD shortcut created (Hotkey: Ctrl+Alt+H): $HudLnk" -ForegroundColor Green
+    Write-Host "      [OK] Mini HUD shortcut created (Hotkey: Ctrl+Alt+Shift+H): $HudLnk" -ForegroundColor Green
 
     # Start Menu Shortcut
     $StartMenuPrograms = [System.Environment]::GetFolderPath('Programs')
@@ -118,8 +140,8 @@ try {
         $SMShortcut = $WshShell.CreateShortcut($StartMenuLnk)
         $SMShortcut.TargetPath = $TargetApp
         $SMShortcut.WorkingDirectory = $InstallDir
-        $SMShortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Z)"
-        $SMShortcut.Hotkey = "CTRL+ALT+Z"
+        $SMShortcut.Description = "Zenith System - Next-Gen Hardware Monitor (Hotkey: Ctrl+Alt+Shift+Z)"
+        $SMShortcut.Hotkey = "CTRL+ALT+SHIFT+Z"
         $SMShortcut.WindowStyle = 1
         $SMShortcut.IconLocation = $IconPath
         $SMShortcut.Save()
