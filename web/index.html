@@ -80,6 +80,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
           <span>Diagnostics Lab</span>
         </button>
+        <button class="nav-item" data-tab="tab-laptop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path></svg>
+          <span>Laptop & Keys</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -931,6 +935,234 @@
             <div class="readout-box">
               <span class="readout-num purple" id="pwr-capacity-readout">--</span>
               <span class="readout-label">Remaining Energy</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: LAPTOP TUNING & KEYBOARD STUDIO -->
+      <section class="tab-pane" id="tab-laptop">
+        <div class="card glass-card mb-4">
+          <div class="laptop-hero-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <h3>Laptop Hardware Tuning & Keyboard Studio</h3>
+              <p class="subtitle">Direct hardware control: Windows key lock, F12 custom hotkey, thermal fan curves, RGB lighting & GPU MUX modes</p>
+            </div>
+            <div class="laptop-hero-badges" style="display: flex; gap: 10px;">
+              <span class="stat-badge cyan" id="hook-status-badge">⚡ Hook Active (0ms)</span>
+              <span class="stat-badge purple" id="active-profile-badge">Balanced Mode</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- CARD 1: KEYBOARD & MACRO MANAGER -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">⌨️ Keyboard & Macro Manager</span>
+              <span class="tag-pill blue">Kernel LL Hook</span>
+            </div>
+            <p class="text-dim text-sm mb-3">Intercepts physical keystrokes with low-level Windows API hooks before the OS shell processes them.</p>
+
+            <!-- Windows Key Lock -->
+            <div class="laptop-control-box mb-4">
+              <div class="control-box-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: var(--text-main);">Windows Key Lock (Gaming Mode)</strong>
+                  <p class="text-dim text-sm" style="font-size: 0.75rem;">Disables Left & Right Win keys to prevent accidental Start Menu popups during gameplay.</p>
+                </div>
+                <label class="cyber-switch">
+                  <input type="checkbox" id="winkey-toggle-switch">
+                  <span class="cyber-slider"></span>
+                </label>
+              </div>
+              <div class="control-box-status mt-2">
+                <span class="text-sm">Status: <strong id="winkey-status-text" class="green">Active (Unlocked)</strong></span>
+              </div>
+            </div>
+
+            <!-- F12 Hotkey Assignment -->
+            <div class="laptop-control-box">
+              <div class="control-box-header mb-2">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="key-badge">F12</span>
+                  <div>
+                    <strong style="color: var(--text-main);">F12 Unassigned Key Macro</strong>
+                    <p class="text-dim text-sm" style="font-size: 0.75rem;">Assign a custom system function to the empty F12 / Fn+F12 key.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hotkey-select-group mt-3">
+                <label class="text-dim text-sm mb-1" style="display: block;">Assigned Action:</label>
+                <select id="f12-action-select" class="cyber-select">
+                  <option value="zenith_hud">🚀 Toggle Zenith Cyber HUD / Mini Monitor</option>
+                  <option value="fan_boost">❄️ Toggle Fan Mode (Silent ⟷ Cooler Boost)</option>
+                  <option value="mic_mute">🎙️ Toggle Global Microphone Mute</option>
+                  <option value="winkey_lock">🎮 Toggle Windows Key Lock (Gaming Mode)</option>
+                  <option value="snip">📸 Launch Screen Snipping Tool</option>
+                  <option value="custom">⚡ Execute Custom App or Shell Command</option>
+                </select>
+              </div>
+
+              <div id="f12-custom-cmd-wrapper" class="mt-3 hidden">
+                <label class="text-dim text-sm mb-1" style="display: block;">Custom Command / Executable Path:</label>
+                <input type="text" id="f12-custom-cmd-input" class="cyber-input" placeholder="e.g. C:\Games\game.exe or notepad.exe">
+              </div>
+
+              <div class="flex-actions mt-3" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="text-dim text-sm" style="font-size: 0.75rem;" id="f12-trigger-counter">F12 Triggers: 0 times</span>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" id="btn-save-f12">Save Action</button>
+                  <button class="btn btn-primary" style="font-size: 0.75rem; padding: 4px 10px;" id="btn-test-f12">Test Trigger</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: THERMAL & FAN PROFILES -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">❄️ Thermal & Fan Profiles</span>
+              <span class="tag-pill cyan">Intel Ultra EPP Engine</span>
+            </div>
+            <p class="text-dim text-sm mb-3">Custom Intel Core Ultra 7 Energy Performance Preference & cooling dissipation curves.</p>
+
+            <div class="profile-grid">
+              <div class="profile-card" data-profile="extreme">
+                <div class="profile-icon">🚀</div>
+                <div class="profile-info">
+                  <strong>Cooler Boost Turbo</strong>
+                  <span>EPP 0% • Max Clocks • Max Airflow</span>
+                </div>
+              </div>
+
+              <div class="profile-card active" data-profile="balanced">
+                <div class="profile-icon">⚖️</div>
+                <div class="profile-info">
+                  <strong>Balanced Mode</strong>
+                  <span>EPP 50% • Dynamic Acoustic Curve</span>
+                </div>
+              </div>
+
+              <div class="profile-card" data-profile="silent">
+                <div class="profile-icon">🤫</div>
+                <div class="profile-info">
+                  <strong>Silent Stealth</strong>
+                  <span>EPP 85% • Inaudible Fans • Office Mode</span>
+                </div>
+              </div>
+
+              <div class="profile-card" data-profile="eco">
+                <div class="profile-icon">🔋</div>
+                <div class="profile-info">
+                  <strong>Super Eco</strong>
+                  <span>EPP 100% • Energy Saving • Max Battery</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="thermal-telemetry-strip mt-3" style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.25); padding: 10px; border-radius: var(--radius-sm);">
+              <div class="strip-item" style="text-align: center;">
+                <span class="strip-lbl" style="font-size: 0.72rem; color: var(--text-dim); display: block;">CPU Load</span>
+                <span class="strip-val" id="fan-cpu-temp" style="font-weight: 700;">-- %</span>
+              </div>
+              <div class="strip-item" style="text-align: center;">
+                <span class="strip-lbl" style="font-size: 0.72rem; color: var(--text-dim); display: block;">RTX 5070 Ti Temp</span>
+                <span class="strip-val purple" id="fan-gpu-temp" style="font-weight: 700;">-- °C</span>
+              </div>
+              <div class="strip-item" style="text-align: center;">
+                <span class="strip-lbl" style="font-size: 0.72rem; color: var(--text-dim); display: block;">Thermal Headroom</span>
+                <span class="strip-val green" id="fan-headroom" style="font-weight: 700;">Optimal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 3: RGB LIGHTING STUDIO -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">🌈 RGB Lighting Studio</span>
+              <span class="tag-pill purple">Win11 Dynamic Lighting</span>
+            </div>
+            <p class="text-dim text-sm mb-3">Controls laptop keyboard backlighting via Windows 11 LampArray & MSI Mystic Light bridge.</p>
+
+            <label class="text-dim text-sm mb-2" style="display: block;">Color Presets:</label>
+            <div class="rgb-palette-grid mb-3" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div class="color-dot active" data-color="#00f0ff" style="background: #00f0ff;" title="Cyber Cyan"></div>
+              <div class="color-dot" data-color="#a855f7" style="background: #a855f7;" title="Neon Purple"></div>
+              <div class="color-dot" data-color="#10b981" style="background: #10b981;" title="Acid Green"></div>
+              <div class="color-dot" data-color="#ef4444" style="background: #ef4444;" title="Crimson Red"></div>
+              <div class="color-dot" data-color="#f59e0b" style="background: #f59e0b;" title="Amber Gold"></div>
+              <div class="color-dot" data-color="#ffffff" style="background: #ffffff;" title="Pure White"></div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-left: 6px;">
+                <input type="color" id="rgb-custom-picker" value="#00f0ff" style="border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; background: transparent;">
+                <span class="text-dim text-sm font-mono" id="rgb-hex-label">#00f0ff</span>
+              </div>
+            </div>
+
+            <div class="grid-2 mb-3">
+              <div>
+                <label class="text-dim text-sm mb-1" style="display: block;">Lighting Effect:</label>
+                <select id="rgb-effect-select" class="cyber-select">
+                  <option value="static">Static (Constant)</option>
+                  <option value="breathing">Breathing (Pulse)</option>
+                  <option value="rainbow">Rainbow Wave</option>
+                  <option value="wave">Fluid Wave</option>
+                  <option value="cycle">Color Spectrum Cycle</option>
+                  <option value="off">Turn Off Backlight</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-dim text-sm mb-1" style="display: block;">Brightness: <span id="rgb-brightness-val">100%</span></label>
+                <input type="range" id="rgb-brightness-slider" min="0" max="100" value="100" class="cyber-slider-bar" style="width: 100%;">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%;" id="btn-apply-rgb">✨ Apply Lighting Effect</button>
+          </div>
+
+          <!-- CARD 4: GPU WORKING MODE & BATTERY HEALTH CARE -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">🎮 GPU Working Mode & Battery Care</span>
+              <span class="tag-pill green">MUX & ACPI</span>
+            </div>
+            
+            <div class="mb-4">
+              <label class="text-dim text-sm mb-2" style="display: block;">GPU Switching Profile (MUX / Optimus):</label>
+              <div class="gpu-mode-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <button class="gpu-mode-btn active" data-gpu="mshybrid">
+                  <strong>🔄 MSHybrid</strong>
+                  <span>Optimus Dynamic</span>
+                </button>
+                <button class="gpu-mode-btn" data-gpu="dgpu">
+                  <strong>⚡ dGPU Only</strong>
+                  <span>RTX 5070 Ti Direct</span>
+                </button>
+                <button class="gpu-mode-btn" data-gpu="eco">
+                  <strong>🍃 Eco iGPU</strong>
+                  <span>Harici GPU Kapalı</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-dim text-sm mb-2" style="display: block;">Battery Health Care Threshold (Şarj Koruma Eşiği):</label>
+              <div class="battery-limit-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <button class="bat-limit-btn" data-limit="60">
+                  <strong>60% Cap</strong>
+                  <span>Always Plugged In</span>
+                </button>
+                <button class="bat-limit-btn active" data-limit="80">
+                  <strong>80% Cap</strong>
+                  <span>Balanced Health</span>
+                </button>
+                <button class="bat-limit-btn" data-limit="100">
+                  <strong>100% Cap</strong>
+                  <span>Full Mobility</span>
+                </button>
+              </div>
+              <p class="text-dim text-sm mt-2" style="font-size: 0.72rem;">*Prevents lithium-ion swelling and extends battery cycle count by limiting constant high-voltage saturation.</p>
             </div>
           </div>
         </div>

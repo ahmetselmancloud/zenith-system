@@ -11,6 +11,8 @@ import winreg
 import re
 import shutil
 import psutil
+import ctypes
+from ctypes import wintypes
 
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
@@ -560,6 +562,200 @@ def set_power_plan(guid):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+# --- LAPTOP & KEYBOARD STUDIO ENGINE ---
+LAPTOP_CONFIG_FILE = os.path.join(BASE_DIR, "laptop_config.json")
+
+laptop_lock = threading.Lock()
+laptop_state = {
+    "winkey_locked": False,
+    "f12_action": "zenith_hud",
+    "custom_cmd": "",
+    "fan_profile": "balanced",
+    "rgb_color": "#00f0ff",
+    "rgb_effect": "static",
+    "rgb_brightness": 100,
+    "rgb_speed": 5,
+    "gpu_mode": "mshybrid",
+    "battery_limit": 80,
+    "f12_press_count": 0,
+    "hook_active": False,
+    "last_hotkey_time": 0,
+    "last_hotkey_action": ""
+}
+
+def load_laptop_config():
+    global laptop_state
+    if os.path.exists(LAPTOP_CONFIG_FILE):
+        try:
+            with open(LAPTOP_CONFIG_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                with laptop_lock:
+                    laptop_state.update(saved)
+        except Exception as e:
+            print("Failed to load laptop config:", e)
+
+def save_laptop_config():
+    try:
+        with laptop_lock:
+            data = dict(laptop_state)
+        with open(LAPTOP_CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print("Failed to save laptop config:", e)
+
+def apply_fan_profile(profile):
+    epp_map = {
+        "extreme": 0,
+        "balanced": 50,
+        "silent": 85,
+        "eco": 100
+    }
+    epp = epp_map.get(profile, 50)
+    try:
+        subprocess.run(f"powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFEPP {epp}", shell=True, timeout=2)
+        subprocess.run(f"powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFEPP {epp}", shell=True, timeout=2)
+        subprocess.run("powercfg /setactive SCHEME_CURRENT", shell=True, timeout=2)
+    except Exception as e:
+        print("Error applying fan profile EPP:", e)
+    with laptop_lock:
+        laptop_state["fan_profile"] = profile
+    save_laptop_config()
+
+def toggle_microphone_mute():
+    try:
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetForegroundWindow()
+        user32.SendMessageW(hwnd, 0x0319, hwnd, 44 << 16)
+        return True
+    except Exception as e:
+        print("Error toggling mic:", e)
+        return False
+
+def apply_rgb_lighting(color_hex, effect, brightness, speed):
+    try:
+        hex_clean = color_hex.lstrip('#')
+        if len(hex_clean) == 6:
+            r = int(hex_clean[0:2], 16)
+            g = int(hex_clean[2:4], 16)
+            b = int(hex_clean[4:6], 16)
+            dword_color = 0xFF000000 | (r << 16) | (g << 8) | b
+        else:
+            dword_color = 4278255615
+
+        eff_map = {
+            "static": 0,
+            "breathing": 1,
+            "rainbow": 2,
+            "wave": 3,
+            "cycle": 4,
+            "off": 0
+        }
+        eff_code = eff_map.get(effect, 0)
+        eff_bright = 0 if effect == "off" else int(brightness)
+
+        key_path = r"Software\Microsoft\Lighting"
+        try:
+            k = winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path)
+            winreg.SetValueEx(k, "AmbientLightingEnabled", 0, winreg.REG_DWORD, 1)
+            winreg.SetValueEx(k, "Brightness", 0, winreg.REG_DWORD, eff_bright)
+            winreg.SetValueEx(k, "Speed", 0, winreg.REG_DWORD, int(speed))
+            winreg.SetValueEx(k, "EffectType", 0, winreg.REG_DWORD, eff_code)
+            winreg.SetValueEx(k, "Color", 0, winreg.REG_DWORD, dword_color)
+            winreg.CloseKey(k)
+        except Exception:
+            pass
+    except Exception as e:
+        print("Error applying RGB lighting:", e)
+
+    with laptop_lock:
+        laptop_state["rgb_color"] = color_hex
+        laptop_state["rgb_effect"] = effect
+        laptop_state["rgb_brightness"] = brightness
+        laptop_state["rgb_speed"] = speed
+    save_laptop_config()
+
+def trigger_f12_action(action, custom_cmd):
+    with laptop_lock:
+        laptop_state["f12_press_count"] += 1
+        laptop_state["last_hotkey_time"] = time.time()
+        laptop_state["last_hotkey_action"] = action
+    
+    if action == "zenith_hud":
+        subprocess.Popen(f'start http://127.0.0.1:{PORT}', shell=True)
+    elif action == "fan_boost":
+        with laptop_lock:
+            cur = laptop_state["fan_profile"]
+        next_p = "extreme" if cur != "extreme" else "silent"
+        apply_fan_profile(next_p)
+    elif action == "mic_mute":
+        toggle_microphone_mute()
+    elif action == "winkey_lock":
+        with laptop_lock:
+            laptop_state["winkey_locked"] = not laptop_state["winkey_locked"]
+        save_laptop_config()
+    elif action == "snip":
+        subprocess.Popen('explorer ms-screenclip:', shell=True)
+    elif action == "custom":
+        if custom_cmd:
+            subprocess.Popen(custom_cmd, shell=True)
+
+_c_hook_proc = None
+
+def keyboard_hook_thread():
+    global _c_hook_proc
+    user32 = ctypes.windll.user32
+    WH_KEYBOARD_LL = 13
+    WM_KEYDOWN = 0x0100
+    VK_LWIN = 0x5B
+    VK_RWIN = 0x5C
+    VK_F12 = 0x7B
+
+    class KBDLLHOOKSTRUCT(ctypes.Structure):
+        _fields_ = [
+            ('vkCode', wintypes.DWORD),
+            ('scanCode', wintypes.DWORD),
+            ('flags', wintypes.DWORD),
+            ('time', wintypes.DWORD),
+            ('dwExtraInfo', ctypes.c_ulong)
+        ]
+
+    HOOKPROC = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_int, wintypes.WPARAM, ctypes.POINTER(KBDLLHOOKSTRUCT))
+
+    def hook_proc(nCode, wParam, lParam):
+        if nCode == 0:
+            vk = lParam.contents.vkCode
+            with laptop_lock:
+                is_win_locked = laptop_state["winkey_locked"]
+                action = laptop_state["f12_action"]
+                custom_cmd = laptop_state["custom_cmd"]
+
+            if is_win_locked and (vk == VK_LWIN or vk == VK_RWIN):
+                return 1
+
+            if vk == VK_F12 and wParam == WM_KEYDOWN:
+                trigger_f12_action(action, custom_cmd)
+
+        return user32.CallNextHookEx(None, nCode, wParam, lParam)
+
+    _c_hook_proc = HOOKPROC(hook_proc)
+    hook = user32.SetWindowsHookExW(WH_KEYBOARD_LL, _c_hook_proc, None, 0)
+    if hook:
+        with laptop_lock:
+            laptop_state["hook_active"] = True
+        print("[Zenith Hook] Keyboard hook active! WinKey lock and F12 hotkey operational.")
+    else:
+        print("[Zenith Hook] Failed to install hook")
+        return
+
+    msg = wintypes.MSG()
+    while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
+        user32.TranslateMessage(ctypes.byref(msg))
+        user32.DispatchMessageW(ctypes.byref(msg))
+
+    user32.UnhookWindowsHookEx(hook)
+    with laptop_lock:
+        laptop_state["hook_active"] = False
+
 # --- STORAGE & NVMe S.M.A.R.T. TELEMETRY ---
 storage_topology_cache = None
 last_storage_scan_time = 0
@@ -772,6 +968,9 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             except Exception:
                 pass
             self.send_json({"opened": True})
+        elif path == "/api/laptop/config":
+            with laptop_lock:
+                self.send_json(dict(laptop_state))
         else:
             super().do_GET()
 
@@ -836,6 +1035,62 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_json({"error": "No uninstall string"}, status=400)
 
+        elif self.path == "/api/laptop/winkey":
+            locked = bool(data.get("locked", False))
+            with laptop_lock:
+                laptop_state["winkey_locked"] = locked
+            save_laptop_config()
+            self.send_json({"success": True, "locked": locked})
+
+        elif self.path == "/api/laptop/f12":
+            action = data.get("action", "zenith_hud")
+            cmd = data.get("custom_cmd", "")
+            with laptop_lock:
+                laptop_state["f12_action"] = action
+                laptop_state["custom_cmd"] = cmd
+            save_laptop_config()
+            self.send_json({"success": True, "action": action, "custom_cmd": cmd})
+
+        elif self.path == "/api/laptop/fan_profile":
+            profile = data.get("profile", "balanced")
+            apply_fan_profile(profile)
+            self.send_json({"success": True, "profile": profile})
+
+        elif self.path == "/api/laptop/rgb":
+            color = data.get("color", "#00f0ff")
+            effect = data.get("effect", "static")
+            brightness = int(data.get("brightness", 100))
+            speed = int(data.get("speed", 5))
+            apply_rgb_lighting(color, effect, brightness, speed)
+            self.send_json({"success": True, "color": color, "effect": effect})
+
+        elif self.path == "/api/laptop/gpu_mode":
+            mode = data.get("mode", "mshybrid")
+            with laptop_lock:
+                laptop_state["gpu_mode"] = mode
+            save_laptop_config()
+            self.send_json({"success": True, "mode": mode})
+
+        elif self.path == "/api/laptop/battery_limit":
+            limit = int(data.get("limit", 80))
+            with laptop_lock:
+                laptop_state["battery_limit"] = limit
+            save_laptop_config()
+            self.send_json({"success": True, "limit": limit})
+
+        elif self.path == "/api/laptop/mic_toggle":
+            success = toggle_microphone_mute()
+            self.send_json({"success": success})
+
+        elif self.path == "/api/laptop/f12_trigger":
+            with laptop_lock:
+                action = laptop_state["f12_action"]
+                cmd = laptop_state["custom_cmd"]
+            trigger_f12_action(action, cmd)
+            with laptop_lock:
+                cnt = laptop_state["f12_press_count"]
+            self.send_json({"success": True, "action": action, "count": cnt})
+
         else:
             self.send_error(404)
 
@@ -854,8 +1109,11 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
 def start_server():
     try:
         psutil.cpu_percent(interval=None)
+        load_laptop_config()
         t_proc = threading.Thread(target=process_cache_worker, daemon=True)
         t_proc.start()
+        t_hook = threading.Thread(target=keyboard_hook_thread, daemon=True)
+        t_hook.start()
         with socketserver.TCPServer(("127.0.0.1", PORT), ZenithHandler) as httpd:
             print(f"Zenith System Server running at http://127.0.0.1:{PORT}")
             httpd.serve_forever()

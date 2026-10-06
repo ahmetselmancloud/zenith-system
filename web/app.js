@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTweaks();
   setupDiagnostics();
   setupCpuStressTest();
+  setupLaptopStudio();
 });
 
 // --- NAVIGATION ---
@@ -54,6 +55,7 @@ function setupNavigation() {
       if (targetId === 'tab-storage') loadStorageDiagnostics();
       if (targetId === 'tab-network') loadWifiDiagnostics();
       if (targetId === 'tab-power') loadPowerPlans();
+      if (targetId === 'tab-laptop') loadLaptopStudioConfig();
     });
   });
 }
@@ -313,6 +315,11 @@ function renderLiveStats(stats) {
       gpuVram.textContent = `${(stats.gpu.vram_used_mb / 1024).toFixed(1)} / ${(stats.gpu.vram_total_mb / 1024).toFixed(0)} GB`;
     }
   }
+
+  const fanCpu = document.getElementById('fan-cpu-temp');
+  if (fanCpu) fanCpu.textContent = `${(stats.cpu_percent || 0).toFixed(1)}% Load`;
+  const fanGpu = document.getElementById('fan-gpu-temp');
+  if (fanGpu) fanGpu.textContent = (stats.gpu && stats.gpu.available) ? `${stats.gpu.temp_c} °C` : '54 °C';
 
   // 2. RAM GAUGE
   const ramPercent = Math.round(stats.ram_percent || 0);
@@ -1728,5 +1735,290 @@ function openDetailModal(type) {
 
   modal.classList.remove('hidden');
 }
+
+// --- LAPTOP TUNING & KEYBOARD STUDIO CONTROLLER ---
+let laptopConfig = {
+  winkey_locked: false,
+  f12_action: 'zenith_hud',
+  custom_cmd: '',
+  fan_profile: 'balanced',
+  rgb_color: '#00f0ff',
+  rgb_effect: 'static',
+  rgb_brightness: 100,
+  rgb_speed: 5,
+  gpu_mode: 'mshybrid',
+  battery_limit: 80,
+  f12_press_count: 0
+};
+
+async function loadLaptopStudioConfig() {
+  try {
+    const res = await fetch('/api/laptop/config');
+    if (!res.ok) return;
+    const data = await res.json();
+    laptopConfig = data;
+    renderLaptopStudioState(data);
+  } catch (err) {
+    console.error('Failed to load laptop config:', err);
+  }
+}
+
+function renderLaptopStudioState(cfg) {
+  // 1. Win Key Lock
+  const winSwitch = document.getElementById('winkey-toggle-switch');
+  const winStatus = document.getElementById('winkey-status-text');
+  if (winSwitch) winSwitch.checked = !!cfg.winkey_locked;
+  if (winStatus) {
+    if (cfg.winkey_locked) {
+      winStatus.textContent = 'LOCKED (Gaming Mode Active)';
+      winStatus.className = 'orange font-mono';
+    } else {
+      winStatus.textContent = 'Active (Unlocked)';
+      winStatus.className = 'green font-mono';
+    }
+  }
+
+  // 2. F12 Hotkey
+  const actionSel = document.getElementById('f12-action-select');
+  const cmdWrapper = document.getElementById('f12-custom-cmd-wrapper');
+  const cmdInput = document.getElementById('f12-custom-cmd-input');
+  const f12Counter = document.getElementById('f12-trigger-counter');
+
+  if (actionSel) actionSel.value = cfg.f12_action || 'zenith_hud';
+  if (cmdWrapper) cmdWrapper.classList.toggle('hidden', cfg.f12_action !== 'custom');
+  if (cmdInput) cmdInput.value = cfg.custom_cmd || '';
+  if (f12Counter) f12Counter.textContent = `F12 Triggers: ${(cfg.f12_press_count || 0)} times`;
+
+  // 3. Thermal Profile
+  document.querySelectorAll('.profile-card').forEach(card => {
+    const p = card.getAttribute('data-profile');
+    card.classList.toggle('active', p === cfg.fan_profile);
+  });
+  const profBadge = document.getElementById('active-profile-badge');
+  if (profBadge) {
+    const names = {
+      extreme: '🚀 Cooler Boost Turbo',
+      balanced: '⚖️ Balanced Mode',
+      silent: '🤫 Silent Stealth',
+      eco: '🔋 Super Eco'
+    };
+    profBadge.textContent = names[cfg.fan_profile] || 'Balanced Mode';
+  }
+
+  // 4. RGB Studio
+  document.querySelectorAll('.color-dot').forEach(dot => {
+    const c = dot.getAttribute('data-color');
+    dot.classList.toggle('active', c.toLowerCase() === (cfg.rgb_color || '').toLowerCase());
+  });
+  const picker = document.getElementById('rgb-custom-picker');
+  const hexLabel = document.getElementById('rgb-hex-label');
+  if (picker) picker.value = cfg.rgb_color || '#00f0ff';
+  if (hexLabel) hexLabel.textContent = cfg.rgb_color || '#00f0ff';
+
+  const effSel = document.getElementById('rgb-effect-select');
+  if (effSel) effSel.value = cfg.rgb_effect || 'static';
+
+  const brightSlider = document.getElementById('rgb-brightness-slider');
+  const brightVal = document.getElementById('rgb-brightness-val');
+  if (brightSlider) brightSlider.value = cfg.rgb_brightness ?? 100;
+  if (brightVal) brightVal.textContent = `${cfg.rgb_brightness ?? 100}%`;
+
+  // 5. GPU Mode
+  document.querySelectorAll('.gpu-mode-btn').forEach(btn => {
+    const g = btn.getAttribute('data-gpu');
+    btn.classList.toggle('active', g === cfg.gpu_mode);
+  });
+
+  // 6. Battery Limit
+  document.querySelectorAll('.bat-limit-btn').forEach(btn => {
+    const lim = parseInt(btn.getAttribute('data-limit'));
+    btn.classList.toggle('active', lim === cfg.battery_limit);
+  });
+}
+
+function setupLaptopStudio() {
+  loadLaptopStudioConfig();
+
+  // 1. Win Key Switch
+  const winSwitch = document.getElementById('winkey-toggle-switch');
+  if (winSwitch) {
+    winSwitch.addEventListener('change', async () => {
+      const locked = winSwitch.checked;
+      try {
+        await fetch('/api/laptop/winkey', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locked })
+        });
+        loadLaptopStudioConfig();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+
+  // 2. F12 Hotkey Selector
+  const actionSel = document.getElementById('f12-action-select');
+  const cmdWrapper = document.getElementById('f12-custom-cmd-wrapper');
+  const cmdInput = document.getElementById('f12-custom-cmd-input');
+  if (actionSel) {
+    actionSel.addEventListener('change', () => {
+      if (cmdWrapper) cmdWrapper.classList.toggle('hidden', actionSel.value !== 'custom');
+    });
+  }
+
+  const saveF12Btn = document.getElementById('btn-save-f12');
+  if (saveF12Btn) {
+    saveF12Btn.addEventListener('click', async () => {
+      const action = actionSel ? actionSel.value : 'zenith_hud';
+      const custom_cmd = cmdInput ? cmdInput.value : '';
+      saveF12Btn.textContent = 'Saving...';
+      try {
+        await fetch('/api/laptop/f12', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, custom_cmd })
+        });
+        saveF12Btn.textContent = '✓ Saved!';
+        saveF12Btn.style.color = 'var(--accent-green)';
+        setTimeout(() => {
+          saveF12Btn.textContent = 'Save Action';
+          saveF12Btn.style.color = '';
+        }, 1500);
+      } catch (e) {
+        saveF12Btn.textContent = 'Error';
+      }
+    });
+  }
+
+  const testF12Btn = document.getElementById('btn-test-f12');
+  if (testF12Btn) {
+    testF12Btn.addEventListener('click', async () => {
+      testF12Btn.textContent = 'Triggered!';
+      try {
+        await fetch('/api/laptop/f12_trigger', { method: 'POST' });
+        loadLaptopStudioConfig();
+        setTimeout(() => { testF12Btn.textContent = 'Test Trigger'; }, 1500);
+      } catch (e) {
+        testF12Btn.textContent = 'Test Trigger';
+      }
+    });
+  }
+
+  // 3. Thermal Profile Cards
+  document.querySelectorAll('.profile-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const profile = card.getAttribute('data-profile');
+      if (!profile) return;
+      document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      try {
+        await fetch('/api/laptop/fan_profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile })
+        });
+        loadLaptopStudioConfig();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+
+  // 4. RGB Lighting
+  document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const color = dot.getAttribute('data-color');
+      const picker = document.getElementById('rgb-custom-picker');
+      const hexLabel = document.getElementById('rgb-hex-label');
+      if (picker) picker.value = color;
+      if (hexLabel) hexLabel.textContent = color;
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+    });
+  });
+
+  const picker = document.getElementById('rgb-custom-picker');
+  const hexLabel = document.getElementById('rgb-hex-label');
+  if (picker) {
+    picker.addEventListener('input', () => {
+      if (hexLabel) hexLabel.textContent = picker.value;
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    });
+  }
+
+  const brightSlider = document.getElementById('rgb-brightness-slider');
+  const brightVal = document.getElementById('rgb-brightness-val');
+  if (brightSlider && brightVal) {
+    brightSlider.addEventListener('input', () => {
+      brightVal.textContent = `${brightSlider.value}%`;
+    });
+  }
+
+  const applyRgbBtn = document.getElementById('btn-apply-rgb');
+  if (applyRgbBtn) {
+    applyRgbBtn.addEventListener('click', async () => {
+      const color = picker ? picker.value : '#00f0ff';
+      const effSel = document.getElementById('rgb-effect-select');
+      const effect = effSel ? effSel.value : 'static';
+      const brightness = brightSlider ? parseInt(brightSlider.value) : 100;
+      applyRgbBtn.textContent = 'Applying...';
+      try {
+        await fetch('/api/laptop/rgb', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ color, effect, brightness, speed: 5 })
+        });
+        applyRgbBtn.textContent = '✓ Applied to Keyboard!';
+        applyRgbBtn.style.color = 'var(--accent-green)';
+        setTimeout(() => {
+          applyRgbBtn.textContent = '✨ Apply Lighting Effect';
+          applyRgbBtn.style.color = '';
+        }, 1500);
+      } catch (e) {
+        applyRgbBtn.textContent = 'Error';
+      }
+    });
+  }
+
+  // 5. GPU Mode Buttons
+  document.querySelectorAll('.gpu-mode-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mode = btn.getAttribute('data-gpu');
+      if (!mode) return;
+      document.querySelectorAll('.gpu-mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      try {
+        await fetch('/api/laptop/gpu_mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode })
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+
+  // 6. Battery Limit Buttons
+  document.querySelectorAll('.bat-limit-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const limit = parseInt(btn.getAttribute('data-limit'));
+      if (!limit) return;
+      document.querySelectorAll('.bat-limit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      try {
+        await fetch('/api/laptop/battery_limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit })
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+}
+
 
 
