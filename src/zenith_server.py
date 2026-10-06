@@ -173,20 +173,56 @@ def get_installed_apps():
 
 def get_processes():
     procs = []
-    for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']):
+    total_threads = 0
+    for p in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_info', 'memory_percent', 'num_threads', 'status']):
         try:
             info = p.info
-            ram_mb = (info['memory_info'].rss / (1024 * 1024)) if info['memory_info'] else 0
+            pid = info['pid']
+            name = info['name'] or f"PID {pid}"
+            user = (info['username'] or '').split('\\')[-1]
+            cpu = info['cpu_percent'] or 0.0
+            threads = info['num_threads'] or 0
+            total_threads += threads
+            status = info['status'] or 'running'
+
+            mem_info = info['memory_info']
+            ram_mb = round((mem_info.rss / (1024 * 1024)), 1) if mem_info else 0.0
+            ram_pct = round(info['memory_percent'] or 0.0, 1)
+
+            disk_mb = 0.0
+            try:
+                io = p.io_counters()
+                disk_mb = round((io.read_bytes + io.write_bytes) / (1024 * 1024), 1)
+            except Exception:
+                pass
+
+            exe = ""
+            try:
+                exe = p.exe()
+            except Exception:
+                pass
+
             procs.append({
-                "pid": info['pid'],
-                "name": info['name'],
-                "cpu_percent": info['cpu_percent'] or 0.0,
-                "ram_mb": ram_mb
+                "pid": pid,
+                "name": name,
+                "user": user or "SYSTEM",
+                "cpu_percent": cpu,
+                "ram_mb": ram_mb,
+                "ram_pct": ram_pct,
+                "disk_mb": disk_mb,
+                "threads": threads,
+                "status": status,
+                "exe": exe
             })
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
+
     procs.sort(key=lambda x: x['ram_mb'], reverse=True)
-    return procs[:60]
+    return {
+        "total_processes": len(procs),
+        "total_threads": total_threads,
+        "processes": procs[:150]
+    }
 
 def search_files(query):
     results = []
@@ -689,6 +725,16 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             fpath = query.get("path", [""])[0]
             if fpath and os.path.exists(fpath):
                 subprocess.Popen(f'explorer /select,"{fpath}"', shell=True)
+            self.send_json({"opened": True})
+        elif path == "/api/processes/open_location":
+            pid_raw = query.get("pid", ["0"])[0]
+            try:
+                p = psutil.Process(int(pid_raw))
+                exe = p.exe()
+                if exe and os.path.exists(exe):
+                    subprocess.Popen(f'explorer /select,"{exe}"', shell=True)
+            except Exception:
+                pass
             self.send_json({"opened": True})
         else:
             super().do_GET()

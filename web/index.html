@@ -128,10 +128,10 @@
         <!-- TOP GAUGES GRID -->
         <div class="grid-5">
           <!-- CPU GAUGE -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="cpu">
             <div class="card-header">
               <span class="card-title">Processor (CPU)</span>
-              <span class="tag-pill" id="cpu-temp-tag">Intel Ultra 7</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div class="gauge-wrapper">
               <div class="circle-progress">
@@ -151,10 +151,10 @@
           </div>
 
           <!-- GPU GAUGE -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="gpu">
             <div class="card-header">
               <span class="card-title">Graphics (GPU)</span>
-              <span class="tag-pill purple" id="gpu-temp-badge">56 °C</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div class="gauge-wrapper">
               <div class="circle-progress">
@@ -181,10 +181,10 @@
           </div>
 
           <!-- RAM GAUGE -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="ram">
             <div class="card-header">
               <span class="card-title">Memory (RAM)</span>
-              <span class="tag-pill">DDR5 6400</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div class="gauge-wrapper">
               <div class="circle-progress">
@@ -211,10 +211,10 @@
           </div>
 
           <!-- BATTERY CARD -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="battery">
             <div class="card-header">
               <span class="card-title">Battery & Power</span>
-              <span class="tag-pill green" id="bat-status-badge">Plugged In</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div class="gauge-wrapper">
               <div class="circle-progress">
@@ -241,10 +241,10 @@
           </div>
 
           <!-- NETWORK CARD -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="network">
             <div class="card-header">
               <span class="card-title">Network I/O</span>
-              <span class="tag-pill blue">Live Stream</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div class="net-stats-container">
               <div class="net-row">
@@ -272,12 +272,13 @@
         <!-- LOWER ROW: NPU, GPU, DISK CARDS -->
         <div class="grid-3 mt-4">
           <!-- NPU CARD -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="npu">
             <div class="card-header">
               <div class="card-title-group">
                 <span class="card-title">Neural Processing Unit (NPU)</span>
                 <span class="badge-accent">2026 Gen</span>
               </div>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div class="hardware-spec-row">
               <span class="spec-name">Device Model</span>
@@ -298,10 +299,10 @@
           </div>
 
           <!-- GPU & DISPLAYS CARD -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="displays">
             <div class="card-header">
               <span class="card-title">Active Displays</span>
-              <span class="tag-pill purple">144 Hz</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div id="displays-list">
               <!-- Dynamically populated -->
@@ -309,10 +310,10 @@
           </div>
 
           <!-- STORAGE DISKS CARD -->
-          <div class="card glass-card">
+          <div class="card glass-card clickable-card" data-modal="storage">
             <div class="card-header">
               <span class="card-title">Physical Storage</span>
-              <span class="tag-pill cyan">PCIe Gen4 NVMe</span>
+              <span class="card-expand-hint">🔍 Details</span>
             </div>
             <div id="storage-list">
               <!-- Dynamically populated -->
@@ -321,7 +322,7 @@
         </div>
 
         <!-- LIVE 60-SECOND PERFORMANCE STREAM -->
-        <div class="card glass-card mt-4">
+        <div class="card glass-card clickable-card mt-4" data-modal="performance">
           <div class="card-header">
             <div class="card-title-group">
               <span class="card-title">Real-Time Performance Stream (Last 60 Seconds)</span>
@@ -330,6 +331,7 @@
             <div class="chart-legend">
               <span class="legend-item"><span class="legend-dot cyan"></span> CPU Load (%)</span>
               <span class="legend-item"><span class="legend-dot purple"></span> GPU Temp (°C)</span>
+              <span class="card-expand-hint" style="margin-left: 12px;">🔍 Expand</span>
             </div>
           </div>
           <div class="chart-canvas-wrapper mt-2">
@@ -340,28 +342,119 @@
 
       <!-- TAB 2: DETAILED HARDWARE IDENTITY -->
       <section class="tab-pane" id="tab-hardware">
+        <!-- SYSTEM HERO BANNER -->
+        <div class="card glass-card hw-hero-banner mb-4">
+          <div class="hw-hero-left">
+            <div class="brand-icon" style="width: 48px; height: 48px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line></svg>
+            </div>
+            <div>
+              <h3 id="hw-hero-title">MSI Gaming Notebook MS-15M3</h3>
+              <p class="subtitle" id="hw-hero-sub">Intel Core Ultra 7 255HX • NVIDIA RTX 5070 Ti • 32 GB DDR5-6400 • Windows 11 Pro</p>
+            </div>
+          </div>
+          <div class="hw-hero-right">
+            <button class="btn btn-secondary" id="btn-refresh-hw">🔄 Re-Scan Hardware</button>
+            <button class="btn btn-primary" id="btn-export-hw">📋 Copy HWiNFO Specs</button>
+          </div>
+        </div>
+
         <div class="grid-2">
-          <!-- CPU DETAILED -->
+          <!-- CARD 1: MOTHERBOARD & BIOS -->
           <div class="card glass-card">
-            <h3 class="box-title">Processor Topology & Architecture</h3>
-            <div class="spec-table" id="cpu-detail-table">
-              <!-- Filled by JS -->
+            <div class="card-header">
+              <span class="card-title">Motherboard & BIOS Firmware</span>
+              <span class="tag-pill cyan">UEFI Insyde/AMI</span>
+            </div>
+            <div class="spec-table" id="hw-mb-table">
+              <!-- Injected by JS -->
             </div>
           </div>
 
-          <!-- BATTERY & POWER DETAILED -->
+          <!-- CARD 2: OPERATING SYSTEM & KERNEL -->
           <div class="card glass-card">
-            <h3 class="box-title">Battery Health & Power Delivery</h3>
-            <div class="spec-table" id="bat-detail-table">
-              <!-- Filled by JS -->
+            <div class="card-header">
+              <span class="card-title">Operating System & Kernel</span>
+              <span class="tag-pill blue">Windows 11 x64</span>
+            </div>
+            <div class="spec-table" id="hw-os-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- CARD 3: PROCESSOR (CPU) DEEP TOPOLOGY -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Processor Topology & Silicon</span>
+              <span class="tag-pill purple">20 Cores / 36MB L2</span>
+            </div>
+            <div class="spec-table" id="hw-cpu-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- CARD 4: PHYSICAL MEMORY (DDR5 RAM MODULES) -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Physical Memory (DDR5 SODIMM)</span>
+              <span class="tag-pill green">6400 MT/s Dual Channel</span>
+            </div>
+            <div class="spec-table" id="hw-ram-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- CARD 5: GRAPHICS (GPU) & DISPLAYS -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Graphics Subsystem & Driver</span>
+              <span class="tag-pill purple">RTX 5070 Ti 144Hz</span>
+            </div>
+            <div class="spec-table" id="hw-gpu-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- CARD 6: AUDIO DEVICES & ENDPOINTS -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Audio Hardware & Endpoints</span>
+              <span class="tag-pill cyan">Realtek / Nahimic</span>
+            </div>
+            <div class="spec-table" id="hw-audio-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- CARD 7: BATTERY HEALTH & POWER DELIVERY -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">Battery Health & Power Delivery</span>
+              <span class="tag-pill green">ACPI Win32 IOCTL</span>
+            </div>
+            <div class="spec-table" id="hw-bat-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- CARD 8: AI NPU & STORAGE CONTROLLERS -->
+          <div class="card glass-card">
+            <div class="card-header">
+              <span class="card-title">AI Accelerators & Storage Controllers</span>
+              <span class="tag-pill blue">DirectML / PCIe Gen4</span>
+            </div>
+            <div class="spec-table" id="hw-accel-table">
+              <!-- Injected by JS -->
             </div>
           </div>
         </div>
 
         <div class="card glass-card mt-4">
-          <h3 class="box-title">Local Hardware Cache (hardware_cache.json)</h3>
-          <p class="subtitle mb-2">Stored locally on the machine for instant sub-millisecond cold boot retrieval.</p>
-          <pre class="json-viewer" id="raw-json-viewer"></pre>
+          <div class="card-header">
+            <span class="card-title">Native Hardware Cache Dump (`hardware_cache.json`)</span>
+            <span class="subtitle">Sub-millisecond local cold boot snapshot</span>
+          </div>
+          <pre class="json-viewer mt-2" id="raw-json-viewer"></pre>
         </div>
       </section>
 
@@ -375,18 +468,23 @@
             </div>
             <div class="task-stats">
               <span id="active-proc-count">Active Processes: 0</span>
-              <button class="btn btn-secondary" id="refresh-procs-btn">Refresh</button>
+              <span id="active-thread-count" class="badge" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); font-weight: 700;">0 Threads</span>
+              <button class="btn btn-secondary" id="refresh-procs-btn">🔄 Refresh</button>
             </div>
           </div>
 
-          <div class="table-container">
+          <div class="table-container" style="max-height: 540px; overflow-y: auto;">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>PID</th>
-                  <th>Process Name</th>
-                  <th>CPU Usage</th>
-                  <th>Memory (RAM)</th>
+                  <th class="sortable-th" data-col="pid">PID <span class="sort-icon"></span></th>
+                  <th class="sortable-th" data-col="name">Process Name <span class="sort-icon"></span></th>
+                  <th class="sortable-th" data-col="user">User <span class="sort-icon"></span></th>
+                  <th class="sortable-th" data-col="cpu_percent">CPU % <span class="sort-icon"></span></th>
+                  <th class="sortable-th active" data-col="ram_mb">Memory (RAM) <span class="sort-icon">↓</span></th>
+                  <th class="sortable-th" data-col="disk_mb">Disk I/O <span class="sort-icon"></span></th>
+                  <th class="sortable-th" data-col="threads">Threads <span class="sort-icon"></span></th>
+                  <th class="sortable-th" data-col="status">Status <span class="sort-icon"></span></th>
                   <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
@@ -842,6 +940,25 @@
 
   <!-- FULLSCREEN PIXEL OVERLAY (Hidden by default) -->
   <div id="fullscreen-pixel-overlay" class="hidden"></div>
+
+  <!-- CENTERED DETAIL MODAL OVERLAY -->
+  <div id="zenith-detail-modal" class="modal-overlay hidden">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon" id="modal-icon">⚡</div>
+          <div>
+            <h3 id="modal-title">Subsystem Detail</h3>
+            <span class="subtitle" id="modal-subtitle">Real-time hardware telemetry and diagnostic parameters</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="modal-close-btn" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Injected dynamically by JS -->
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

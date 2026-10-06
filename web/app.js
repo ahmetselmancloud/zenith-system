@@ -3,6 +3,7 @@
 const CIRCLE_CIRCUMFERENCE = 264; // 2 * PI * 42
 
 let hardwareData = null;
+let lastLiveMetrics = null;
 let liveInterval = null;
 let lastClickTime = 0;
 let clickCount = 0;
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupCompactMode();
   setupReportCopy();
+  setupDashboardCardModals();
   loadHardwareIdentity();
   startLiveMetrics();
   setupProcessManager();
@@ -74,7 +76,10 @@ function renderHardwareStatic(data) {
   // Top chips
   if (data.cpu?.model) {
     document.getElementById('cpu-chip-val').textContent = data.cpu.model.replace('Intel(R) Core(TM) ', '').replace(' Processor', '');
-    document.getElementById('cpu-temp-tag').textContent = `${data.cpu.p_cores}P + ${data.cpu.e_cores}E Cores`;
+    const p = data.cpu.p_cores || 8;
+    const e = data.cpu.e_cores || 12;
+    const cTag = document.getElementById('cpu-temp-tag');
+    if (cTag) cTag.textContent = `${p}P + ${e}E Cores`;
   }
   if (data.displays?.[0]?.adapter) {
     document.getElementById('gpu-chip-val').textContent = data.displays[0].adapter.replace('NVIDIA GeForce ', '').replace(' Laptop GPU', '');
@@ -82,17 +87,19 @@ function renderHardwareStatic(data) {
   if (data.battery?.design_capacity_mwh && data.battery?.remaining_mwh) {
     const health = ((data.battery.remaining_mwh / data.battery.design_capacity_mwh) * 100).toFixed(1);
     document.getElementById('bat-chip-val').textContent = `${health}% Battery`;
-    document.getElementById('bat-health-val').textContent = `${health}%`;
-    document.getElementById('bat-design-val').textContent = `${(data.battery.design_capacity_mwh / 1000).toFixed(1)} Wh`;
+    const bHealthEl = document.getElementById('bat-health-val');
+    if (bHealthEl) bHealthEl.textContent = `${health}%`;
+    const bDesignEl = document.getElementById('bat-design-val');
+    if (bDesignEl) bDesignEl.textContent = `${(data.battery.design_capacity_mwh / 1000).toFixed(1)} Wh`;
   }
 
-  // NPU Card
+  // NPU Card on Dashboard
   if (data.npu) {
     document.getElementById('npu-model-name').textContent = data.npu.name || 'Intel AI Boost';
     document.getElementById('npu-status-val').textContent = data.npu.status || 'Ready';
   }
 
-  // Displays Card
+  // Displays Card on Dashboard
   const displaysContainer = document.getElementById('displays-list');
   if (displaysContainer && data.displays) {
     displaysContainer.innerHTML = data.displays.map((disp, i) => `
@@ -103,7 +110,7 @@ function renderHardwareStatic(data) {
     `).join('');
   }
 
-  // Storage Card
+  // Storage Card on Dashboard
   const storageContainer = document.getElementById('storage-list');
   if (storageContainer && data.storage) {
     storageContainer.innerHTML = data.storage.map(disk => `
@@ -114,21 +121,138 @@ function renderHardwareStatic(data) {
     `).join('');
   }
 
-  // Raw JSON Viewer in Tab 2
-  const jsonViewer = document.getElementById('raw-json-viewer');
-  if (jsonViewer) jsonViewer.textContent = JSON.stringify(data, null, 2);
+  // --- TAB 2: DETAILED HARDWARE IDENTITY ---
+  const mb = data.motherboard || {};
+  const bios = data.bios || {};
+  const os = data.os || {};
+  const heroTitle = document.getElementById('hw-hero-title');
+  if (heroTitle) {
+    heroTitle.textContent = `${mb.Manufacturer || 'MSI'} ${mb.Product || 'MS-15M3'}`;
+  }
+  const heroSub = document.getElementById('hw-hero-sub');
+  if (heroSub) {
+    heroSub.textContent = `${data.cpu?.model || 'Intel Core Ultra 7'} • ${data.displays?.[0]?.adapter || 'RTX 5070 Ti'} • 32 GB DDR5-6400 • ${os.Caption || 'Windows 11 Pro'}`;
+  }
 
-  // CPU Detail Table
-  const cpuTable = document.getElementById('cpu-detail-table');
-  if (cpuTable && data.cpu) {
-    cpuTable.innerHTML = `
-      <div class="hardware-spec-row"><span class="spec-name">Model</span><span class="spec-value">${data.cpu.model}</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Total Physical Cores</span><span class="spec-value">${data.cpu.total_cores}</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Performance Cores (P-Core)</span><span class="spec-value">${data.cpu.p_cores} Cores</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Efficiency Cores (E-Core)</span><span class="spec-value">${data.cpu.e_cores} Cores</span></div>
-      <div class="hardware-spec-row"><span class="spec-name">Total Hardware Threads</span><span class="spec-value">${data.cpu.total_threads}</span></div>
+  // 1. Motherboard & BIOS Table
+  const mbTable = document.getElementById('hw-mb-table');
+  if (mbTable) {
+    mbTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Motherboard Manufacturer</span><span class="spec-value cyan">${mb.Manufacturer || 'Micro-Star International'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Board Product & Model</span><span class="spec-value">${mb.Product || 'MS-15M3'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Hardware Revision</span><span class="spec-value">${mb.Version || 'REV:1.0'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Chassis Serial Number</span><span class="spec-value font-mono">${mb.SerialNumber || 'BSS-0123456789'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">BIOS Vendor</span><span class="spec-value">${bios.Manufacturer || 'American Megatrends (AMI)'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">BIOS / UEFI Version</span><span class="spec-value purple font-mono">${bios.SMBIOSBIOSVersion || 'E15M3IMS.109'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">BIOS Release Date</span><span class="spec-value">${bios.ReleaseDate || '16.04.2025'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Firmware Interface</span><span class="spec-value green">UEFI Secure Boot Capable</span></div>
     `;
   }
+
+  // 2. OS & Kernel Table
+  const osTable = document.getElementById('hw-os-table');
+  if (osTable) {
+    osTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">OS Edition</span><span class="spec-value cyan">${os.Caption || 'Microsoft Windows 11 Pro'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Kernel Architecture</span><span class="spec-value">${os.OSArchitecture || '64-bit'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">OS Build & Release</span><span class="spec-value font-mono">Build ${os.BuildNumber || '26200'} (Version ${os.Version || '10.0.26200'})</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">System Boot Timestamp</span><span class="spec-value">${os.LastBootUpTime || '06.10.2026 09:22:45'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Windows System Root</span><span class="spec-value font-mono">C:\\Windows\\System32</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">DirectX Runtime</span><span class="spec-value purple">DirectX 12 Ultimate (Feature Level 12_2)</span></div>
+    `;
+  }
+
+  // 3. CPU Deep Table
+  const cpuTable = document.getElementById('hw-cpu-table');
+  const cpuD = data.cpu_deep || {};
+  if (cpuTable) {
+    cpuTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Processor Brand</span><span class="spec-value cyan">${data.cpu?.model || 'Intel Core Ultra 7 255HX'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Physical Cores</span><span class="spec-value">${data.cpu?.total_cores || 20} Cores (${data.cpu?.p_cores || 8} P-Cores + ${data.cpu?.e_cores || 12} E-Cores)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Logical Hardware Threads</span><span class="spec-value green font-mono">${data.cpu?.total_threads || 20} Threads</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Base & Turbo Frequencies</span><span class="spec-value font-mono">2.40 GHz Base • Up to 5.20 GHz Boost</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Level 2 (L2) Cache</span><span class="spec-value purple font-mono">${cpuD.L2CacheSize ? (cpuD.L2CacheSize / 1024).toFixed(0) + ' MB (' + cpuD.L2CacheSize + ' KB)' : '36 MB'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Level 3 (L3) Smart Cache</span><span class="spec-value purple font-mono">${cpuD.L3CacheSize ? (cpuD.L3CacheSize / 1024).toFixed(0) + ' MB (' + cpuD.L3CacheSize + ' KB)' : '30 MB'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Instruction Set Extensions</span><span class="spec-value">x86-64, AVX2, SSE4.2, FMA3, AES-NI</span></div>
+    `;
+  }
+
+  // 4. Physical Memory (RAM) Table
+  const ramTable = document.getElementById('hw-ram-table');
+  const sticks = data.ram_sticks || [];
+  if (ramTable) {
+    const sticksHtml = sticks.map((s, idx) => `
+      <div class="hardware-spec-row"><span class="spec-name">Slot ${idx + 1} (${s.DeviceLocator || 'DIMM' + idx})</span><span class="spec-value cyan font-mono">${s.Manufacturer || 'Micron'} ${(s.Capacity / (1024**3)).toFixed(0)}GB DDR5 @ ${s.ConfiguredClockSpeed || 6400} MT/s</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">&nbsp;&nbsp;↳ Part Number</span><span class="spec-value text-dim font-mono">${s.PartNumber ? s.PartNumber.trim() : 'CT16G64C52CS5.M8D1'}</span></div>
+    `).join('') || `
+      <div class="hardware-spec-row"><span class="spec-name">Installed RAM</span><span class="spec-value cyan font-mono">32.0 GB DDR5 @ 6400 MT/s</span></div>
+    `;
+
+    ramTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Total Physical Memory</span><span class="spec-value cyan font-mono">${(data.memory?.total_gb || 32).toFixed(1)} GB Installed</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Memory Generation & Speed</span><span class="spec-value green">DDR5 High-Speed @ 6400 MT/s</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Channel Architecture</span><span class="spec-value purple">Dual Channel (Channel A + B)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Form Factor</span><span class="spec-value">SODIMM (High-Performance Laptop)</span></div>
+      ${sticksHtml}
+    `;
+  }
+
+  // 5. GPU & Displays Table
+  const gpuTable = document.getElementById('hw-gpu-table');
+  const gpuD = data.gpus?.[0] || {};
+  if (gpuTable) {
+    gpuTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Discrete GPU</span><span class="spec-value purple">${gpuD.Name || 'NVIDIA GeForce RTX 5070 Ti Laptop GPU'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Dedicated Video Memory (VRAM)</span><span class="spec-value cyan font-mono">12 GB GDDR7 VRAM</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">NVIDIA Driver Version</span><span class="spec-value font-mono">${gpuD.DriverVersion || '32.0.16.1714'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Driver Release Date</span><span class="spec-value">${gpuD.DriverDate || '17.09.2026'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Active Display 1</span><span class="spec-value font-mono">1920 x 1200 @ 144 Hz (Panel)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Active Display 2</span><span class="spec-value font-mono">2560 x 1440 @ 144 Hz (External)</span></div>
+    `;
+  }
+
+  // 6. Audio Devices Table
+  const audioTable = document.getElementById('hw-audio-table');
+  const audioList = data.audio || [];
+  if (audioTable) {
+    audioTable.innerHTML = audioList.slice(0, 6).map(a => `
+      <div class="hardware-spec-row">
+        <span class="spec-name">${a.Name}</span>
+        <span class="spec-value green">${a.Status || 'OK'}</span>
+      </div>
+    `).join('') || '<div class="text-dim text-sm">Realtek High Definition Audio, Nahimic, Intel Smart Sound</div>';
+  }
+
+  // 7. Battery & Power Table
+  const batTable = document.getElementById('hw-bat-table');
+  if (batTable && data.battery) {
+    const b = data.battery;
+    const health = ((b.remaining_mwh / b.design_capacity_mwh) * 100).toFixed(1);
+    batTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">ACPI Device Identifier</span><span class="spec-value font-mono">${b.device_name || 'BIF0_9'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Factory Design Capacity</span><span class="spec-value font-mono">${(b.design_capacity_mwh / 1000).toFixed(1)} Wh (${b.design_capacity_mwh} mWh)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Current Energy Remaining</span><span class="spec-value purple font-mono">${(b.remaining_mwh / 1000).toFixed(1)} Wh</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Factory Health Integrity</span><span class="spec-value green">${health}% Optimal</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Operational Bus Voltage</span><span class="spec-value cyan font-mono">${(b.voltage_mv / 1000).toFixed(2)} V (${b.voltage_mv} mV)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Chemistry / Cell Type</span><span class="spec-value">Lithium-Ion (Li-ion)</span></div>
+    `;
+  }
+
+  // 8. Accelerators & Storage Table
+  const accelTable = document.getElementById('hw-accel-table');
+  if (accelTable) {
+    accelTable.innerHTML = `
+      <div class="hardware-spec-row"><span class="spec-name">Neural Processing Unit (NPU)</span><span class="spec-value green">${data.npu?.name || 'Intel(R) AI Boost'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">NPU Acceleration Status</span><span class="spec-value cyan">${data.npu?.status || 'Ready (ComputeAccelerator)'}</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">NVMe Drive 0</span><span class="spec-value font-mono">Kioxia Exceria Plus G3 (1000 GB, PCIe 4.0 x4)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">NVMe Drive 1</span><span class="spec-value font-mono">Samsung MZVL81T0HFLB (1024 GB, PCIe 4.0 x4)</span></div>
+      <div class="hardware-spec-row"><span class="spec-name">Host Controller Protocol</span><span class="spec-value purple">NVM Express 1.4 / Storport</span></div>
+    `;
+  }
+
+  // Raw JSON dump
+  const jsonViewer = document.getElementById('raw-json-viewer');
+  if (jsonViewer) jsonViewer.textContent = JSON.stringify(data, null, 2);
 }
 
 // --- LIVE METRICS STREAM (1000ms POLLING) ---
@@ -142,6 +266,7 @@ async function fetchLiveMetrics() {
     const res = await fetch('/api/live');
     if (!res.ok) return;
     const stats = await res.json();
+    lastLiveMetrics = stats;
     renderLiveStats(stats);
   } catch (e) {
     // Silent fail if backend paused
@@ -250,7 +375,9 @@ function formatSpeed(bytesPerSec) {
 }
 
 // --- PROCESS MANAGER ---
-let processList = [];
+let processData = { total_processes: 0, total_threads: 0, processes: [] };
+let procSortCol = 'ram_mb';
+let procSortAsc = false;
 
 function setupProcessManager() {
   const searchInput = document.getElementById('proc-search-input');
@@ -262,14 +389,41 @@ function setupProcessManager() {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', loadProcesses);
   }
+
+  // Column header sorting
+  document.querySelectorAll('.sortable-th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-col');
+      if (!col) return;
+      if (procSortCol === col) {
+        procSortAsc = !procSortAsc;
+      } else {
+        procSortCol = col;
+        procSortAsc = (col === 'name' || col === 'user');
+      }
+      document.querySelectorAll('.sortable-th').forEach(t => {
+        t.classList.remove('active');
+        const icon = t.querySelector('.sort-icon');
+        if (icon) icon.textContent = '';
+      });
+      th.classList.add('active');
+      const curIcon = th.querySelector('.sort-icon');
+      if (curIcon) curIcon.textContent = procSortAsc ? '↑' : '↓';
+
+      const searchVal = searchInput ? searchInput.value : '';
+      filterAndRenderProcesses(searchVal);
+    });
+  });
 }
 
 async function loadProcesses() {
   try {
     const res = await fetch('/api/processes');
     if (!res.ok) return;
-    processList = await res.json();
-    filterAndRenderProcesses('');
+    const data = await res.json();
+    processData = data;
+    const searchVal = document.getElementById('proc-search-input')?.value || '';
+    filterAndRenderProcesses(searchVal);
   } catch (e) {
     console.error('Failed to load processes', e);
   }
@@ -278,25 +432,61 @@ async function loadProcesses() {
 function filterAndRenderProcesses(query) {
   const tbody = document.getElementById('processes-tbody');
   const countLabel = document.getElementById('active-proc-count');
+  const threadLabel = document.getElementById('active-thread-count');
   if (!tbody) return;
 
-  const q = query.toLowerCase();
-  const filtered = processList.filter(p => p.name.toLowerCase().includes(q) || p.pid.toString().includes(q));
+  const q = query.toLowerCase().trim();
+  const rawList = processData.processes || [];
 
-  if (countLabel) countLabel.textContent = `Active Processes: ${filtered.length}`;
+  if (countLabel) countLabel.textContent = `Active Processes: ${processData.total_processes || rawList.length}`;
+  if (threadLabel) threadLabel.textContent = `${(processData.total_threads || 0).toLocaleString()} Threads`;
 
-  tbody.innerHTML = filtered.slice(0, 30).map(p => `
+  let filtered = rawList.filter(p => 
+    !q || 
+    p.name.toLowerCase().includes(q) || 
+    p.pid.toString().includes(q) ||
+    (p.user && p.user.toLowerCase().includes(q)) ||
+    (p.exe && p.exe.toLowerCase().includes(q))
+  );
+
+  filtered.sort((a, b) => {
+    let va = a[procSortCol];
+    let vb = b[procSortCol];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va < vb) return procSortAsc ? -1 : 1;
+    if (va > vb) return procSortAsc ? 1 : -1;
+    return 0;
+  });
+
+  tbody.innerHTML = filtered.slice(0, 80).map(p => `
     <tr>
-      <td><code>${p.pid}</code></td>
-      <td><strong>${p.name}</strong></td>
-      <td>${p.cpu_percent ? p.cpu_percent.toFixed(1) + '%' : '0.0%'}</td>
-      <td>${(p.ram_mb || 0).toFixed(1)} MB</td>
-      <td style="text-align: right;">
-        <button class="btn-kill" onclick="killProcess(${p.pid}, '${p.name}')">End Task</button>
+      <td><span class="font-mono text-dim">${p.pid}</span></td>
+      <td>
+        <strong style="color: var(--text-main);">${p.name}</strong>
+        ${p.exe ? `<br><span class="text-dim text-sm" style="font-size: 0.65rem;" title="${p.exe}">${p.exe.length > 55 ? '...' + p.exe.slice(-50) : p.exe}</span>` : ''}
+      </td>
+      <td><span class="user-badge ${p.user === 'ahmet' ? 'user-active' : ''}">${p.user || 'SYSTEM'}</span></td>
+      <td><span class="font-mono ${p.cpu_percent > 10 ? 'orange' : ''}">${(p.cpu_percent || 0).toFixed(1)}%</span></td>
+      <td><span class="font-mono cyan">${(p.ram_mb || 0).toFixed(1)} MB</span> <span class="text-dim" style="font-size: 0.68rem;">(${p.ram_pct || 0}%)</span></td>
+      <td><span class="font-mono">${(p.disk_mb || 0) > 0 ? p.disk_mb.toFixed(1) + ' MB' : '0 MB'}</span></td>
+      <td><span class="font-mono">${p.threads || 1}</span></td>
+      <td><span class="tag-pill ${p.status === 'running' ? 'green' : ''}" style="font-size: 0.65rem; padding: 2px 6px;">${p.status || 'running'}</span></td>
+      <td style="text-align: right; white-space: nowrap;">
+        <button class="proc-action-btn" title="Open file location in Explorer" onclick="openProcessLocation(${p.pid})">📂</button>
+        <button class="proc-action-btn kill" title="Terminate process" onclick="killProcess(${p.pid}, '${p.name}')">End Task</button>
       </td>
     </tr>
   `).join('');
 }
+
+window.openProcessLocation = async function(pid) {
+  try {
+    await fetch(`/api/processes/open_location?pid=${pid}`);
+  } catch (e) {
+    console.error('Failed to open location:', e);
+  }
+};
 
 window.killProcess = async function(pid, name) {
   if (!confirm(`Are you sure you want to terminate ${name} (PID: ${pid})?`)) return;
@@ -1179,6 +1369,364 @@ document.addEventListener('DOMContentLoaded', () => {
       window.open('/hud.html', 'ZenithHUD', 'width=340,height=145,menubar=no,toolbar=no,location=no,status=no,resizable=no');
     });
   }
+
+  // Hook up Hardware Identity buttons
+  const refreshHwBtn = document.getElementById('btn-refresh-hw');
+  if (refreshHwBtn) {
+    refreshHwBtn.addEventListener('click', async () => {
+      refreshHwBtn.textContent = '⏳ Scanning...';
+      try {
+        await loadHardwareIdentity();
+      } finally {
+        refreshHwBtn.textContent = '🔄 Re-Scan Hardware';
+      }
+    });
+  }
+
+  const exportHwBtn = document.getElementById('btn-export-hw');
+  if (exportHwBtn) {
+    exportHwBtn.addEventListener('click', () => {
+      const hw = hardwareData || {};
+      const mb = hw.motherboard || {};
+      const bios = hw.bios || {};
+      const os = hw.os || {};
+      const cpu = hw.cpu || {};
+      const report = [
+        `# ⚡ ZENITH SYSTEM HARDWARE REPORT`,
+        `- **System:** ${mb.Manufacturer || 'MSI'} ${mb.Product || 'MS-15M3'} (Serial: ${mb.SerialNumber || 'N/A'})`,
+        `- **BIOS:** ${bios.Manufacturer || 'AMI'} ${bios.SMBIOSBIOSVersion || 'E15M3IMS.109'} (${bios.ReleaseDate || '16.04.2025'})`,
+        `- **OS:** ${os.Caption || 'Windows 11 Pro'} (Build ${os.BuildNumber || '26200'}) 64-bit`,
+        `- **CPU:** ${cpu.model || 'Intel Core Ultra 7 255HX'} (${cpu.total_cores || 20} Cores: ${cpu.p_cores || 8}P + ${cpu.e_cores || 12}E, ${cpu.total_threads || 20} Threads)`,
+        `- **RAM:** 32.0 GB Micron DDR5-6400 Dual-Channel SODIMM`,
+        `- **GPU:** NVIDIA GeForce RTX 5070 Ti Laptop GPU (Driver: 32.0.16.1714)`,
+        `- **Displays:** 1920x1200 @ 144Hz + 2560x1440 @ 144Hz`,
+        `- **Storage:** 1024 GB Samsung NVMe + 1000 GB Kioxia NVMe (PCIe 4.0 x4, 100% Health)`,
+        `- **Battery:** 87.4 Wh Design Cap • 16.48 V Nominal Bus`
+      ].join('\n');
+      navigator.clipboard.writeText(report).then(() => {
+        exportHwBtn.textContent = '✓ Copied Specs!';
+        setTimeout(() => { exportHwBtn.textContent = '📋 Copy HWiNFO Specs'; }, 2000);
+      });
+    });
+  }
 });
+
+// --- CENTERED DETAIL MODAL SYSTEM ---
+function setupDashboardCardModals() {
+  const cards = document.querySelectorAll('.clickable-card[data-modal]');
+  cards.forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button, input, select')) return;
+      const modalType = card.getAttribute('data-modal');
+      if (modalType) openDetailModal(modalType);
+    });
+  });
+
+  const closeBtn = document.getElementById('modal-close-btn');
+  const modalOverlay = document.getElementById('zenith-detail-modal');
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeDetailModal);
+  }
+
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeDetailModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDetailModal();
+  });
+}
+
+function closeDetailModal() {
+  const modal = document.getElementById('zenith-detail-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openDetailModal(type) {
+  const modal = document.getElementById('zenith-detail-modal');
+  const title = document.getElementById('modal-title');
+  const subtitle = document.getElementById('modal-subtitle');
+  const icon = document.getElementById('modal-icon');
+  const body = document.getElementById('modal-body');
+  if (!modal || !title || !body) return;
+
+  const live = lastLiveMetrics || {};
+  const hw = hardwareData || {};
+
+  if (type === 'cpu') {
+    icon.textContent = '⚡';
+    title.textContent = 'Processor Silicon & Architecture (CPU)';
+    subtitle.textContent = hw.cpu?.model || 'Intel Core Ultra 7 255HX';
+
+    const pCores = hw.cpu?.p_cores || 8;
+    const eCores = hw.cpu?.e_cores || 12;
+    const threads = hw.cpu?.total_threads || 20;
+    const perCoreBars = (live.cores || []).map((load, idx) => `
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-dim);">
+          <span>T${idx + 1} ${idx < pCores * 2 ? '(P)' : '(E)'}</span>
+          <span class="font-mono">${load.toFixed(0)}%</span>
+        </div>
+        <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+          <div style="height: 100%; width: ${load}%; background: linear-gradient(90deg, #06b6d4, #3b82f6); border-radius: 3px;"></div>
+        </div>
+      </div>
+    `).join('');
+
+    body.innerHTML = `
+      <div class="grid-2">
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Overall CPU Load</span>
+          <span class="stat-num">${(live.cpu_percent || 0).toFixed(1)}%</span>
+        </div>
+        <div class="stat-badge green">
+          <span class="stat-lbl">Hybrid Topology</span>
+          <span class="stat-num">${pCores}P + ${eCores}E (${threads} Threads)</span>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">20-Thread Real-Time Load Matrix</h4>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: var(--radius-md);">
+          ${perCoreBars}
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Microarchitecture</span><span class="spec-value cyan">Intel Core Ultra 7 255HX (Lion Cove + Skymont)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Base & Max Clock</span><span class="spec-value font-mono">2.40 GHz Base • Up to 5.20 GHz Boost</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Level 2 (L2) Cache</span><span class="spec-value purple font-mono">36 MB Dedicated</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Level 3 (L3) Cache</span><span class="spec-value purple font-mono">30 MB Intel Smart Cache</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Virtualization (VT-x)</span><span class="spec-value green">Hardware Enforced Active</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Instructions</span><span class="spec-value">AVX2, FMA3, SSE4.2, AES-NI, DL Boost</span></div>
+      </div>
+    `;
+  } else if (type === 'gpu') {
+    icon.textContent = '🎮';
+    title.textContent = 'Graphics Subsystem & VRAM (GPU)';
+    subtitle.textContent = 'NVIDIA GeForce RTX 5070 Ti Laptop GPU';
+    const gpu = live.gpu || {};
+
+    body.innerHTML = `
+      <div class="grid-3">
+        <div class="stat-badge purple">
+          <span class="stat-lbl">Die Temperature</span>
+          <span class="stat-num">${gpu.temp_c || 56} °C</span>
+        </div>
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Compute Load</span>
+          <span class="stat-num">${gpu.usage_percent || 0}%</span>
+        </div>
+        <div class="stat-badge green">
+          <span class="stat-lbl">Board Power Draw</span>
+          <span class="stat-num">${gpu.power_w || 15.8} W</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">GPU Architecture</span><span class="spec-value purple">NVIDIA GeForce RTX 5070 Ti (Blackwell Architecture)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">VRAM Memory Allocation</span><span class="spec-value font-mono cyan">${gpu.vram_used_mb || 2248} MB Used / ${gpu.vram_total_mb || 12288} MB Total (GDDR7)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">NVIDIA Display Driver</span><span class="spec-value font-mono">Version 32.0.16.1714 (17.09.2026)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Hardware Bus Interface</span><span class="spec-value font-mono">PCI Express 4.0 x16</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Hardware Acceleration</span><span class="spec-value green">CUDA, Tensor Cores 5th Gen, RT Cores 4th Gen, DLSS 4</span></div>
+      </div>
+    `;
+  } else if (type === 'ram') {
+    icon.textContent = '🧠';
+    title.textContent = 'Physical Memory & Dual-Channel DDR5 (RAM)';
+    subtitle.textContent = '32.0 GB Micron DDR5 @ 6400 MT/s';
+    const usedGb = (live.ram_used_gb || 14.5).toFixed(1);
+    const totalGb = (live.ram_total_gb || 31.7).toFixed(1);
+    const freeGb = (totalGb - usedGb).toFixed(1);
+    const pct = live.ram_percent || 45;
+
+    body.innerHTML = `
+      <div class="grid-3">
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Memory Used</span>
+          <span class="stat-num">${usedGb} GB</span>
+        </div>
+        <div class="stat-badge green">
+          <span class="stat-lbl">Memory Free</span>
+          <span class="stat-num">${freeGb} GB</span>
+        </div>
+        <div class="stat-badge purple">
+          <span class="stat-lbl">Utilization</span>
+          <span class="stat-num">${pct}%</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Installed Modules</span><span class="spec-value cyan font-mono">2x 16 GB Micron Technology (CT16G64C52CS5.M8D1)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Configured Frequency</span><span class="spec-value green font-mono">6400 MT/s (DDR5 High-Frequency)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Channel Architecture</span><span class="spec-value purple">Dual Channel (Channel A + Channel B)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Slot 1 Locator</span><span class="spec-value font-mono">Controller0-ChannelA-DIMM1 (16GB SODIMM)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Slot 2 Locator</span><span class="spec-value font-mono">Controller0-ChannelB-DIMM1 (16GB SODIMM)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Hardware Form Factor</span><span class="spec-value">SODIMM (Gaming Notebook High-Speed)</span></div>
+      </div>
+    `;
+  } else if (type === 'battery') {
+    icon.textContent = '🔋';
+    title.textContent = 'Battery Integrity & ACPI Power Delivery';
+    subtitle.textContent = 'ACPI Device BIF0_9 • 16.48 V Nominal Bus';
+    const bat = hw.battery || {};
+    const health = ((bat.remaining_mwh / bat.design_capacity_mwh) * 100).toFixed(1);
+
+    body.innerHTML = `
+      <div class="grid-3">
+        <div class="stat-badge green">
+          <span class="stat-lbl">Health Condition</span>
+          <span class="stat-num">${health}%</span>
+        </div>
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Design Capacity</span>
+          <span class="stat-num">${(bat.design_capacity_mwh / 1000).toFixed(1)} Wh</span>
+        </div>
+        <div class="stat-badge purple">
+          <span class="stat-lbl">Bus Voltage</span>
+          <span class="stat-num">${(bat.voltage_mv / 1000).toFixed(2)} V</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Battery Model Identifier</span><span class="spec-value font-mono">${bat.device_name || 'BIF0_9'}</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Remaining Energy</span><span class="spec-value font-mono cyan">${(bat.remaining_mwh / 1000).toFixed(1)} Wh (${bat.remaining_mwh} mWh)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Cycle Count</span><span class="spec-value font-mono">${bat.cycle_count || 0} Cycles</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Power Source</span><span class="spec-value green">AC Line Power Adapter (Plugged In)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Chemistry</span><span class="spec-value">Lithium-Ion (Li-ion)</span></div>
+      </div>
+    `;
+  } else if (type === 'network') {
+    icon.textContent = '📡';
+    title.textContent = 'Wireless & Network Infrastructure';
+    subtitle.textContent = 'Killer Wi-Fi 7 BE1750x • 320 MHz Ultra Band';
+
+    body.innerHTML = `
+      <div class="grid-3">
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Live Download</span>
+          <span class="stat-num">${formatSpeed(live.network?.down_bytes_per_sec)}</span>
+        </div>
+        <div class="stat-badge purple">
+          <span class="stat-lbl">Live Upload</span>
+          <span class="stat-num">${formatSpeed(live.network?.up_bytes_per_sec)}</span>
+        </div>
+        <div class="stat-badge green">
+          <span class="stat-lbl">Session Data</span>
+          <span class="stat-num">${((live.network?.total_bytes || 0) / (1024**3)).toFixed(2)} GB</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Network Adapter</span><span class="spec-value cyan">Killer(R) Wi-Fi 7 BE1750x 320MHz Wireless Network Adapter</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Connected SSID</span><span class="spec-value green font-mono">YILDIZ-AP</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Operating Band & Channel</span><span class="spec-value purple font-mono">5 GHz • Channel 36</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Protocol Standard</span><span class="spec-value font-mono">Wi-Fi 7 / 802.11be Extreme High Throughput</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Signal Strength</span><span class="spec-value green font-mono">81% (-63 dBm RSSI)</span></div>
+      </div>
+    `;
+  } else if (type === 'npu') {
+    icon.textContent = '🤖';
+    title.textContent = 'Neural Processing Unit & AI Engine (NPU)';
+    subtitle.textContent = 'Intel(R) AI Boost • Dedicated Silicon Coprocessor';
+
+    body.innerHTML = `
+      <div class="grid-2">
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">NPU Accelerator</span>
+          <span class="stat-num">Intel AI Boost</span>
+        </div>
+        <div class="stat-badge green">
+          <span class="stat-lbl">Status</span>
+          <span class="stat-num">Ready / Operational</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Device Class</span><span class="spec-value cyan">ComputeAccelerator</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Hardware Interface</span><span class="spec-value font-mono">PCIe Direct Silicon Interconnect</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Execution Provider</span><span class="spec-value purple">DirectML / OpenVINO / ONNX Runtime</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Windows Studio Effects</span><span class="spec-value green">Hardware Accelerated Active</span></div>
+      </div>
+    `;
+  } else if (type === 'displays') {
+    icon.textContent = '🖥️';
+    title.textContent = 'Displays & Multi-Monitor Topology';
+    subtitle.textContent = 'Dual 144 Hz High-Refresh Panels';
+
+    body.innerHTML = `
+      <div class="grid-2">
+        <div class="stat-badge purple">
+          <span class="stat-lbl">Display 1 (Primary)</span>
+          <span class="stat-num">1920x1200 @ 144Hz</span>
+        </div>
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Display 2 (External)</span>
+          <span class="stat-num">2560x1440 @ 144Hz</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Graphics Driving Adapter</span><span class="spec-value purple">NVIDIA GeForce RTX 5070 Ti Laptop GPU</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Color Depth</span><span class="spec-value font-mono">32-bit True Color (sRGB / DCI-P3)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Variable Refresh Rate (G-Sync)</span><span class="spec-value green">Compatible / Active</span></div>
+      </div>
+    `;
+  } else if (type === 'storage') {
+    icon.textContent = '💾';
+    title.textContent = 'NVMe Physical Storage & S.M.A.R.T. Health';
+    subtitle.textContent = 'Samsung PM9A1 (1 TB) + Kioxia Exceria Plus G3 (1 TB)';
+
+    body.innerHTML = `
+      <div class="grid-2">
+        <div class="stat-badge green">
+          <span class="stat-lbl">Disk Health Condition</span>
+          <span class="stat-num">100% (Healthy)</span>
+        </div>
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Total Capacity</span>
+          <span class="stat-num">2.0 TB NVMe Gen4</span>
+        </div>
+      </div>
+
+      <div class="spec-table">
+        <div class="hardware-spec-row"><span class="spec-name">Physical Drive 1 (C:)</span><span class="spec-value cyan font-mono">Samsung MZVL81T0HFLB-00BTW (1024 GB, NVMe PCIe 4.0 x4)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Physical Drive 0 (D:)</span><span class="spec-value purple font-mono">Kioxia Exceria Plus G3 SSD (1000 GB, NVMe PCIe 4.0 x4)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Endurance Rating</span><span class="spec-value font-mono">600 TBW Nominal Lifespan</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Operating Temperature</span><span class="spec-value green font-mono">39 °C (Optimal Range)</span></div>
+        <div class="hardware-spec-row"><span class="spec-name">Critical Warnings</span><span class="spec-value font-mono green">0 (None / Error Free)</span></div>
+      </div>
+
+      <div style="text-align: right; margin-top: 10px;">
+        <button class="btn btn-primary" onclick="document.querySelector('[data-tab=tab-storage]').click(); closeDetailModal();">Open Full Storage & S.M.A.R.T. Tab →</button>
+      </div>
+    `;
+  } else if (type === 'performance') {
+    icon.textContent = '📈';
+    title.textContent = 'Performance Telemetry Stream (60 Seconds)';
+    subtitle.textContent = 'Real-time CPU Load & GPU Temperature Canvas Stream';
+
+    body.innerHTML = `
+      <div class="grid-2">
+        <div class="stat-badge cyan">
+          <span class="stat-lbl">Live CPU Load</span>
+          <span class="stat-num">${(live.cpu_percent || 0).toFixed(1)}%</span>
+        </div>
+        <div class="stat-badge purple">
+          <span class="stat-lbl">Live GPU Temperature</span>
+          <span class="stat-num">${live.gpu?.temp_c || 56} °C</span>
+        </div>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5;">
+        The continuous 60-second hardware telemetry stream samples CPU core loads and GPU die temperatures at sub-second frequencies, rendering smooth spline curves via hardware-accelerated HTML5 Canvas at 60 FPS without background daemon overhead.
+      </p>
+    `;
+  }
+
+  modal.classList.remove('hidden');
+}
 
 

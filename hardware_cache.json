@@ -1,6 +1,6 @@
 {
   "engine": "Zenith Native Hardware Probe V1.0",
-  "execution_time_ms": 143.798,
+  "execution_time_ms": 139.292,
   "cpu": {
     "model": "Intel(R) Core(TM) Ultra 7 255HX",
     "total_cores": 20,
@@ -15,8 +15,8 @@
   },
   "memory": {
     "total_gb": 31.6645,
-    "used_gb": 15.5026,
-    "usage_percent": 48
+    "used_gb": 13.7521,
+    "usage_percent": 43
   },
   "displays": [
     {
@@ -54,7 +54,121 @@
     "is_charging": false,
     "is_discharging": false,
     "rate_mw": 0,
-    "remaining_mwh": 67221,
-    "voltage_mv": 16481
-  }
+    "remaining_mwh": 66790,
+    "voltage_mv": 16458
+  },
+  "motherboard": {
+    "Manufacturer": "Micro-Star International Co., Ltd.",
+    "Product": "MS-15M3",
+    "Version": "REV:1.0",
+    "SerialNumber": "BSS-0123456789"
+  },
+  "bios": {
+    "Manufacturer": "American Megatrends International, LLC.",
+    "SMBIOSBIOSVersion": "E15M3IMS.109",
+    "ReleaseDate": "16.04.2025"
+  },
+  "os": {
+    "Caption": "Microsoft Windows 11 Pro",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200",
+    "OSArchitecture": "64 bit",
+    "LastBootUpTime": "06.10.2026 09:22:45"
+  },
+  "ram_sticks": [
+    {
+      "Manufacturer": "Micron Technology",
+      "PartNumber": "CT16G64C52CS5.M8D1  ",
+      "Speed": 6400,
+      "ConfiguredClockSpeed": 6400,
+      "Capacity": 17179869184,
+      "DeviceLocator": "Controller0-ChannelA-DIMM1",
+      "FormFactor": 12
+    },
+    {
+      "Manufacturer": "Micron Technology",
+      "PartNumber": "CT16G64C52CS5.M8D1  ",
+      "Speed": 6400,
+      "ConfiguredClockSpeed": 6400,
+      "Capacity": 17179869184,
+      "DeviceLocator": "Controller0-ChannelB-DIMM1",
+      "FormFactor": 12
+    }
+  ],
+  "cpu_deep": {
+    "Name": "Intel(R) Core(TM) Ultra 7 255HX",
+    "MaxClockSpeed": 2400,
+    "L2CacheSize": 36864,
+    "L3CacheSize": 30720,
+    "NumberOfCores": 20,
+    "NumberOfLogicalProcessors": 20
+  },
+  "gpus": [
+    {
+      "Name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+      "DriverVersion": "32.0.16.1714",
+      "DriverDate": "17.09.2026",
+      "AdapterRAM": 4293918720,
+      "VideoProcessor": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+      "VideoModeDescription": "1920 x 1200 x 4294967296 renk",
+      "CurrentRefreshRate": 144
+    }
+  ],
+  "audio": [
+    {
+      "Name": "Dijital Mikrofonlar için Intel® Smart Sound Teknolojisi",
+      "Manufacturer": "Intel(R) Corporation",
+      "Status": "OK"
+    },
+    {
+      "Name": "USB Ses için Intel® Smart Sound Teknolojisi",
+      "Manufacturer": "Intel(R) Corporation",
+      "Status": "OK"
+    },
+    {
+      "Name": "Bluetooth® Ses için Intel® Smart Sound Teknolojisi",
+      "Manufacturer": "Intel(R) Corporation",
+      "Status": "OK"
+    },
+    {
+      "Name": "Realtek High Definition Audio",
+      "Manufacturer": "Realtek",
+      "Status": "OK"
+    },
+    {
+      "Name": "Steam Streaming Microphone",
+      "Manufacturer": "Valve Corporation Audio DDK",
+      "Status": "OK"
+    },
+    {
+      "Name": "Nahimic Easy Surround device",
+      "Manufacturer": "Nahimic",
+      "Status": "OK"
+    },
+    {
+      "Name": "Steam Streaming Speakers",
+      "Manufacturer": "Valve Corporation Audio DDK",
+      "Status": "OK"
+    },
+    {
+      "Name": "NVIDIA Virtual Audio Device (Wave Extensible) (WDM)",
+      "Manufacturer": "NVIDIA",
+      "Status": "OK"
+    },
+    {
+      "Name": "NVIDIA High Definition Audio",
+      "Manufacturer": "NVIDIA",
+      "Status": "OK"
+    },
+    {
+      "Name": "USB Ses Aygıtı",
+      "Manufacturer": "(Genel USB Sesi)",
+      "Status": "OK"
+    },
+    {
+      "Name": "Nahimic mirroring device",
+      "Manufacturer": "Nahimic",
+      "Status": "OK"
+    }
+  ]
 }
