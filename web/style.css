@@ -1970,3 +1970,199 @@ body.compact-mode .grid-5 {
   border-radius: 4px;
 }
 
+/* ==========================================================================
+   TROUBLESHOOTER & SYSTEM FIXER UI
+   ========================================================================== */
+.troubleshoot-cat-card {
+  margin-bottom: 24px;
+}
+
+.troubleshoot-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.troubleshoot-cat-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.troubleshoot-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
+}
+
+.repair-tool-card {
+  background: rgba(22, 27, 34, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.repair-tool-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.repair-tool-card.running {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.04);
+}
+
+.repair-tool-card.success-flash {
+  border-color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.repair-tool-card.error-flash {
+  border-color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.repair-tool-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.repair-tool-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.repair-tool-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.repair-tool-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.repair-tool-cmd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  word-break: break-all;
+}
+
+.repair-tool-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 16px;
+  flex-grow: 1;
+}
+
+.repair-tool-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.repair-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.repair-status-pill.idle {
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.repair-status-pill.running {
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.12);
+  animation: pulse-border 1.5s infinite;
+}
+
+.repair-status-pill.success {
+  color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.repair-status-pill.error {
+  color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.repair-run-btn {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repair-run-btn:hover:not(:disabled) {
+  background: var(--accent-cyan);
+  color: #000;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+.repair-run-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-dim);
+}
+
+.repair-output-modal-content {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  background: #090d16;
+  padding: 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  max-height: 260px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #d1d5db;
+}
+
+

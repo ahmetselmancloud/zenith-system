@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupDiagnostics();
   setupCpuStressTest();
   setupLaptopStudio();
+  setupTroubleshooter();
 });
 
 // --- NAVIGATION ---
@@ -56,6 +57,7 @@ function setupNavigation() {
       if (targetId === 'tab-network') loadWifiDiagnostics();
       if (targetId === 'tab-power') loadPowerPlans();
       if (targetId === 'tab-laptop') loadLaptopStudioConfig();
+      if (targetId === 'tab-troubleshoot') loadTroubleshootTools();
     });
   });
 }
@@ -2384,5 +2386,302 @@ function setupLaptopStudio() {
   });
 }
 
+// ==========================================================================
+// SYSTEM FIXER & ONE-CLICK TROUBLESHOOTER ENGINE
+// ==========================================================================
+let troubleshootPollInterval = null;
 
+function escapeTroubleshootHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
+async function setupTroubleshooter() {
+  const refreshBtn = document.getElementById('btn-refresh-troubleshoot');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => loadTroubleshootTools(true));
+  }
+}
+
+async function loadTroubleshootTools(force = false) {
+  const container = document.getElementById('troubleshoot-categories-container');
+  const globalStatus = document.getElementById('troubleshoot-global-status');
+  if (!container) return;
+
+  if (force) {
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-dim);">Onarım araçları taranıyor...</div>';
+  }
+
+  try {
+    const res = await fetch('/api/troubleshoot/tools');
+    if (!res.ok) throw new Error('API hatası: ' + res.status);
+    const data = await res.json();
+    renderTroubleshootCategories(data.tools || []);
+    
+    // If an async task is running in the background, reflect it in the UI immediately
+    if (data.active_task && data.active_task.status === 'running') {
+      showTroubleshootBanner(data.active_task);
+      startTroubleshootPolling(data.active_task.tool_id);
+    } else if (globalStatus) {
+      globalStatus.textContent = '✓ Sistem Hazır';
+      globalStatus.style.color = 'var(--accent-green)';
+    }
+  } catch (e) {
+    console.error('Failed to load troubleshoot tools:', e);
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-red);">Onarım araçları yüklenemedi: ${escapeTroubleshootHtml(e.message)}</div>`;
+  }
+}
+
+function renderTroubleshootCategories(tools) {
+  const container = document.getElementById('troubleshoot-categories-container');
+  if (!container) return;
+
+  if (!tools || tools.length === 0) {
+    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-dim);">Kullanılabilir onarım aracı bulunamadı.</div>';
+    return;
+  }
+
+  // Group by category_name
+  const grouped = {};
+  tools.forEach(tool => {
+    const cat = tool.category_name || 'Genel Onarım';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(tool);
+  });
+
+  let html = '';
+  for (const [catName, catTools] of Object.entries(grouped)) {
+    html += `
+      <div class="troubleshoot-cat-card">
+        <div class="troubleshoot-cat-header">
+          <div class="troubleshoot-cat-title">${escapeTroubleshootHtml(catName)}</div>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">${catTools.length} Araç</span>
+        </div>
+        <div class="troubleshoot-tools-grid">
+          ${catTools.map(tool => `
+            <div class="repair-tool-card" id="repair-card-${tool.id}">
+              <div>
+                <div class="repair-tool-header">
+                  <div class="repair-tool-icon">${tool.icon || '🛠️'}</div>
+                  <div class="repair-tool-info">
+                    <div class="repair-tool-name">${escapeTroubleshootHtml(tool.title)}</div>
+                    <span class="repair-tool-cmd">${escapeTroubleshootHtml(tool.cmd_desc || '')}</span>
+                  </div>
+                </div>
+                <div class="repair-tool-desc">${escapeTroubleshootHtml(tool.description)}</div>
+              </div>
+              <div class="repair-tool-footer">
+                <span class="repair-status-pill idle" id="repair-status-${tool.id}">Hazır</span>
+                <button class="repair-run-btn" id="repair-btn-${tool.id}" onclick="runTroubleshootTool('${tool.id}', ${tool.is_long ? 'true' : 'false'})">
+                  <span>${tool.is_long ? '🛡️ Derin Onarımı Başlat' : '⚡ Onar'}</span>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+window.runTroubleshootTool = async function(toolId, isLong = false) {
+  const card = document.getElementById(`repair-card-${toolId}`);
+  const btn = document.getElementById(`repair-btn-${toolId}`);
+  const statusPill = document.getElementById(`repair-status-${toolId}`);
+  const globalStatus = document.getElementById('troubleshoot-global-status');
+
+  if (isLong) {
+    if (!confirm('Bu derin sistem onarımı Windows sistem bileşenlerini ve çekirdek dosyalarını tarayacak. Birkaç dakika sürebilir. Başlatmak istiyor musunuz?')) {
+      return;
+    }
+  }
+
+  if (btn) btn.disabled = true;
+  if (statusPill) {
+    statusPill.className = 'repair-status-pill running';
+    statusPill.textContent = 'Çalışıyor...';
+  }
+  if (card) card.classList.add('running');
+  if (globalStatus) {
+    globalStatus.textContent = '⏳ Onarım Yürütülüyor...';
+    globalStatus.style.color = 'var(--accent-cyan)';
+  }
+
+  try {
+    const res = await fetch('/api/troubleshoot/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool_id: toolId })
+    });
+    const data = await res.json();
+
+    if (data.status === 'busy') {
+      alert(data.error || 'Başka bir onarım işlemi zaten çalışıyor!');
+      if (statusPill) {
+        statusPill.className = 'repair-status-pill idle';
+        statusPill.textContent = 'Meşgul';
+      }
+      if (btn) btn.disabled = false;
+      if (card) card.classList.remove('running');
+      return;
+    }
+
+    if (data.status === 'running') {
+      // Async long-running task (SFC / DISM)
+      showTroubleshootBanner({ tool_id: toolId, progress: 0, logs: ['Onarım süreci başlatıldı...'] });
+      startTroubleshootPolling(toolId);
+    } else {
+      // Sync tool completed
+      if (card) card.classList.remove('running');
+      if (data.success) {
+        if (card) {
+          card.classList.add('success-flash');
+          setTimeout(() => card.classList.remove('success-flash'), 4000);
+        }
+        if (statusPill) {
+          statusPill.className = 'repair-status-pill success';
+          statusPill.textContent = '✓ Başarılı';
+        }
+        if (globalStatus) {
+          globalStatus.textContent = '✓ Onarım Tamamlandı';
+          globalStatus.style.color = 'var(--accent-green)';
+        }
+      } else {
+        if (card) {
+          card.classList.add('error-flash');
+          setTimeout(() => card.classList.remove('error-flash'), 4000);
+        }
+        if (statusPill) {
+          statusPill.className = 'repair-status-pill error';
+          statusPill.textContent = '❌ Hata';
+        }
+        if (globalStatus) {
+          globalStatus.textContent = '❌ Onarım Hatası';
+          globalStatus.style.color = 'var(--accent-red)';
+        }
+      }
+
+      setTimeout(() => {
+        if (btn) btn.disabled = false;
+      }, 2000);
+    }
+  } catch (e) {
+    console.error('Troubleshoot execution error:', e);
+    if (card) card.classList.remove('running');
+    if (statusPill) {
+      statusPill.className = 'repair-status-pill error';
+      statusPill.textContent = 'İletişim Hatası';
+    }
+    if (btn) btn.disabled = false;
+  }
+};
+
+function showTroubleshootBanner(task) {
+  const banner = document.getElementById('troubleshoot-async-banner');
+  const title = document.getElementById('troubleshoot-task-title');
+  const percent = document.getElementById('troubleshoot-task-percent');
+  const bar = document.getElementById('troubleshoot-task-bar');
+  const logsEl = document.getElementById('troubleshoot-task-logs');
+
+  if (!banner) return;
+  banner.style.display = 'block';
+
+  const toolName = task.tool_id === 'sfc_scannow' 
+    ? 'SFC /scannow (Sistem Dosyası Doğrulama)' 
+    : (task.tool_id === 'dism_restorehealth' ? 'DISM RestoreHealth (Bileşen Deposu Onarımı)' : 'Sistem Onarımı');
+
+  if (title) {
+    title.textContent = `${toolName} Çalışıyor...`;
+    title.style.color = '#fff';
+  }
+  if (percent) percent.textContent = `${task.progress || 0}%`;
+  if (bar) {
+    bar.style.width = `${task.progress || 0}%`;
+    bar.style.background = 'var(--accent-cyan)';
+  }
+
+  if (logsEl && task.logs) {
+    logsEl.innerHTML = task.logs.map(line => `<div class="terminal-line">${escapeTroubleshootHtml(line)}</div>`).join('');
+    logsEl.scrollTop = logsEl.scrollHeight;
+  }
+}
+
+function startTroubleshootPolling(activeToolId = null) {
+  if (troubleshootPollInterval) clearInterval(troubleshootPollInterval);
+
+  troubleshootPollInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/api/troubleshoot/status');
+      if (!res.ok) return;
+      const status = await res.json();
+
+      const banner = document.getElementById('troubleshoot-async-banner');
+      const title = document.getElementById('troubleshoot-task-title');
+      const percent = document.getElementById('troubleshoot-task-percent');
+      const bar = document.getElementById('troubleshoot-task-bar');
+      const logsEl = document.getElementById('troubleshoot-task-logs');
+      const globalStatus = document.getElementById('troubleshoot-global-status');
+
+      if (status.status === 'running') {
+        if (banner) banner.style.display = 'block';
+        if (percent) percent.textContent = `${status.progress || 0}%`;
+        if (bar) bar.style.width = `${status.progress || 0}%`;
+
+        if (logsEl && status.logs) {
+          logsEl.innerHTML = status.logs.map(line => `<div class="terminal-line">${escapeTroubleshootHtml(line)}</div>`).join('');
+          logsEl.scrollTop = logsEl.scrollHeight;
+        }
+      } else if (status.status === 'completed' || status.status === 'error') {
+        clearInterval(troubleshootPollInterval);
+        troubleshootPollInterval = null;
+
+        const isOk = status.status === 'completed';
+        if (percent) percent.textContent = isOk ? '100%' : 'Hata!';
+        if (bar) {
+          bar.style.width = '100%';
+          bar.style.background = isOk ? 'var(--accent-green)' : 'var(--accent-red)';
+        }
+        if (title) {
+          title.textContent = isOk ? '✓ Derin Sistem Onarımı Başarıyla Tamamlandı!' : '❌ Derin Sistem Onarımı Hatayla Sonlandı!';
+          title.style.color = isOk ? 'var(--accent-green)' : 'var(--accent-red)';
+        }
+
+        if (logsEl && status.logs) {
+          logsEl.innerHTML = status.logs.map(line => `<div class="terminal-line">${escapeTroubleshootHtml(line)}</div>`).join('');
+          logsEl.scrollTop = logsEl.scrollHeight;
+        }
+
+        const toolId = status.tool_id || activeToolId;
+        if (toolId) {
+          const card = document.getElementById(`repair-card-${toolId}`);
+          const btn = document.getElementById(`repair-btn-${toolId}`);
+          const statusPill = document.getElementById(`repair-status-${toolId}`);
+
+          if (card) {
+            card.classList.remove('running');
+            card.classList.add(isOk ? 'success-flash' : 'error-flash');
+          }
+          if (statusPill) {
+            statusPill.className = `repair-status-pill ${isOk ? 'success' : 'error'}`;
+            statusPill.textContent = isOk ? '✓ Tamamlandı' : '❌ Hata';
+          }
+          if (btn) btn.disabled = false;
+        }
+
+        if (globalStatus) {
+          globalStatus.textContent = isOk ? '✓ Sistem Hazır' : '⚠️ Onarım Uyarısı';
+          globalStatus.style.color = isOk ? 'var(--accent-green)' : 'var(--accent-yellow)';
+        }
+      }
+    } catch (e) {
+      console.warn('Troubleshoot poll error:', e);
+    }
+  }, 1000);
+}

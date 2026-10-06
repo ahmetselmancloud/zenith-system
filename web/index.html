@@ -79,6 +79,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
           <span>Diagnostics Lab</span>
         </button>
+        <button class="nav-item" data-tab="tab-troubleshoot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+          <span>System Fixer</span>
+        </button>
         <button class="nav-item" data-tab="tab-laptop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path></svg>
           <span>Laptop & Keys</span>
@@ -784,6 +788,44 @@
               <span class="readout-label">Stability Status</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB: SYSTEM FIXER & ONE-CLICK TROUBLESHOOTER -->
+      <section class="tab-pane" id="tab-troubleshoot">
+        <div class="card glass-card mb-4">
+          <div class="tweak-header" style="margin-bottom: 16px;">
+            <div>
+              <h3>🩺 One-Click Windows System Fixer & Troubleshooter</h3>
+              <p class="subtitle">Windows'un en can sıkıcı ağ, ses, gezgin, yazdırma ve sistem dosyası sorunlarını tek tıkla onarın</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span id="troubleshoot-global-status" style="font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">✓ Sistem Hazır</span>
+              <button class="btn btn-secondary" id="btn-refresh-troubleshoot" style="padding: 6px 12px; font-size: 0.8rem;">Yenile</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASYNC TASK PROGRESS BANNER (Visible during SFC/DISM) -->
+        <div id="troubleshoot-async-banner" class="card glass-card mb-4" style="display: none; border-color: var(--accent-cyan); background: rgba(0, 240, 255, 0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.2rem;">⏳</span>
+              <strong id="troubleshoot-task-title" style="color: #fff;">Derin Sistem Onarımı Çalışıyor...</strong>
+            </div>
+            <span id="troubleshoot-task-percent" style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan);">0%</span>
+          </div>
+          <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; margin-bottom: 12px;">
+            <div id="troubleshoot-task-bar" style="width: 0%; height: 100%; background: var(--accent-cyan); transition: width 0.3s;"></div>
+          </div>
+          <div class="winget-terminal" id="troubleshoot-task-logs" style="max-height: 140px; min-height: 80px;">
+            <div class="terminal-line text-dim">Komut başlatılıyor...</div>
+          </div>
+        </div>
+
+        <!-- REPAIR TOOLS CATEGORIES -->
+        <div id="troubleshoot-categories-container">
+          <div style="padding: 40px; text-align: center; color: var(--text-dim);">Onarım araçları yükleniyor...</div>
         </div>
       </section>
 

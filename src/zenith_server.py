@@ -17,8 +17,10 @@ from ctypes import wintypes
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
+    from system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
 except ImportError:
     from src.catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
+    from src.system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
 
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
@@ -1096,6 +1098,10 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(search_winget(q))
         elif path == "/api/winget/upgrades":
             self.send_json(get_winget_upgrades())
+        elif path == "/api/troubleshoot/tools":
+            self.send_json(get_troubleshoot_tools())
+        elif path == "/api/troubleshoot/status":
+            self.send_json(get_troubleshooter_status())
         elif path == "/hardware_cache.json":
             if os.path.exists(CACHE_FILE):
                 try:
@@ -1181,6 +1187,13 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": True})
             else:
                 self.send_json({"error": "Missing package id"}, status=400)
+
+        elif self.path == "/api/troubleshoot/run":
+            tool_id = data.get("tool_id", "")
+            if tool_id:
+                self.send_json(execute_fix(tool_id))
+            else:
+                self.send_json({"error": "No tool_id specified"}, status=400)
 
         elif self.path == "/api/stress/start":
             duration = int(data.get("duration", 15))
