@@ -4,6 +4,8 @@ import subprocess
 import threading
 import time
 
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+
 # Zenith System — Windows Troubleshooter & System Fixer Engine
 # One-click repairs for networking, audio, print spooler, explorer, search and system integrity.
 
@@ -163,7 +165,7 @@ def get_troubleshooter_status():
 
 def run_command_sync(cmd, shell=False):
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', shell=shell, timeout=25)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', shell=shell, timeout=25, creationflags=CREATE_NO_WINDOW)
         out = (res.stdout or "") + (res.stderr or "")
         return res.returncode == 0, out.strip()
     except Exception as e:
@@ -233,7 +235,7 @@ def execute_fix(tool_id):
 
     elif tool_id == "store_reset_cache":
         try:
-            subprocess.Popen("wsreset.exe -i", shell=True)
+            subprocess.Popen(["wsreset.exe", "-i"], creationflags=CREATE_NO_WINDOW)
             return {"success": True, "tool_id": tool_id, "logs": ["✓ Microsoft Store önbellek sıfırlama işlemi arka planda başlatıldı."]}
         except Exception as e:
             return {"success": False, "tool_id": tool_id, "logs": [f"Hata: {str(e)}"]}
@@ -256,7 +258,7 @@ def _async_integrity_worker(tool_id):
 
     cmd = ["sfc", "/scannow"] if tool_id == "sfc_scannow" else ["dism", "/online", "/cleanup-image", "/restorehealth"]
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', bufsize=1)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', bufsize=1, creationflags=CREATE_NO_WINDOW)
         
         for line in iter(proc.stdout.readline, ''):
             l = line.strip()

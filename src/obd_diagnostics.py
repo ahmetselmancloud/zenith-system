@@ -18,6 +18,8 @@ import psutil
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBD_CACHE_FILE = os.path.join(BASE_DIR, "obd_cache.json")
 
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+
 _cached_report = None
 _last_scan_time = 0
 
@@ -29,7 +31,7 @@ def query_gpu_pcie():
             "--query-gpu=name,pcie.link.gen.gpucurrent,pcie.link.gen.max,pcie.link.width.current,pcie.link.width.max",
             "--format=csv,noheader,nounits"
         ]
-        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=2).decode().strip()
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=2, creationflags=CREATE_NO_WINDOW).decode().strip()
         parts = [p.strip() for p in out.split(',')]
         if len(parts) >= 5:
             return {
@@ -52,7 +54,7 @@ def query_whea_logs():
         Select-Object TimeCreated, Id, LevelDisplayName, Message | ConvertTo-Json -Compress
         """
         res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                             capture_output=True, text=True, timeout=5)
+                             capture_output=True, text=True, timeout=5, creationflags=CREATE_NO_WINDOW)
         raw = res.stdout.strip()
         if raw:
             data = json.loads(raw)
@@ -72,7 +74,7 @@ def query_pnp_problem_devices():
         Select-Object FriendlyName, InstanceId, Status, Class, Problem | ConvertTo-Json -Compress
         """
         res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                             capture_output=True, text=True, timeout=5)
+                             capture_output=True, text=True, timeout=5, creationflags=CREATE_NO_WINDOW)
         raw = res.stdout.strip()
         if raw:
             data = json.loads(raw)
@@ -94,7 +96,7 @@ def query_recent_disconnect_events():
         Select-Object TimeCreated, Id, Message | ConvertTo-Json -Compress
         """
         res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                             capture_output=True, text=True, timeout=4)
+                             capture_output=True, text=True, timeout=4, creationflags=CREATE_NO_WINDOW)
         raw = res.stdout.strip()
         if raw:
             data = json.loads(raw)

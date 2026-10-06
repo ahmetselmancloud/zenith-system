@@ -1,7 +1,10 @@
 import os
+import sys
 import json
 import subprocess
 import threading
+
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOG_DIR = os.path.join(BASE_DIR, "catalog")
@@ -78,7 +81,7 @@ def search_winget(query: str, limit: int = 12):
             "--accept-source-agreements",
             "--disable-interactivity"
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=12)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=12, creationflags=CREATE_NO_WINDOW)
         lines = [l for l in res.stdout.splitlines() if l.strip()]
         if not lines:
             return []
@@ -95,7 +98,7 @@ def get_winget_upgrades():
             "--accept-source-agreements",
             "--disable-interactivity"
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20, creationflags=CREATE_NO_WINDOW)
         lines = [l for l in res.stdout.splitlines() if l.strip()]
         if not lines:
             return []

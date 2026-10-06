@@ -44,6 +44,61 @@ WEB_DIR = os.path.join(BASE_DIR, "web")
 CACHE_FILE = os.path.join(BASE_DIR, "hardware_cache.json")
 PROBE_EXE = os.path.join(BASE_DIR, "bin", "zenith_probe.exe")
 
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+
+def silent_run(cmd, **kwargs):
+    if sys.platform == "win32":
+        kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+    return subprocess.run(cmd, **kwargs)
+
+def silent_check_output(cmd, **kwargs):
+    if sys.platform == "win32":
+        kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+    return subprocess.check_output(cmd, **kwargs)
+
+def silent_popen(cmd, **kwargs):
+    if sys.platform == "win32":
+        kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+    return subprocess.Popen(cmd, **kwargs)
+
+# Heartbeat & Auto-Shutdown Watchdog
+_last_heartbeat = time.time()
+_heartbeat_lock = threading.Lock()
+_pending_shutdown_timer = None
+
+def record_heartbeat():
+    global _last_heartbeat, _pending_shutdown_timer
+    with _heartbeat_lock:
+        _last_heartbeat = time.time()
+        if _pending_shutdown_timer is not None:
+            _pending_shutdown_timer.cancel()
+            _pending_shutdown_timer = None
+
+def trigger_shutdown_countdown(delay_sec=2.5):
+    global _pending_shutdown_timer
+    with _heartbeat_lock:
+        if _pending_shutdown_timer is not None:
+            _pending_shutdown_timer.cancel()
+        
+        def do_exit():
+            print("[Zenith Server] Shutdown timer expired (browser closed). Terminating cleanly.")
+            os._exit(0)
+            
+        _pending_shutdown_timer = threading.Timer(delay_sec, do_exit)
+        _pending_shutdown_timer.daemon = True
+        _pending_shutdown_timer.start()
+
+def watchdog_worker():
+    # 60s initial grace period to allow browser startup and loading
+    time.sleep(60)
+    while True:
+        time.sleep(4)
+        with _heartbeat_lock:
+            elapsed = time.time() - _last_heartbeat
+        if elapsed > 25.0:
+            print(f"[Zenith Watchdog] No frontend heartbeat received for {int(elapsed)}s. Shutting down server cleanly.")
+            os._exit(0)
+
 last_net_time = time.time()
 last_net_io = psutil.net_io_counters()
 
@@ -83,7 +138,7 @@ def get_hardware_info(force_refresh=False):
     probe_ps1 = os.path.join(BASE_DIR, "src", "probe_deep.ps1")
     if os.path.exists(probe_ps1):
         try:
-            p = subprocess.run(
+            p = silent_run(
                 ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", probe_ps1],
                 capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5
             )
@@ -94,7 +149,7 @@ def get_hardware_info(force_refresh=False):
 
     if os.path.exists(PROBE_EXE):
         try:
-            p2 = subprocess.run([PROBE_EXE], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3)
+            p2 = silent_run([PROBE_EXE], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3)
             if p2.returncode == 0 and p2.stdout.strip():
                 native = json.loads(p2.stdout.strip())
                 data.update({k: v for k, v in native.items() if k not in data or not data[k]})
@@ -120,7 +175,7 @@ def get_hardware_info(force_refresh=False):
 
 def get_gpu_live():
     try:
-        out = subprocess.check_output(
+        out = silent_check_output(
             ["nvidia-smi", "--query-gpu=temperature.gpu,utilization.gpu,memory.total,memory.used,power.draw", "--format=csv,noheader,nounits"],
             stderr=subprocess.DEVNULL, timeout=0.6
         ).decode().strip()
@@ -372,7 +427,7 @@ def run_winget_worker(package_ids):
             "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"
         ]
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            res = silent_run(cmd, capture_output=True, text=True, timeout=300)
             with winget_lock:
                 if res.returncode == 0:
                     winget_state["logs"].append(f"✓ Successfully installed: {pkg_id}")
@@ -410,7 +465,7 @@ while time.time() < end_t:
     workers = []
     for _ in range(num_cores):
         try:
-            p = subprocess.Popen([sys.executable, "-c", burn_code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            p = silent_popen([sys.executable, "-c", burn_code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             workers.append(p)
         except Exception:
             pass
@@ -438,19 +493,19 @@ while time.time() < end_t:
 def apply_registry_tweaks(tweaks):
     logs = []
     if tweaks.get("bing", True):
-        subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v BingSearchEnabled /t REG_DWORD /d 0 /f', shell=True)
-        subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v CortanaConsent /t REG_DWORD /d 0 /f', shell=True)
+        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "/v", "BingSearchEnabled", "/t", "REG_DWORD", "/d", "0", "/f"])
+        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "/v", "CortanaConsent", "/t", "REG_DWORD", "/d", "0", "/f"])
         logs.append("Disabled Start Menu Bing web searches (pure local search enabled).")
     else:
-        subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search" /v BingSearchEnabled /t REG_DWORD /d 1 /f', shell=True)
+        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "/v", "BingSearchEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
         logs.append("Restored Bing web searches to default.")
 
     if tweaks.get("telemetry", True):
-        subprocess.run('reg add "HKCU\\Software\\Microsoft\\Siuf\\Rules" /v NumberOfSIUFInPeriod /t REG_DWORD /d 0 /f', shell=True)
+        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\Siuf\\Rules", "/v", "NumberOfSIUFInPeriod", "/t", "REG_DWORD", "/d", "0", "/f"])
         logs.append("Disabled Windows feedback & telemetry prompts.")
 
     if tweaks.get("game_mode", True):
-        subprocess.run('reg add "HKCU\\Software\\Microsoft\\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f', shell=True)
+        silent_run(["reg", "add", "HKCU\\Software\\Microsoft\\GameBar", "/v", "AutoGameModeEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
         logs.append("Enabled Windows Game Mode (Performance Scheduling Priority).")
 
     return logs
@@ -586,7 +641,7 @@ def clean_junk_categories(selected_ids):
 
 def get_wifi_diagnostics():
     try:
-        out = subprocess.check_output(
+        out = silent_check_output(
             ["netsh", "wlan", "show", "interfaces"],
             text=True, stderr=subprocess.DEVNULL, timeout=2,
             encoding='utf-8', errors='replace'
@@ -662,7 +717,7 @@ def get_wifi_diagnostics():
 
 def get_power_plans():
     try:
-        out = subprocess.check_output(["powercfg", "/list"], text=True, stderr=subprocess.DEVNULL, timeout=2)
+        out = silent_check_output(["powercfg", "/list"], text=True, stderr=subprocess.DEVNULL, timeout=2)
     except Exception as e:
         return {"plans": [], "error": str(e)}
 
@@ -685,7 +740,7 @@ def set_power_plan(guid):
     if not re.match(r'^[a-f0-9\-]{36}$', guid, re.IGNORECASE):
         return {"success": False, "error": "Invalid power scheme GUID"}
     try:
-        subprocess.run(f"powercfg /setactive {guid}", shell=True, check=True, timeout=2)
+        silent_run(["powercfg", "/setactive", guid], check=True, timeout=2)
         return {"success": True, "active_guid": guid}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -740,9 +795,9 @@ def apply_fan_profile(profile):
     }
     epp = epp_map.get(profile, 50)
     try:
-        subprocess.run(f"powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFEPP {epp}", shell=True, timeout=2)
-        subprocess.run(f"powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFEPP {epp}", shell=True, timeout=2)
-        subprocess.run("powercfg /setactive SCHEME_CURRENT", shell=True, timeout=2)
+        silent_run(["powercfg", "/setacvalueindex", "SCHEME_CURRENT", "SUB_PROCESSOR", "PERFEPP", str(epp)], timeout=2)
+        silent_run(["powercfg", "/setdcvalueindex", "SCHEME_CURRENT", "SUB_PROCESSOR", "PERFEPP", str(epp)], timeout=2)
+        silent_run(["powercfg", "/setactive", "SCHEME_CURRENT"], timeout=2)
     except Exception as e:
         print("Error applying fan profile EPP:", e)
     with laptop_lock:
@@ -811,7 +866,8 @@ def trigger_f12_action(action, custom_cmd):
         laptop_state["last_hotkey_action"] = action
     
     if action == "zenith_hud":
-        subprocess.Popen(f'start http://127.0.0.1:{PORT}', shell=True)
+        import webbrowser
+        webbrowser.open(f'http://127.0.0.1:{PORT}')
     elif action == "fan_boost":
         with laptop_lock:
             cur = laptop_state["fan_profile"]
@@ -824,10 +880,10 @@ def trigger_f12_action(action, custom_cmd):
             laptop_state["winkey_locked"] = not laptop_state["winkey_locked"]
         save_laptop_config()
     elif action == "snip":
-        subprocess.Popen('explorer ms-screenclip:', shell=True)
+        silent_popen(["cmd", "/c", "start", "ms-screenclip:"])
     elif action == "custom":
         if custom_cmd:
-            subprocess.Popen(custom_cmd, shell=True)
+            silent_popen(custom_cmd, shell=True)
 
 def set_winkey_state(locked):
     with laptop_lock:
@@ -902,14 +958,14 @@ def scan_storage_topology():
     disks = []
     try:
         ps_cmd = 'Get-PhysicalDisk | Select-Object DeviceId, FriendlyName, MediaType, BusType, OperationalStatus, HealthStatus, Size, AllocatedSize, FirmwareVersion | ConvertTo-Json -Compress'
-        p = subprocess.run(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=4)
+        p = silent_run(['powershell', '-NoProfile', '-NonInteractive', '-Command', ps_cmd], capture_output=True, text=True, timeout=4)
         raw_disks = []
         if p.returncode == 0 and p.stdout.strip():
             data = json.loads(p.stdout)
             raw_disks = data if isinstance(data, list) else [data]
 
         part_cmd = 'Get-Partition | Select-Object DiskNumber, PartitionNumber, DriveLetter, Size, Type | ConvertTo-Json -Compress'
-        p2 = subprocess.run(['powershell', '-NoProfile', '-Command', part_cmd], capture_output=True, text=True, timeout=4)
+        p2 = silent_run(['powershell', '-NoProfile', '-NonInteractive', '-Command', part_cmd], capture_output=True, text=True, timeout=4)
         raw_parts = []
         if p2.returncode == 0 and p2.stdout.strip():
             data = json.loads(p2.stdout)
@@ -1059,7 +1115,12 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
 
-        if path == "/api/hardware":
+        if path.startswith("/api/"):
+            record_heartbeat()
+
+        if path == "/api/heartbeat":
+            self.send_json({"status": "alive", "time": time.time()})
+        elif path == "/api/hardware":
             self.send_json(get_hardware_info())
         elif path == "/api/live":
             self.send_json(get_live_metrics())
@@ -1091,7 +1152,7 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/open":
             fpath = query.get("path", [""])[0]
             if fpath and os.path.exists(fpath):
-                subprocess.Popen(f'explorer /select,"{fpath}"', shell=True)
+                silent_popen(["explorer", f'/select,{fpath}'])
             self.send_json({"opened": True})
         elif path == "/api/processes/open_location":
             pid_raw = query.get("pid", ["0"])[0]
@@ -1099,7 +1160,7 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 p = psutil.Process(int(pid_raw))
                 exe = p.exe()
                 if exe and os.path.exists(exe):
-                    subprocess.Popen(f'explorer /select,"{exe}"', shell=True)
+                    silent_popen(["explorer", f'/select,{exe}'])
             except Exception:
                 pass
             self.send_json({"opened": True})
@@ -1140,7 +1201,18 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         body = self.rfile.read(content_len)
         data = json.loads(body) if body else {}
 
-        if self.path == "/api/kill":
+        if self.path.startswith("/api/"):
+            record_heartbeat()
+
+        if self.path == "/api/heartbeat":
+            self.send_json({"status": "alive", "time": time.time()})
+            return
+        elif self.path == "/api/server/shutdown":
+            trigger_shutdown_countdown(2.5)
+            self.send_json({"shutting_down": True, "grace_sec": 2.5})
+            return
+
+        elif self.path == "/api/kill":
             pid = data.get("pid")
             try:
                 p = psutil.Process(pid)
@@ -1199,7 +1271,7 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                         winget_state["current_package"] = p_id
                         winget_state["logs"].append(f"[Zenith WinGet] Uninstalling: {p_id}...")
                     cmd = ["winget", "uninstall", "--id", p_id, "-e", "--silent", "--accept-source-agreements", "--disable-interactivity"]
-                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                    res = silent_run(cmd, capture_output=True, text=True, timeout=120)
                     with winget_lock:
                         winget_state["status"] = "done"
                         winget_state["current_package"] = ""
@@ -1251,7 +1323,7 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             cmd = data.get("uninstall_string", "")
             if cmd:
                 try:
-                    subprocess.Popen(cmd, shell=True)
+                    silent_popen(cmd, shell=True)
                     self.send_json({"success": True})
                 except Exception as e:
                     self.send_json({"error": str(e)}, status=500)
@@ -1345,6 +1417,8 @@ def start_server():
         t_proc.start()
         t_hook = threading.Thread(target=keyboard_hook_thread, daemon=True)
         t_hook.start()
+        t_watchdog = threading.Thread(target=watchdog_worker, daemon=True)
+        t_watchdog.start()
         # Register rule engine callbacks and start intelligent automation thread
         register_callbacks(
             get_gpu_live=get_gpu_live,

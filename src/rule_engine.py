@@ -36,7 +36,7 @@ DEFAULT_RULES = [
         "name": "🎮 Akıllı Oyun & 3D Modu",
         "description": "Oyun veya 3D yazılım açıldığında Fanı Turbo'ya al, Yüksek Performans güç planına geç, Win tuşunu kilitle. Oyundan çıkınca eski ayarlara dön.",
         "icon": "🎮",
-        "enabled": True,
+        "enabled": False,
         "is_preset": True,
         "auto_revert": True,
         "cooldown_sec": 5,
@@ -60,7 +60,7 @@ DEFAULT_RULES = [
         "name": "🔥 Termal Koruma & Aşırı Isınma Kalkanı",
         "description": "GPU sıcaklığı 82°C'yi aşarsa anında Cooler Boost / Turbo fana geç ve masaüstü uyarısı gönder. 74°C altına inince normale dön.",
         "icon": "🔥",
-        "enabled": True,
+        "enabled": False,
         "is_preset": True,
         "auto_revert": True,
         "cooldown_sec": 15,
@@ -84,7 +84,7 @@ DEFAULT_RULES = [
         "name": "🔋 Akıllı Pil Koruyucu",
         "description": "Laptop prizden çıkarıldığında ve pil <%25 seviyesine indiğinde Güç Tasarrufu planına geç ve fanı Sessiz moda al.",
         "icon": "🔋",
-        "enabled": True,
+        "enabled": False,
         "is_preset": True,
         "auto_revert": True,
         "cooldown_sec": 30,
@@ -152,18 +152,33 @@ def register_callbacks(**kwargs):
             if k in _server_callbacks:
                 _server_callbacks[k] = v
 
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+
+_last_valid_proc_name = ""
+
+IGNORED_FOCUS_PROCESSES = {
+    "cmd.exe", "conhost.exe", "powershell.exe", "python.exe", "zenith.exe", "zenith_probe.exe",
+    "searchapp.exe", "shellexperiencehost.exe", "startmenuexperiencehost.exe", "taskhostw.exe",
+    "textinputhost.exe", "lockapp.exe", "applicationframehost.exe"
+}
+
 def get_active_process_name():
+    global _last_valid_proc_name
     try:
         hwnd = user32.GetForegroundWindow()
         if not hwnd:
-            return ""
+            return _last_valid_proc_name
         pid = wintypes.DWORD()
         user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
         if pid.value > 0:
-            return psutil.Process(pid.value).name()
+            name = psutil.Process(pid.value).name()
+            if name.lower() in IGNORED_FOCUS_PROCESSES:
+                return _last_valid_proc_name
+            _last_valid_proc_name = name
+            return name
     except Exception:
         pass
-    return ""
+    return _last_valid_proc_name
 
 def send_windows_notification(title, message):
     try:
@@ -179,7 +194,13 @@ def send_windows_notification(title, message):
         $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Zenith System")
         $notifier.Show($toast)
         """
-        subprocess.Popen(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        flags = CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        subprocess.Popen(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=flags
+        )
     except Exception:
         pass
 

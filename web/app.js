@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTroubleshooter();
   setupAutomationRules();
   setupHardwareObd();
+  setupHeartbeatAndExitHandler();
 });
 
 // --- NAVIGATION ---
@@ -3238,4 +3239,25 @@ async function runHardwareObdScan() {
   await loadHardwareObdReport(true);
 }
 
+// --- HEARTBEAT & GRACEFUL EXIT WATCHDOG ---
+function setupHeartbeatAndExitHandler() {
+  // Send heartbeat every 4 seconds to keep Python backend alive
+  setInterval(async () => {
+    try {
+      await fetch('/api/heartbeat', { cache: 'no-store' });
+    } catch (e) {
+      // Backend may be shutting down
+    }
+  }, 4000);
 
+  // When browser or tab is closed, instantly notify server to terminate
+  window.addEventListener('beforeunload', () => {
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/server/shutdown', JSON.stringify({ action: 'close' }));
+      } else {
+        fetch('/api/server/shutdown', { method: 'POST', keepalive: true });
+      }
+    } catch (e) {}
+  });
+}
