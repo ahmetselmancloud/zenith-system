@@ -229,24 +229,49 @@ class LaptopProvider:
 
         # Vendor Hardware Sync
         if self.vendor == "msi":
+            # Effect code mapping for MSI Mystic Light (VID_1462&PID_1603 24 Zone Keyboard)
+            # M01 = Static, M02 = Breathing, M03 = Rainbow Wave, M08 = Color Cycle, M00 = Off
+            msi_eff_map = {
+                "static": "M01",
+                "breathing": "M02",
+                "rainbow": "M03",
+                "wave": "M03",
+                "cycle": "M08",
+                "off": "M00"
+            }
+            mode_code = msi_eff_map.get(effect, "M01")
+            is_active = 1 if effect != "off" and brightness > 0 else 0
+
             try:
-                # Update MSI Mystic Light Active LED Profile
+                # 1. Update MSI Mystic Light Active LED Profile
                 ml_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Mystic Light\LED"
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, ml_key, 0, winreg.KEY_SET_VALUE) as k:
                     # Color format: R,G,B repeated across 24 zones
                     zone_rgb = f"{r},{g},{b}," * 24
                     winreg.SetValueEx(k, "Save_ColorBlock", 0, winreg.REG_SZ, zone_rgb)
-                    setting_str = f"M03,VID_1462&PID_1603,24 Zone,T,{1 if effect != 'off' else 0},{r},{g},{b},F,1,{speed}"
+                    setting_str = f"{mode_code},VID_1462&PID_1603,24 Zone,T,{is_active},{r},{g},{b},F,1,{speed}"
                     winreg.SetValueEx(k, "SettingData", 0, winreg.REG_SZ, setting_str)
                     winreg.SetValueEx(k, "ML_Keeper_CMD_Apply", 0, winreg.REG_DWORD, 1)
+                    # CRITICAL: LEDKeeper2 only calls SynchronizeApplyAllEffectData if ML_UI_Apply is 'True'
+                    winreg.SetValueEx(k, "ML_UI_Apply", 0, winreg.REG_SZ, "True")
 
-                # Update General Setting Backlight
+                # 2. Update ML Control trigger if key exists
+                try:
+                    ctrl_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Mystic Light\ML Control"
+                    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, ctrl_key, 0, winreg.KEY_SET_VALUE) as k:
+                        winreg.SetValueEx(k, "ML_CMD_Apply", 0, winreg.REG_DWORD, 1)
+                except Exception:
+                    pass
+
+                # 3. Update General Setting Backlight
                 gen_key = r"SOFTWARE\WOW6432Node\MSI\MSI Center\Component\Base Module\GeneralSetting"
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, gen_key, 0, winreg.KEY_SET_VALUE) as k:
-                    kb_level = 0 if effect == "off" or brightness == 0 else (1 if brightness < 50 else 2)
+                    kb_level = 0 if not is_active else (1 if brightness < 50 else 2)
                     winreg.SetValueEx(k, "KBBacklight", 0, winreg.REG_DWORD, kb_level)
 
                 logs.append("MSI Mystic Light & KBBacklight synced successfully.")
+            except PermissionError:
+                logs.append("Yönetici izni gerekli (Run Zenith.exe as Administrator).")
             except Exception as e:
                 logs.append(f"MSI Mystic Light sync notice: {e}")
 
