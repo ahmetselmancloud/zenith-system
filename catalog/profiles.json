@@ -1,0 +1,80 @@
+{
+  "version": "1.0.0",
+  "profiles": [
+    {
+      "id": "gamer",
+      "name": "🎮 Oyuncu Kurulumu",
+      "description": "Oyun launcher'ları, performans araçları, ses/görüntü ve DirectX bağımlılıkları",
+      "packages": [
+        "Valve.Steam",
+        "EpicGames.EpicGamesLauncher",
+        "Discord.Discord",
+        "MSI.Afterburner",
+        "Guru3D.RivaTunerStatisticsServer",
+        "Ryochan7.DS4Windows",
+        "NexusMods.Vortex",
+        "Microsoft.VCRedist.2015+.x64",
+        "Microsoft.DirectX"
+      ]
+    },
+    {
+      "id": "developer",
+      "name": "💻 Geliştirici Kurulumu",
+      "description": "IDE, terminal, container, Python, Node.js ve geliştirme araçları",
+      "packages": [
+        "Microsoft.VisualStudioCode",
+        "Git.Git",
+        "OpenJS.NodeJS.LTS",
+        "Python.Python.3.12",
+        "Docker.DockerDesktop",
+        "Microsoft.WindowsTerminal",
+        "Microsoft.PowerShell",
+        "Postman.Postman",
+        "Microsoft.DotNet.SDK.8"
+      ]
+    },
+    {
+      "id": "privacy",
+      "name": "🔒 Gizlilik Öncelikli",
+      "description": "İzleme yapmayan tarayıcılar, parola yöneticisi, VPN ve şifreleme",
+      "packages": [
+        "Brave.Brave",
+        "Mullvad.MullvadBrowser",
+        "TorProject.TorBrowser",
+        "Bitwarden.Bitwarden",
+        "OpenWhisperSystems.Signal",
+        "Mullvad.MullvadVPN",
+        "VeraCrypt.VeraCrypt",
+        "OO-Software.ShutUp10"
+      ]
+    },
+    {
+      "id": "creator",
+      "name": "🎬 İçerik Üretici",
+      "description": "Video montaj, ses kayıt, ekran yakalama ve 3D tasarım",
+      "packages": [
+        "OBSProject.OBSStudio",
+        "Audacity.Audacity",
+        "HandBrake.HandBrake",
+        "ShareX.ShareX",
+        "BlenderFoundation.Blender",
+        "KDE.Krita",
+        "GIMP.GIMP",
+        "BlackmagicDesign.DaVinciResolve",
+        "Discord.Discord"
+      ]
+    },
+    {
+      "id": "minimal",
+      "name": "🧹 Minimal Sistem",
+      "description": "Sadece olmazsa olmaz temel araçlar (arşivleyici, arama ve metin editörü)",
+      "packages": [
+        "7zip.7zip",
+        "Microsoft.PowerToys",
+        "voidtools.Everything",
+        "Notepad++.Notepad++",
+        "Microsoft.VCRedist.2015+.x64"
+      ]
+    }
+  ]
+}

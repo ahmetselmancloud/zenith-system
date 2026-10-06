@@ -1,0 +1,244 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-10-06",
+  "note": "Zenith System curated WinGet package catalogue",
+  "categories": [
+    {
+      "id": "browsers",
+      "name": "Web Tarayıcıları",
+      "icon": "🌐",
+      "packages": [
+        { "id": "Brave.Brave", "name": "Brave", "tags": ["privacy", "chromium"] },
+        { "id": "Mozilla.Firefox", "name": "Firefox", "tags": ["privacy", "gecko"] },
+        { "id": "Google.Chrome", "name": "Chrome", "tags": ["chromium"] },
+        { "id": "Microsoft.Edge", "name": "Edge", "tags": ["chromium", "default"] },
+        { "id": "Vivaldi.Vivaldi", "name": "Vivaldi", "tags": ["chromium", "power-user"] },
+        { "id": "Opera.Opera", "name": "Opera", "tags": ["chromium"] },
+        { "id": "Opera.OperaGX", "name": "Opera GX", "tags": ["gaming"] },
+        { "id": "LibreWolf.LibreWolf", "name": "LibreWolf", "tags": ["privacy", "gecko"] },
+        { "id": "TorProject.TorBrowser", "name": "Tor Browser", "tags": ["anonymity"] },
+        { "id": "Mullvad.MullvadBrowser", "name": "Mullvad Browser", "tags": ["privacy"] },
+        { "id": "Waterfox.Waterfox", "name": "Waterfox", "tags": ["gecko"] }
+      ]
+    },
+    {
+      "id": "development",
+      "name": "Geliştirici Araçları",
+      "icon": "💻",
+      "packages": [
+        { "id": "Microsoft.VisualStudioCode", "name": "VS Code" },
+        { "id": "Microsoft.VisualStudio.2022.Community", "name": "Visual Studio 2022 Community" },
+        { "id": "Microsoft.VisualStudio.2022.Professional", "name": "VS 2022 Professional" },
+        { "id": "JetBrains.Toolbox", "name": "JetBrains Toolbox" },
+        { "id": "JetBrains.IntelliJIDEA.Community", "name": "IntelliJ IDEA CE" },
+        { "id": "JetBrains.PyCharm.Community", "name": "PyCharm CE" },
+        { "id": "JetBrains.WebStorm", "name": "WebStorm" },
+        { "id": "SublimeHQ.SublimeText.4", "name": "Sublime Text 4" },
+        { "id": "Neovim.Neovim", "name": "Neovim" },
+        { "id": "Git.Git", "name": "Git" },
+        { "id": "GitHub.cli", "name": "GitHub CLI" },
+        { "id": "GitKraken.GitKraken", "name": "GitKraken" },
+        { "id": "OpenJS.NodeJS.LTS", "name": "Node.js LTS" },
+        { "id": "Python.Python.3.12", "name": "Python 3.12" },
+        { "id": "Python.Python.3.13", "name": "Python 3.13" },
+        { "id": "GoLang.Go", "name": "Go" },
+        { "id": "Rustlang.Rustup", "name": "Rust (rustup)" },
+        { "id": "Microsoft.DotNet.SDK.8", "name": ".NET 8 SDK" },
+        { "id": "EclipseAdoptium.Temurin.21.JDK", "name": "Temurin JDK 21" },
+        { "id": "Docker.DockerDesktop", "name": "Docker Desktop" },
+        { "id": "RedHat.Podman", "name": "Podman" },
+        { "id": "Postman.Postman", "name": "Postman" },
+        { "id": "Insomnia.Insomnia", "name": "Insomnia" },
+        { "id": "dbeaver.dbeaver", "name": "DBeaver" },
+        { "id": "Microsoft.WindowsTerminal", "name": "Windows Terminal" },
+        { "id": "Microsoft.PowerShell", "name": "PowerShell 7" },
+        { "id": "JanDeDobbeleer.OhMyPosh", "name": "Oh My Posh" }
+      ]
+    },
+    {
+      "id": "utilities",
+      "name": "Sistem Araçları",
+      "icon": "🛠️",
+      "packages": [
+        { "id": "7zip.7zip", "name": "7-Zip" },
+        { "id": "RARLab.WinRAR", "name": "WinRAR" },
+        { "id": "M2Team.NanaZip", "name": "NanaZip" },
+        { "id": "PeaZip.PeaZip", "name": "PeaZip" },
+        { "id": "voidtools.Everything", "name": "Everything Search" },
+        { "id": "AntibodySoftware.WizTree", "name": "WizTree" },
+        { "id": "JAMSoftware.TreeSize.Free", "name": "TreeSize Free" },
+        { "id": "Notepad++.Notepad++", "name": "Notepad++" },
+        { "id": "Microsoft.PowerToys", "name": "PowerToys" },
+        { "id": "AutoHotkey.AutoHotkey", "name": "AutoHotkey" },
+        { "id": "pbatard.Rufus", "name": "Rufus" },
+        { "id": "Ventoy.Ventoy", "name": "Ventoy" },
+        { "id": "balenaEtcher.balenaEtcher", "name": "balenaEtcher" },
+        { "id": "CrystalDewWorld.CrystalDiskInfo", "name": "CrystalDiskInfo" },
+        { "id": "CrystalDewWorld.CrystalDiskMark", "name": "CrystalDiskMark" },
+        { "id": "REALiX.HWiNFO", "name": "HWiNFO64" },
+        { "id": "techpowerup.GPU-Z", "name": "GPU-Z" },
+        { "id": "CPUID.CPU-Z", "name": "CPU-Z" },
+        { "id": "Klocman.BulkCrapUninstaller", "name": "Bulk Crap Uninstaller" },
+        { "id": "RevoUninstaller.RevoUninstaller", "name": "Revo Uninstaller" },
+        { "id": "ShareX.ShareX", "name": "ShareX" },
+        { "id": "Greenshot.Greenshot", "name": "Greenshot" },
+        { "id": "Winaero.WinaeroTweaker", "name": "Winaero Tweaker" },
+        { "id": "OO-Software.ShutUp10", "name": "O&O ShutUp10++" },
+        { "id": "Microsoft.Sysinternals.Autoruns", "name": "Autoruns" },
+        { "id": "Microsoft.Sysinternals.ProcessExplorer", "name": "Process Explorer" },
+        { "id": "Nirsoft.NirLauncher", "name": "NirLauncher" }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "Medya & Tasarım",
+      "icon": "🎬",
+      "packages": [
+        { "id": "VideoLAN.VLC", "name": "VLC Media Player" },
+        { "id": "clsid2.mpc-hc", "name": "MPC-HC" },
+        { "id": "mpv.net", "name": "mpv.net" },
+        { "id": "OBSProject.OBSStudio", "name": "OBS Studio" },
+        { "id": "Audacity.Audacity", "name": "Audacity" },
+        { "id": "REAPER.Reaper", "name": "REAPER" },
+        { "id": "LMMS.LMMS", "name": "LMMS" },
+        { "id": "HandBrake.HandBrake", "name": "HandBrake" },
+        { "id": "Spotify.Spotify", "name": "Spotify" },
+        { "id": "Tidal.Tidal", "name": "Tidal" },
+        { "id": "MusicBee.MusicBee", "name": "MusicBee" },
+        { "id": "PeterPawlowski.foobar2000", "name": "foobar2000" },
+        { "id": "GIMP.GIMP", "name": "GIMP" },
+        { "id": "KDE.Krita", "name": "Krita" },
+        { "id": "dotPDN.PaintDotNet", "name": "Paint.NET" },
+        { "id": "Inkscape.Inkscape", "name": "Inkscape" },
+        { "id": "BlenderFoundation.Blender", "name": "Blender" },
+        { "id": "BlackmagicDesign.DaVinciResolve", "name": "DaVinci Resolve" }
+      ]
+    },
+    {
+      "id": "gaming",
+      "name": "Oyun & Launcher",
+      "icon": "🎮",
+      "packages": [
+        { "id": "Valve.Steam", "name": "Steam" },
+        { "id": "EpicGames.EpicGamesLauncher", "name": "Epic Games" },
+        { "id": "GOG.Galaxy", "name": "GOG Galaxy" },
+        { "id": "Ubisoft.Connect", "name": "Ubisoft Connect" },
+        { "id": "ElectronicArts.EADesktop", "name": "EA App" },
+        { "id": "Blizzard.BattleNet", "name": "Battle.net" },
+        { "id": "RockstarGames.Launcher", "name": "Rockstar Launcher" },
+        { "id": "Discord.Discord", "name": "Discord" },
+        { "id": "TeamSpeak.TeamSpeak", "name": "TeamSpeak" },
+        { "id": "MSI.Afterburner", "name": "MSI Afterburner" },
+        { "id": "Guru3D.RivaTunerStatisticsServer", "name": "RTSS" },
+        { "id": "Ryochan7.DS4Windows", "name": "DS4Windows" },
+        { "id": "Playnite.Playnite", "name": "Playnite" },
+        { "id": "NexusMods.Vortex", "name": "Vortex Mod Manager" },
+        { "id": "RetroArch.RetroArch", "name": "RetroArch" },
+        { "id": "DolphinEmulator.Dolphin", "name": "Dolphin Emulator" },
+        { "id": "PPSSPP.PPSSPP", "name": "PPSSPP" }
+      ]
+    },
+    {
+      "id": "communication",
+      "name": "İletişim",
+      "icon": "💬",
+      "packages": [
+        { "id": "Slack.Slack", "name": "Slack" },
+        { "id": "Telegram.TelegramDesktop", "name": "Telegram Desktop" },
+        { "id": "WhatsApp.WhatsApp", "name": "WhatsApp" },
+        { "id": "OpenWhisperSystems.Signal", "name": "Signal" },
+        { "id": "Element.Element", "name": "Element (Matrix)" },
+        { "id": "zoom.zoom", "name": "Zoom" },
+        { "id": "Microsoft.Teams", "name": "Microsoft Teams" }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Güvenlik & Gizlilik",
+      "icon": "🔒",
+      "packages": [
+        { "id": "Bitwarden.Bitwarden", "name": "Bitwarden" },
+        { "id": "KeePassXCTeam.KeePassXC", "name": "KeePassXC" },
+        { "id": "AgileBits.1Password", "name": "1Password" },
+        { "id": "Mullvad.MullvadVPN", "name": "Mullvad VPN" },
+        { "id": "Proton.ProtonVPN", "name": "Proton VPN" },
+        { "id": "WireGuard.WireGuard", "name": "WireGuard" },
+        { "id": "Malwarebytes.Malwarebytes", "name": "Malwarebytes" },
+        { "id": "ESET.ESETOnlineScanner", "name": "ESET Online Scanner" },
+        { "id": "VeraCrypt.VeraCrypt", "name": "VeraCrypt" },
+        { "id": "Cryptomator.Cryptomator", "name": "Cryptomator" },
+        { "id": "Yubico.YubikeyManager", "name": "YubiKey Manager" }
+      ]
+    },
+    {
+      "id": "network",
+      "name": "Ağ Araçları",
+      "icon": "📡",
+      "packages": [
+        { "id": "Wireshark.Wireshark", "name": "Wireshark" },
+        { "id": "Insecure.Nmap", "name": "Nmap" },
+        { "id": "WinSCP.WinSCP", "name": "WinSCP" },
+        { "id": "PuTTY.PuTTY", "name": "PuTTY" },
+        { "id": "FileZilla.FileZilla", "name": "FileZilla" },
+        { "id": "angryip.AngryIPScanner", "name": "Angry IP Scanner" }
+      ]
+    },
+    {
+      "id": "cloud",
+      "name": "Bulut & Senkronizasyon",
+      "icon": "☁️",
+      "packages": [
+        { "id": "Microsoft.OneDrive", "name": "OneDrive" },
+        { "id": "Google.GoogleDrive", "name": "Google Drive" },
+        { "id": "Dropbox.Dropbox", "name": "Dropbox" },
+        { "id": "pCloudAG.pCloudDrive", "name": "pCloud Drive" },
+        { "id": "Mega.MEGASync", "name": "MEGA Sync" },
+        { "id": "Nextcloud.NextcloudDesktop", "name": "Nextcloud Desktop" }
+      ]
+    },
+    {
+      "id": "office",
+      "name": "Ofis & Verimlilik",
+      "icon": "📋",
+      "packages": [
+        { "id": "TheDocumentFoundation.LibreOffice", "name": "LibreOffice" },
+        { "id": "ONLYOFFICE.DesktopEditors", "name": "ONLYOFFICE" },
+        { "id": "Obsidian.Obsidian", "name": "Obsidian" },
+        { "id": "Notion.Notion", "name": "Notion" },
+        { "id": "logseq.Logseq", "name": "Logseq" },
+        { "id": "SumatraPDF.SumatraPDF", "name": "SumatraPDF" },
+        { "id": "Adobe.Acrobat.Reader.64-bit", "name": "Acrobat Reader" },
+        { "id": "Zotero.Zotero", "name": "Zotero" },
+        { "id": "calibre.calibre", "name": "Calibre" }
+      ]
+    },
+    {
+      "id": "ai",
+      "name": "Yapay Zeka Araçları",
+      "icon": "🤖",
+      "packages": [
+        { "id": "Ollama.Ollama", "name": "Ollama" },
+        { "id": "LMStudio.LMStudio", "name": "LM Studio" },
+        { "id": "Jan.Jan", "name": "Jan" },
+        { "id": "StabilityMatrix", "name": "Stability Matrix" },
+        { "id": "Anthropic.Claude", "name": "Claude Desktop" },
+        { "id": "OpenAI.ChatGPT", "name": "ChatGPT Desktop" }
+      ]
+    },
+    {
+      "id": "runtimes",
+      "name": "Runtime & Bağımlılıklar",
+      "icon": "⚙️",
+      "packages": [
+        { "id": "Microsoft.VCRedist.2015+.x64", "name": "VC++ Redist 2015-2022 (x64)" },
+        { "id": "Microsoft.VCRedist.2015+.x86", "name": "VC++ Redist 2015-2022 (x86)" },
+        { "id": "Microsoft.DotNet.DesktopRuntime.6", "name": ".NET Desktop 6" },
+        { "id": "Microsoft.DotNet.DesktopRuntime.7", "name": ".NET Desktop 7" },
+        { "id": "Microsoft.DotNet.DesktopRuntime.8", "name": ".NET Desktop 8" },
+        { "id": "EclipseAdoptium.Temurin.21.JRE", "name": "Temurin JRE 21" },
+        { "id": "Microsoft.DirectX", "name": "DirectX Runtime" },
+        { "id": "Microsoft.EdgeWebView2Runtime", "name": "WebView2 Runtime" }
+      ]
+    }
+  ]
+}

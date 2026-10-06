@@ -40,6 +40,9 @@ Copy-Item -Path (Join-Path $ProjectRoot "web") -Destination $StagingDir -Recurse
 if (Test-Path (Join-Path $ProjectRoot "assets")) {
     Copy-Item -Path (Join-Path $ProjectRoot "assets") -Destination $StagingDir -Recurse -Force
 }
+if (Test-Path (Join-Path $ProjectRoot "catalog")) {
+    Copy-Item -Path (Join-Path $ProjectRoot "catalog") -Destination $StagingDir -Recurse -Force
+}
 
 # Copy root files
 $RootFiles = @("Zenith.exe", "start_zenith.bat", "install.ps1", "README.md", "LICENSE", "hardware_cache.json")

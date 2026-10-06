@@ -729,55 +729,407 @@ function setupCompactMode() {
   }
 }
 
-// --- WINGET APP STORE ---
-function setupWinGetStore() {
-  const installBtn = document.getElementById('btn-install-winget-pkgs');
-  const logBox = document.getElementById('winget-log-box');
-  if (!installBtn) return;
+// --- WINGET APP STORE & CATALOG MANAGER ---
+let wingetCatalogData = null;
+let wingetProfilesData = null;
+let wingetCurrentCategory = 'all';
+let wingetSearchTimeout = null;
+let isWingetPollActive = false;
 
-  installBtn.addEventListener('click', async () => {
-    const checked = Array.from(document.querySelectorAll('.pkg-checkbox input:checked')).map(cb => cb.value);
-    if (checked.length === 0) {
-      alert('Please select at least one package.');
+async function setupWinGetStore() {
+  const installBtn = document.getElementById('btn-install-winget-pkgs');
+  const searchInput = document.getElementById('winget-search-input');
+  const clearSearchBtn = document.getElementById('btn-clear-winget-search');
+  const upgradesBtn = document.getElementById('btn-winget-check-upgrades');
+  const toggleTermBtn = document.getElementById('btn-toggle-winget-terminal');
+  const logBox = document.getElementById('winget-log-box');
+
+  // Load profiles and catalog concurrently
+  loadWingetProfiles();
+  loadWingetCatalog();
+
+  // Search input handler with debounce
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim();
+      if (clearSearchBtn) clearSearchBtn.style.display = q ? 'block' : 'none';
+      clearTimeout(wingetSearchTimeout);
+      if (!q) {
+        renderWingetCatalogView();
+        return;
+      }
+      if (q.length < 2) return;
+
+      const view = document.getElementById('winget-content-view');
+      if (view) view.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--accent-cyan);">🔍 Microsoft WinGet deposunda "${q}" aranıyor...</div>`;
+
+      wingetSearchTimeout = setTimeout(() => {
+        executeLiveWingetSearch(q);
+      }, 400);
+    });
+  }
+
+  if (clearSearchBtn && searchInput) {
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearSearchBtn.style.display = 'none';
+      renderWingetCatalogView();
+    });
+  }
+
+  // Category filter pills
+  const pills = document.querySelectorAll('.winget-pill');
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      wingetCurrentCategory = pill.getAttribute('data-cat') || 'all';
+      if (searchInput) {
+        searchInput.value = '';
+        if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+      }
+      renderWingetCatalogView();
+    });
+  });
+
+  // Upgrades checker
+  if (upgradesBtn) {
+    upgradesBtn.addEventListener('click', async () => {
+      upgradesBtn.disabled = true;
+      upgradesBtn.innerHTML = '<span>⏳ Taranıyor...</span>';
+      const view = document.getElementById('winget-content-view');
+      if (view) view.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--accent-green);">🔄 Sisteminizdeki kurulu uygulamalar için güncellemeler taranıyor...</div>';
+      try {
+        const res = await fetch('/api/winget/upgrades');
+        const upgrades = res.ok ? await res.json() : [];
+        renderWingetUpgradesView(upgrades);
+      } catch (e) {
+        if (view) view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Güncelleme taraması başarısız oldu: ${e.message}</div>`;
+      } finally {
+        upgradesBtn.disabled = false;
+        upgradesBtn.innerHTML = '<span>🔄 Güncellemeleri Tara</span>';
+      }
+    });
+  }
+
+  // Toggle terminal
+  if (toggleTermBtn && logBox) {
+    toggleTermBtn.addEventListener('click', () => {
+      logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  // Bulk Install Selected
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      const checked = Array.from(document.querySelectorAll('.pkg-cb:checked')).map(cb => cb.value);
+      if (checked.length === 0) {
+        alert('Lütfen kurmak için en az bir paket seçin.');
+        return;
+      }
+
+      installBtn.disabled = true;
+      installBtn.textContent = 'Kuruluyor...';
+      startWingetPolling();
+
+      try {
+        const res = await fetch('/api/winget/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packages: checked })
+        });
+        if (!res.ok) throw new Error('API isteği başarısız oldu.');
+      } catch (e) {
+        alert('Hata: ' + e.message);
+        installBtn.disabled = false;
+        updateSelectedPackagesCount();
+      }
+    });
+  }
+}
+
+async function loadWingetProfiles() {
+  const container = document.getElementById('winget-profiles-container');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/catalog/profiles');
+    if (!res.ok) return;
+    wingetProfilesData = await res.json();
+    const profiles = wingetProfilesData.profiles || [];
+    container.innerHTML = profiles.map(p => `
+      <div class="profile-card">
+        <div>
+          <div class="profile-card-header">
+            <span class="profile-card-icon">${p.name.split(' ')[0] || '⚡'}</span>
+            <h4 class="profile-card-title">${p.name.substring(p.name.indexOf(' ') + 1) || p.name}</h4>
+          </div>
+          <p class="profile-card-desc">${p.description}</p>
+          <div class="profile-pkg-count">${p.packages.length} Paket Hazır</div>
+        </div>
+        <button class="profile-deploy-btn" onclick="deployWingetProfile('${p.id}', '${p.name.replace(/'/g, "\\'")}')">
+          <span>⚡ Profili Kur</span>
+        </button>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load profiles:', e);
+  }
+}
+
+async function loadWingetCatalog() {
+  const view = document.getElementById('winget-content-view');
+  try {
+    const res = await fetch('/api/catalog');
+    if (!res.ok) return;
+    wingetCatalogData = await res.json();
+    renderWingetCatalogView();
+  } catch (e) {
+    if (view) view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Katalog yüklenemedi: ${e.message}</div>`;
+  }
+}
+
+function renderWingetCatalogView() {
+  const view = document.getElementById('winget-content-view');
+  if (!view || !wingetCatalogData) return;
+
+  const categories = wingetCatalogData.categories || [];
+  const filtered = wingetCurrentCategory === 'all'
+    ? categories
+    : categories.filter(c => c.id === wingetCurrentCategory);
+
+  if (filtered.length === 0) {
+    view.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-dim);">Bu kategoride paket bulunamadı.</div>';
+    return;
+  }
+
+  view.innerHTML = `
+    <div class="winget-cat-grid">
+      ${filtered.map(cat => `
+        <div class="winget-cat-card">
+          <div class="winget-cat-header">
+            <div class="winget-cat-title">
+              <span>${cat.icon || '📦'}</span>
+              <span>${cat.name}</span>
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">${cat.packages.length} Paket</span>
+          </div>
+          <div class="package-list">
+            ${cat.packages.map(pkg => `
+              <div class="pkg-item">
+                <div class="pkg-item-left">
+                  <input type="checkbox" class="pkg-cb" value="${pkg.id}" onchange="updateSelectedPackagesCount()" style="accent-color: var(--accent-cyan); cursor: pointer; width: 16px; height: 16px;">
+                  <div>
+                    <div class="pkg-item-name">${pkg.name}</div>
+                    <div class="pkg-item-id">${pkg.id}</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  ${(pkg.tags || []).slice(0, 1).map(t => `<span class="pkg-tag-badge">${t}</span>`).join('')}
+                  <button class="pkg-install-quick-btn" onclick="installSingleWingetPackage('${pkg.id}')">Kur</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  updateSelectedPackagesCount();
+}
+
+async function executeLiveWingetSearch(query) {
+  const view = document.getElementById('winget-content-view');
+  if (!view) return;
+  try {
+    const res = await fetch(`/api/winget/search?q=${encodeURIComponent(query)}`);
+    const results = res.ok ? await res.json() : [];
+
+    if (results.length === 0) {
+      view.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: var(--text-dim);">
+          <div style="font-size: 1.8rem; margin-bottom: 8px;">🔍</div>
+          <div>"${query}" için resmi Microsoft WinGet deposunda sonuç bulunamadı.</div>
+          <div style="font-size: 0.75rem; margin-top: 6px; color: var(--text-dim);">Farklı bir arama terimi deneyin (örn: chrome, vlc, discord).</div>
+        </div>
+      `;
       return;
     }
 
+    view.innerHTML = `
+      <div style="margin-bottom: 14px; font-size: 0.82rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+        <span>"${query}" için <strong>${results.length}</strong> canlı sonuç bulundu:</span>
+        <span style="color: var(--accent-cyan);">Kaynak: Microsoft WinGet Repository</span>
+      </div>
+      <div class="winget-cat-grid">
+        <div class="winget-cat-card" style="grid-column: 1 / -1;">
+          <div class="package-list">
+            ${results.map(r => `
+              <div class="pkg-item" style="padding: 10px 14px;">
+                <div class="pkg-item-left">
+                  <input type="checkbox" class="pkg-cb" value="${r.id}" onchange="updateSelectedPackagesCount()" style="accent-color: var(--accent-cyan); cursor: pointer; width: 16px; height: 16px;">
+                  <div>
+                    <div class="pkg-item-name" style="font-size: 0.9rem;">${r.name}</div>
+                    <div class="pkg-item-id">${r.id} • Sürüm: ${r.version || 'Son'} ${r.source ? `• ${r.source}` : ''}</div>
+                  </div>
+                </div>
+                <button class="pkg-install-quick-btn" style="padding: 6px 14px; font-weight: 600;" onclick="installSingleWingetPackage('${r.id}')">⚡ Şimdi Kur</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    updateSelectedPackagesCount();
+  } catch (e) {
+    view.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--accent-pink);">Arama sırasında hata oluştu: ${e.message}</div>`;
+  }
+}
+
+function renderWingetUpgradesView(upgrades) {
+  const view = document.getElementById('winget-content-view');
+  if (!view) return;
+
+  if (!upgrades || upgrades.length === 0) {
+    view.innerHTML = `
+      <div style="padding: 50px; text-align: center; color: var(--accent-green);">
+        <div style="font-size: 2.2rem; margin-bottom: 10px;">✨</div>
+        <div style="font-size: 1rem; font-weight: 700;">Tebrikler, tüm yazılımlarınız güncel!</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">Sisteminizdeki WinGet paketleri için bekleyen yeni bir güncelleme bulunmuyor.</div>
+      </div>
+    `;
+    return;
+  }
+
+  view.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h4 style="margin: 0; font-size: 1rem; color: #fff;">Güncellenebilir Uygulamalar (${upgrades.length})</h4>
+        <span style="font-size: 0.75rem; color: var(--text-dim);">Aşağıdaki uygulamaların daha yeni sürümleri mevcut</span>
+      </div>
+      <button class="btn btn-primary" onclick="upgradeAllWingetPackages(${JSON.stringify(upgrades.map(u => u.id)).replace(/"/g, '&quot;')})">
+        ⚡ Hepsini Güncelle (${upgrades.length})
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      ${upgrades.map(u => `
+        <div class="upgrade-row">
+          <div>
+            <div style="font-weight: 600; font-size: 0.88rem; color: #fff;">${u.name}</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">${u.id}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="font-size: 0.78rem; color: var(--text-muted);">
+              <span>${u.version || 'Mevcut'}</span>
+              <span style="color: var(--accent-cyan); margin: 0 6px;">➔</span>
+              <span class="upgrade-version-badge">${u.available || 'Yeni'}</span>
+            </div>
+            <button class="pkg-install-quick-btn" onclick="installSingleWingetPackage('${u.id}')">Güncelle</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+window.updateSelectedPackagesCount = function() {
+  const checked = document.querySelectorAll('.pkg-cb:checked');
+  const countEl = document.getElementById('winget-selected-count');
+  const installBtn = document.getElementById('btn-install-winget-pkgs');
+  if (countEl) countEl.textContent = checked.length;
+  if (installBtn && !isWingetPollActive) {
+    installBtn.innerHTML = `<span>Seçilenleri Kur (${checked.length})</span>`;
+  }
+};
+
+window.installSingleWingetPackage = async function(pkgId) {
+  if (!confirm(`'${pkgId}' uygulamasını arka planda sessizce kurmak istiyor musunuz?`)) return;
+  startWingetPolling();
+  try {
+    await fetch('/api/winget/install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ packages: [pkgId] })
+    });
+  } catch (e) {
+    alert('Kurulum başlatılamadı: ' + e.message);
+  }
+};
+
+window.deployWingetProfile = async function(profileId, profileName) {
+  if (!confirm(`'${profileName}' profilindeki tüm paketler sırayla sessizce kurulacak. Başlatılsın mı?`)) return;
+  startWingetPolling();
+  try {
+    const res = await fetch('/api/winget/install-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_id: profileId })
+    });
+    if (!res.ok) throw new Error('Profil kurulum isteği başarısız oldu.');
+  } catch (e) {
+    alert('Profil kurulum hatası: ' + e.message);
+  }
+};
+
+window.upgradeAllWingetPackages = async function(pkgIds) {
+  if (!confirm(`${pkgIds.length} adet uygulama sırayla en güncel sürüme yükseltilecek. Başlatılsın mı?`)) return;
+  startWingetPolling();
+  try {
+    await fetch('/api/winget/install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ packages: pkgIds })
+    });
+  } catch (e) {
+    alert('Toplu güncelleme hatası: ' + e.message);
+  }
+};
+
+function startWingetPolling() {
+  const logBox = document.getElementById('winget-log-box');
+  const spinner = document.getElementById('winget-spinner');
+  const installBtn = document.getElementById('btn-install-winget-pkgs');
+
+  if (logBox) {
+    logBox.style.display = 'block';
+    logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">[Zenith WinGet] Arka plan kurulum işi başlatıldı...</div>';
+  }
+  if (spinner) spinner.style.display = 'inline';
+  if (installBtn) {
     installBtn.disabled = true;
-    installBtn.textContent = 'Installing...';
-    if (logBox) logBox.innerHTML = '<div class="terminal-line" style="color: #38bdf8;">Installation queued. Starting background WinGet worker...</div>';
+    installBtn.textContent = 'Kuruluyor...';
+  }
 
+  isWingetPollActive = true;
+  const pollInterval = setInterval(async () => {
     try {
-      const res = await fetch('/api/winget/install', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packages: checked })
-      });
-      if (!res.ok) throw new Error('API request failed.');
-
-      const pollInterval = setInterval(async () => {
-        try {
-          const sRes = await fetch('/api/winget/status');
-          if (!sRes.ok) return;
-          const statusData = await sRes.json();
-          if (logBox && statusData.logs) {
-            logBox.innerHTML = statusData.logs.map(l => `<div class="terminal-line">${l}</div>`).join('');
-            logBox.scrollTop = logBox.scrollHeight;
-          }
-          if (statusData.status === 'done' || statusData.status === 'error') {
-            clearInterval(pollInterval);
-            installBtn.disabled = false;
-            installBtn.textContent = 'Install Selected Silently';
-          }
-        } catch (err) {
-          clearInterval(pollInterval);
+      const res = await fetch('/api/winget/status');
+      if (!res.ok) return;
+      const statusData = await res.json();
+      if (logBox && statusData.logs) {
+        logBox.innerHTML = statusData.logs.map(l => `<div class="terminal-line">${l}</div>`).join('');
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+      if (statusData.status === 'done' || statusData.status === 'error') {
+        clearInterval(pollInterval);
+        isWingetPollActive = false;
+        if (spinner) spinner.style.display = 'none';
+        if (installBtn) {
+          installBtn.disabled = false;
+          updateSelectedPackagesCount();
         }
-      }, 1000);
-    } catch (e) {
-      alert('Error: ' + e.message);
-      installBtn.disabled = false;
-      installBtn.textContent = 'Install Selected Silently';
+      }
+    } catch (_) {
+      clearInterval(pollInterval);
+      isWingetPollActive = false;
+      if (spinner) spinner.style.display = 'none';
+      if (installBtn) {
+        installBtn.disabled = false;
+        updateSelectedPackagesCount();
+      }
     }
-  });
+  }, 1000);
 }
 
 // --- INSTALLED APPS MANAGER (100ms REGISTRY ENGINE) ---

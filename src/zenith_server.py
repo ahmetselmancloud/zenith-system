@@ -14,6 +14,12 @@ import psutil
 import ctypes
 from ctypes import wintypes
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
+except ImportError:
+    from src.catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
+
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
 # 100ms Registry Installed Apps Engine, WinGet Package Installer, and Safe CPU Benchmark.
@@ -1081,6 +1087,15 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/laptop/config":
             with laptop_lock:
                 self.send_json(dict(laptop_state))
+        elif path == "/api/catalog":
+            self.send_json(get_catalog())
+        elif path == "/api/catalog/profiles":
+            self.send_json(get_profiles())
+        elif path == "/api/winget/search":
+            q = query.get("q", [""])[0]
+            self.send_json(search_winget(q))
+        elif path == "/api/winget/upgrades":
+            self.send_json(get_winget_upgrades())
         elif path == "/hardware_cache.json":
             if os.path.exists(CACHE_FILE):
                 try:
@@ -1136,6 +1151,36 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": True, "count": len(packages)})
             else:
                 self.send_json({"error": "No packages specified"}, status=400)
+
+        elif self.path == "/api/winget/install-profile":
+            profile_id = data.get("profile_id", "")
+            profiles = get_profiles().get("profiles", [])
+            matched = next((p for p in profiles if p["id"] == profile_id), None)
+            if matched and matched.get("packages"):
+                t = threading.Thread(target=run_winget_worker, args=(matched["packages"],), daemon=True)
+                t.start()
+                self.send_json({"success": True, "profile": matched["name"], "count": len(matched["packages"])})
+            else:
+                self.send_json({"error": "Profile not found or empty"}, status=404)
+
+        elif self.path == "/api/winget/uninstall":
+            pkg_id = data.get("id", "")
+            if pkg_id:
+                def uninstall_worker(p_id):
+                    with winget_lock:
+                        winget_state["status"] = "installing"
+                        winget_state["current_package"] = p_id
+                        winget_state["logs"].append(f"[Zenith WinGet] Uninstalling: {p_id}...")
+                    cmd = ["winget", "uninstall", "--id", p_id, "-e", "--silent", "--accept-source-agreements", "--disable-interactivity"]
+                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                    with winget_lock:
+                        winget_state["status"] = "done"
+                        winget_state["current_package"] = ""
+                        winget_state["logs"].append(f"Uninstall {p_id} completed (Code: {res.returncode})")
+                threading.Thread(target=uninstall_worker, args=(pkg_id,), daemon=True).start()
+                self.send_json({"success": True})
+            else:
+                self.send_json({"error": "Missing package id"}, status=400)
 
         elif self.path == "/api/stress/start":
             duration = int(data.get("duration", 15))

@@ -555,71 +555,80 @@
         </div>
       </section>
 
-      <!-- TAB 6: WINGET APP STORE -->
+      <!-- TAB 6: WINGET SOFTWARE HUB -->
       <section class="tab-pane" id="tab-winget">
-        <div class="card glass-card">
-          <div class="tweak-header">
+        <!-- 1-CLICK PROFILES SECTION -->
+        <div class="card glass-card mb-4">
+          <div class="tweak-header" style="margin-bottom: 16px;">
             <div>
-              <h3>WinGet Bulk Software Provisioner</h3>
-              <p class="subtitle">Deploy essential desktop software silently in the background with official Microsoft WinGet</p>
+              <h3>⚡ 1-Click Setup Profiles</h3>
+              <p class="subtitle">Format sonrası veya yeni sistem için tek tıkla otomatik paket kurulum presetleri</p>
             </div>
-            <button class="btn btn-primary" id="btn-install-winget-pkgs">Install Selected Silently</button>
+          </div>
+          <div class="profile-carousel" id="winget-profiles-container">
+            <!-- Dynamically populated from /api/catalog/profiles -->
+            <div style="grid-column: 1 / -1; padding: 16px; text-align: center; color: var(--text-dim);">Loading setup profiles...</div>
+          </div>
+        </div>
+
+        <!-- MAIN PACKAGE CATALOG & SEARCH -->
+        <div class="card glass-card">
+          <div class="tweak-header" style="margin-bottom: 16px;">
+            <div>
+              <h3 id="winget-title">📦 WinGet Software Catalogue & Manager</h3>
+              <p class="subtitle">Microsoft WinGet resmi deposundan 180+ popüler uygulama, canlı arama ve güncelleme takibi</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn btn-secondary" id="btn-winget-check-upgrades" style="display: flex; align-items: center; gap: 6px;">
+                <span>🔄 Güncellemeleri Tara</span>
+              </button>
+              <button class="btn btn-primary" id="btn-install-winget-pkgs" style="display: flex; align-items: center; gap: 6px;">
+                <span>Seçilenleri Kur (<span id="winget-selected-count">0</span>)</span>
+              </button>
+            </div>
           </div>
 
-          <!-- PACKAGE CATEGORIES -->
-          <div class="grid-3">
-            <div class="card glass-card">
-              <h4 class="category-title">🌐 Web Browsers</h4>
-              <div class="package-list">
-                <label class="pkg-checkbox"><input type="checkbox" value="Brave.Brave"> <span>Brave Browser</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Google.Chrome"> <span>Google Chrome</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Mozilla.Firefox"> <span>Mozilla Firefox</span></label>
-              </div>
+          <div class="winget-controls-bar">
+            <!-- SEARCH INPUT -->
+            <div class="winget-search-row">
+              <input type="text" class="winget-search-input" id="winget-search-input" placeholder="🔍 Microsoft WinGet deposunda canlı ara (örn: obs, vlc, git, discord, rust, blender)...">
+              <button class="btn btn-secondary" id="btn-clear-winget-search" style="display: none; padding: 10px 16px;">Temizle</button>
             </div>
 
-            <div class="card glass-card">
-              <h4 class="category-title">💻 Developer & Code</h4>
-              <div class="package-list">
-                <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.VisualStudioCode"> <span>VS Code</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Git.Git"> <span>Git CLI</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="OpenJS.NodeJS"> <span>Node.js (LTS)</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Python.Python.3.12"> <span>Python 3.12</span></label>
-              </div>
+            <!-- CATEGORY FILTER PILLS -->
+            <div class="winget-pills-container" id="winget-pills-container">
+              <button class="winget-pill active" data-cat="all">Tümü (150+)</button>
+              <button class="winget-pill" data-cat="browsers">🌐 Tarayıcılar</button>
+              <button class="winget-pill" data-cat="development">💻 Geliştirici</button>
+              <button class="winget-pill" data-cat="utilities">🛠️ Sistem</button>
+              <button class="winget-pill" data-cat="media">🎬 Medya</button>
+              <button class="winget-pill" data-cat="gaming">🎮 Oyun</button>
+              <button class="winget-pill" data-cat="communication">💬 İletişim</button>
+              <button class="winget-pill" data-cat="security">🔒 Güvenlik</button>
+              <button class="winget-pill" data-cat="network">📡 Ağ</button>
+              <button class="winget-pill" data-cat="cloud">☁️ Bulut</button>
+              <button class="winget-pill" data-cat="office">📋 Ofis</button>
+              <button class="winget-pill" data-cat="ai">🤖 Yapay Zeka</button>
+              <button class="winget-pill" data-cat="runtimes">⚙️ Runtimes</button>
             </div>
+          </div>
 
-            <div class="card glass-card">
-              <h4 class="category-title">🛠️ Utilities & Tools</h4>
-              <div class="package-list">
-                <label class="pkg-checkbox"><input type="checkbox" value="7zip.7zip"> <span>7-Zip</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="voidtools.Everything"> <span>Everything Search</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Notepad++.Notepad++"> <span>Notepad++</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Microsoft.PowerToys"> <span>Microsoft PowerToys</span></label>
-              </div>
+          <!-- CATALOG CONTENT VIEW (Categories / Search / Upgrades) -->
+          <div id="winget-content-view">
+            <div style="padding: 40px; text-align: center; color: var(--text-dim);">Katalog yükleniyor...</div>
+          </div>
+
+          <!-- COLLAPSIBLE LIVE TERMINAL -->
+          <div style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                <span>📋 WinGet Kurulum Konsolu</span>
+                <span id="winget-spinner" style="display: none; font-size: 0.75rem; color: var(--accent-cyan);">⏳ İşlem yapılıyor...</span>
+              </span>
+              <button class="btn btn-secondary" id="btn-toggle-winget-terminal" style="padding: 3px 8px; font-size: 0.72rem;">Konsolu Gizle/Göster</button>
             </div>
-
-            <div class="card glass-card">
-              <h4 class="category-title">🎬 Media & Communication</h4>
-              <div class="package-list">
-                <label class="pkg-checkbox"><input type="checkbox" value="VideoLAN.VLC"> <span>VLC Media Player</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Discord.Discord"> <span>Discord</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="Spotify.Spotify"> <span>Spotify</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="OBSProject.OBSStudio"> <span>OBS Studio</span></label>
-              </div>
-            </div>
-
-            <div class="card glass-card">
-              <h4 class="category-title">🎮 Gaming Launchers</h4>
-              <div class="package-list">
-                <label class="pkg-checkbox"><input type="checkbox" value="Valve.Steam"> <span>Steam</span></label>
-                <label class="pkg-checkbox"><input type="checkbox" value="EpicGames.EpicGamesLauncher"> <span>Epic Games</span></label>
-              </div>
-            </div>
-
-            <div class="card glass-card">
-              <h4 class="category-title">📋 Live Install Terminal</h4>
-              <div class="winget-terminal" id="winget-log-box">
-                <div class="terminal-line text-dim">No installation active. Select packages and click 'Install Selected Silently'.</div>
-              </div>
+            <div class="winget-terminal" id="winget-log-box">
+              <div class="terminal-line text-dim">Hazır. Kurulum başlatıldığında arka plan çıktıları burada canlı akacaktır.</div>
             </div>
           </div>
         </div>
