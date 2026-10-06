@@ -43,9 +43,12 @@ if (Test-Path (Join-Path $ProjectRoot "assets")) {
 if (Test-Path (Join-Path $ProjectRoot "catalog")) {
     Copy-Item -Path (Join-Path $ProjectRoot "catalog") -Destination $StagingDir -Recurse -Force
 }
+if (Test-Path (Join-Path $ProjectRoot "scripts")) {
+    Copy-Item -Path (Join-Path $ProjectRoot "scripts") -Destination $StagingDir -Recurse -Force
+}
 
 # Copy root files
-$RootFiles = @("Zenith.exe", "start_zenith.bat", "install.ps1", "README.md", "LICENSE", "hardware_cache.json")
+$RootFiles = @("Zenith.exe", "start_zenith.bat", "fix_permissions.bat", "install.ps1", "README.md", "LICENSE", "hardware_cache.json")
 foreach ($rf in $RootFiles) {
     $srcPath = Join-Path $ProjectRoot $rf
     if (Test-Path $srcPath) {
