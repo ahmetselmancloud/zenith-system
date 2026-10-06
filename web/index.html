@@ -91,6 +91,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
           <span>Automation Rules</span>
         </button>
+        <button class="nav-item" data-tab="tab-obd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path><path d="M8 12a4 4 0 0 1 8 0"></path></svg>
+          <span>Hardware OBD-II</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -895,6 +899,63 @@
           </div>
           <div class="winget-terminal" id="rules-history-log" style="max-height: 180px; min-height: 90px;">
             <div class="terminal-line text-dim">Henüz bir kural tetiklenmedi...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: HARDWARE DIAGNOSTICS & PC OBD-II (FAZ 4) -->
+      <section class="tab-pane" id="tab-obd">
+        <!-- OBD-II INSTRUMENT CLUSTER & SCANNER HEADER -->
+        <div class="card glass-card mb-4">
+          <div class="tweak-header" style="margin-bottom: 20px;">
+            <div>
+              <h3>🚗 Zenith PC OBD-II — Donanım Ekspertizi & Derin Check-Up</h3>
+              <p class="subtitle">Otomobil arıza tespit cihazı (OBD-II) mantığıyla tüm donanım hatlarını, PCIe veri yollarını, WHEA kayıtlarını ve soket temassızlıklarını tarar</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn btn-secondary" id="btn-obd-clear-dtc" title="Arıza kodlarını sıfırla">Arıza Kodlarını Sıfırla</button>
+              <button class="btn btn-secondary" id="btn-obd-export" title="Ekspertiz raporunu panoya kopyala">📋 Rapor Al</button>
+              <button class="btn btn-primary" id="btn-obd-scan-now">⚡ Derin Check-Up Başlat</button>
+            </div>
+          </div>
+
+          <!-- GAUGE & MIL INDICATOR ROW -->
+          <div class="obd-hero-row">
+            <div class="obd-gauge-box">
+              <div class="obd-gauge-val" id="obd-score-val">100</div>
+              <div class="obd-gauge-label">DONANIM SAĞLIK PUANI (0-100)</div>
+              <div class="obd-gauge-sub" id="obd-scan-time-label">Son Tarama: Az önce</div>
+            </div>
+
+            <div class="obd-mil-box">
+              <div class="obd-mil-header">
+                <span class="obd-mil-title">ARIZA LAMBASI (MIL)</span>
+                <span class="obd-mil-lamp off" id="obd-mil-lamp">CHECK ENGINE</span>
+              </div>
+              <div class="obd-summary-box" id="obd-summary-text">
+                Tüm donanım hatları, PCIe veri yolları ve USB/Ses portları kusursuz durumda.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 SUBSYSTEMS DIAGNOSTIC CARDS -->
+        <div class="obd-subsystems-grid" id="obd-subsystems-grid">
+          <!-- Injected dynamically by JS -->
+          <div style="padding: 30px; text-align: center; color: var(--text-dim); grid-column: 1 / -1;">Donanım alt sistemleri taranıyor...</div>
+        </div>
+
+        <!-- DIAGNOSTIC TROUBLE CODES (DTC) TABLE CARD -->
+        <div class="card glass-card" style="margin-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.2rem;">⚠️</span>
+              <h4 style="margin: 0; font-size: 1rem; color: #fff;">Aktif Arıza Kodları (Diagnostic Trouble Codes - DTC)</h4>
+            </div>
+            <span id="obd-dtc-count-badge" class="tag-pill green">0 Arıza Kodu</span>
+          </div>
+          <div id="obd-dtc-container">
+            <!-- Injected dynamically by JS -->
           </div>
         </div>
       </section>

@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupLaptopStudio();
   setupTroubleshooter();
   setupAutomationRules();
+  setupHardwareObd();
 });
 
 // --- NAVIGATION ---
@@ -60,6 +61,7 @@ function setupNavigation() {
       if (targetId === 'tab-laptop') loadLaptopStudioConfig();
       if (targetId === 'tab-troubleshoot') loadTroubleshootTools();
       if (targetId === 'tab-rules') loadAutomationRules();
+      if (targetId === 'tab-obd') loadHardwareObdReport();
     });
   });
 }
@@ -3047,4 +3049,193 @@ window.deleteCustomRule = async function(ruleId) {
     console.error('Error deleting rule:', e);
   }
 };
+
+// ==========================================================================
+// HARDWARE DIAGNOSTICS & PC OBD-II ENGINE (FAZ 4)
+// ==========================================================================
+let obdCurrentReport = null;
+
+async function setupHardwareObd() {
+  const scanBtn = document.getElementById('btn-obd-scan-now');
+  const clearBtn = document.getElementById('btn-obd-clear-dtc');
+  const exportBtn = document.getElementById('btn-obd-export');
+
+  if (scanBtn) {
+    scanBtn.addEventListener('click', async () => {
+      scanBtn.disabled = true;
+      scanBtn.textContent = '⏳ Derin Donanım Taranıyor...';
+      try {
+        await runHardwareObdScan();
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.textContent = '⚡ Derin Check-Up Başlat';
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async () => {
+      if (!confirm('Tüm aktif arıza kodlarını (DTC) sıfırlamak istiyor musunuz?')) return;
+      try {
+        await fetch('/api/obd/clear_dtc', { method: 'POST' });
+        await loadHardwareObdReport(false);
+      } catch (e) {
+        console.error('Clear DTC error:', e);
+      }
+    });
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      if (!obdCurrentReport) return;
+      const rep = obdCurrentReport;
+      const subs = rep.subsystems || {};
+      const lines = [
+        `# 🚗 ZENITH PC OBD-II DONANIM EKSPERTİZ VE CHECK-UP RAPORU`,
+        `- **Tarama Tarihi:** ${rep.scan_time_str || 'Az önce'}`,
+        `- **Donanım Sağlık Skoru:** ${rep.overall_score} / 100`,
+        `- **Arıza Lambası (MIL):** ${rep.mil_status === 'OFF' ? 'NORMAL (Söndürüldü / 0 Hata)' : rep.mil_status}`,
+        `- **Özet:** ${rep.summary || 'Kusursuz'}`,
+        ``,
+        `### 🔬 Alt Sistem Teşhisleri`,
+        `- **WHEA Kararlılığı:** ${subs.whea?.status?.toUpperCase()} (${subs.whea?.score}/100) — ${subs.whea?.details}`,
+        `- **Kablo & Soket Kararlılığı:** ${subs.port_stability?.status?.toUpperCase()} (${subs.port_stability?.score}/100) — ${subs.port_stability?.details}`,
+        `- **PCIe Veri Yolu (GPU):** ${subs.pcie_bus?.status?.toUpperCase()} (${subs.pcie_bus?.score}/100) — ${subs.pcie_bus?.details}`,
+        `- **Disk Arayüz Bütünlüğü:** ${subs.storage_interface?.status?.toUpperCase()} (${subs.storage_interface?.score}/100) — ${subs.storage_interface?.details}`,
+        `- **Güç Rayları & Voltaj:** ${subs.power_rails?.status?.toUpperCase()} (${subs.power_rails?.score}/100) — ${subs.power_rails?.details}`,
+        ``,
+        `### ⚠️ Arıza Kodları (DTC - ${rep.dtc_codes?.length || 0} Adet)`,
+        ...(rep.dtc_codes && rep.dtc_codes.length > 0 
+          ? rep.dtc_codes.map(c => `- [${c.code}] ${c.subsystem}: ${c.description} -> Çözüm: ${c.recommendation}`)
+          : ['- Aktif arıza kodu (DTC) saptanmadı. Tüm donanım hatları temiz.'])
+      ];
+
+      navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        exportBtn.textContent = '✓ Kopyalandı!';
+        setTimeout(() => { exportBtn.textContent = '📋 Rapor Al'; }, 2000);
+      });
+    });
+  }
+}
+
+async function loadHardwareObdReport(force = false) {
+  const grid = document.getElementById('obd-subsystems-grid');
+  const dtcBox = document.getElementById('obd-dtc-container');
+  const dtcBadge = document.getElementById('obd-dtc-count-badge');
+  const scoreVal = document.getElementById('obd-score-val');
+  const scanTimeLabel = document.getElementById('obd-scan-time-label');
+  const milLamp = document.getElementById('obd-mil-lamp');
+  const summaryText = document.getElementById('obd-summary-text');
+
+  try {
+    const url = force ? '/api/obd/scan' : '/api/obd/report';
+    const method = force ? 'POST' : 'GET';
+    const res = await fetch(url, { method });
+    if (!res.ok) throw new Error('API yanıt vermedi: ' + res.status);
+    obdCurrentReport = await res.json();
+    const rep = obdCurrentReport;
+
+    // 1. Score & MIL
+    if (scoreVal) {
+      scoreVal.textContent = rep.overall_score ?? 100;
+      scoreVal.className = 'obd-gauge-val ' + (rep.overall_score >= 90 ? 'green' : (rep.overall_score >= 70 ? 'yellow' : 'red'));
+    }
+    if (scanTimeLabel) {
+      scanTimeLabel.textContent = `Son Tarama: ${rep.scan_time_str || 'Az önce'}`;
+    }
+
+    if (milLamp) {
+      const mil = rep.mil_status || 'OFF';
+      milLamp.className = `obd-mil-lamp ${mil.toLowerCase()}`;
+      if (mil === 'OFF') {
+        milLamp.innerHTML = '✓ MIL: NORMAL (TEMİZ)';
+      } else if (mil === 'PENDING') {
+        milLamp.innerHTML = '⚠️ MIL: UYARI / PARAZİT';
+      } else {
+        milLamp.innerHTML = '🚨 CHECK ENGINE (ARIZA)';
+      }
+    }
+
+    if (summaryText) {
+      summaryText.textContent = rep.summary || 'Tüm donanım hatları sağlıklı.';
+    }
+
+    // 2. Subsystems Grid
+    if (grid && rep.subsystems) {
+      const subs = rep.subsystems;
+      const subKeys = Object.keys(subs);
+      grid.innerHTML = subKeys.map(k => {
+        const item = subs[k];
+        const sc = item.score ?? 100;
+        const color = sc >= 90 ? 'var(--accent-green)' : (sc >= 70 ? '#f59e0b' : 'var(--accent-red)');
+        const statusBadge = item.status === 'clean' || item.status === 'optimal' || item.status === 'stable'
+          ? '<span class="repair-status-pill success">Kusursuz</span>'
+          : '<span class="repair-status-pill error">Dikkat</span>';
+
+        return `
+          <div class="obd-subsystem-card">
+            <div>
+              <div class="obd-subsystem-header">
+                <div class="obd-subsystem-title-group">
+                  <span class="obd-subsystem-icon">${item.icon || '🔬'}</span>
+                  <span class="obd-subsystem-title">${escapeTroubleshootHtml(item.title)}</span>
+                </div>
+                ${statusBadge}
+              </div>
+              <div class="obd-subsystem-details">${escapeTroubleshootHtml(item.details)}</div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 4px;">
+                <span>Donanım Sağlığı</span>
+                <strong style="color: ${color};">${sc}%</strong>
+              </div>
+              <div class="obd-subsystem-bar-wrapper">
+                <div class="obd-subsystem-bar-fill" style="width: ${sc}%; background: ${color};"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 3. DTC Codes Table
+    if (dtcBox) {
+      const dtcs = rep.dtc_codes || [];
+      if (dtcBadge) {
+        dtcBadge.textContent = `${dtcs.length} Arıza Kodu`;
+        dtcBadge.className = `tag-pill ${dtcs.length === 0 ? 'green' : 'red'}`;
+      }
+
+      if (dtcs.length === 0) {
+        dtcBox.innerHTML = `
+          <div style="padding: 30px; text-align: center; color: var(--accent-green);">
+            <div style="font-size: 2rem; margin-bottom: 8px;">✨</div>
+            <strong style="font-size: 0.95rem;">Tebrikler, sistemde donanım arıza kodu (DTC) bulunamadı!</strong>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">Tüm soketler, PCIe hatları ve voltaj rayları nominal toleranslar içinde çalışıyor.</p>
+          </div>
+        `;
+      } else {
+        dtcBox.innerHTML = dtcs.map(dtc => `
+          <div class="obd-dtc-item">
+            <span class="obd-dtc-code-badge">${escapeTroubleshootHtml(dtc.code)}</span>
+            <div class="obd-dtc-info">
+              <div class="obd-dtc-desc">${escapeTroubleshootHtml(dtc.description)}</div>
+              <div class="obd-dtc-recom">💡 <strong>Önerilen Eylem:</strong> ${escapeTroubleshootHtml(dtc.recommendation)}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Error loading OBD report:', e);
+    if (grid) {
+      grid.innerHTML = `<div style="padding: 20px; color: var(--accent-red); grid-column: 1 / -1;">OBD-II Raporu yüklenemedi: ${escapeTroubleshootHtml(e.message)}</div>`;
+    }
+  }
+}
+
+async function runHardwareObdScan() {
+  await loadHardwareObdReport(true);
+}
+
 

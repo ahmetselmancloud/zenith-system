@@ -23,6 +23,7 @@ try:
         set_engine_master_state, toggle_rule_state, save_custom_rule,
         delete_rule, clear_history_log, evaluate_all_rules
     )
+    from obd_diagnostics import get_obd_report, run_full_hardware_checkup, clear_dtc_codes
 except ImportError:
     from src.catalog_loader import get_catalog, get_profiles, search_winget, get_winget_upgrades
     from src.system_troubleshooter import get_troubleshoot_tools, get_troubleshooter_status, execute_fix
@@ -31,6 +32,7 @@ except ImportError:
         set_engine_master_state, toggle_rule_state, save_custom_rule,
         delete_rule, clear_history_log, evaluate_all_rules
     )
+    from src.obd_diagnostics import get_obd_report, run_full_hardware_checkup, clear_dtc_codes
 
 # Zenith System — Backend Server & API Hub V3.0
 # Zero-bloat, lightweight local server providing hardware intelligence, live GPU sensors,
@@ -1119,6 +1121,8 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(get_troubleshooter_status())
         elif path == "/api/rules":
             self.send_json(get_engine_data())
+        elif path == "/api/obd/report":
+            self.send_json(get_obd_report())
         elif path == "/hardware_cache.json":
             if os.path.exists(CACHE_FILE):
                 try:
@@ -1230,6 +1234,12 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == "/api/rules/evaluate":
             evaluate_all_rules()
             self.send_json({"success": True})
+
+        elif self.path == "/api/obd/scan":
+            self.send_json(run_full_hardware_checkup())
+
+        elif self.path == "/api/obd/clear_dtc":
+            self.send_json(clear_dtc_codes())
 
         elif self.path == "/api/stress/start":
             duration = int(data.get("duration", 15))
