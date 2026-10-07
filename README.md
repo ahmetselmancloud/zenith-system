@@ -42,7 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubus
    *(Installs to `%LOCALAPPDATA%\ZenithSystem`, adds Desktop + Start Menu shortcuts and an uninstaller. Python and all libraries are bundled.)*
 
 > The installer is unsigned, so Windows SmartScreen may show "Unknown publisher" - click **More info -> Run anyway**.
-> Rebuild it yourself with `build_dist.ps1` followed by `build_setup.ps1`.
+> Rebuild it yourself with `build_dist.ps1` followed by `build_setup.ps1` (needs Inno Setup 6).
 
 ---
 

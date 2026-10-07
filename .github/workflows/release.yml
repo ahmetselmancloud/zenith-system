@@ -46,10 +46,9 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File build_dist.ps1
 
-      - name: Build One-Click Installer (build_setup.ps1)
+      - name: Build One-Click Installer (Inno Setup)
         run: |
-          echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
-          $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+          choco install innosetup -y --no-progress
           powershell -ExecutionPolicy Bypass -File build_setup.ps1
 
       - name: Create GitHub Release & Upload Assets
