@@ -40,7 +40,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubus
 1. Download **[Zenith-System-v1.0.0-win-x64.zip](https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/master/dist/Zenith-System-v1.0.0-win-x64.zip)**.
 2. Extract the archive into any folder.
 3. Simply double-click **`Zenith.exe`** or **`start_zenith.bat`**.  
-   *(If Python is not installed on that PC, the launcher detects it and configures the environment automatically on first launch!)*
+   *(Python and all libraries are bundled inside the ZIP in `runtime\` - nothing to install, works on a fresh Windows PC.)*
 
 ---
 

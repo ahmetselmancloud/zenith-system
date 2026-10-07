@@ -9,8 +9,10 @@ if errorlevel 1 (
     exit /b
 )
 
-:: Check if Python is available, otherwise auto-install silently via winget or embedded bootstrap
+:: Prefer the bundled portable runtime (no installation needed)
 set "PYTHON_CMD="
+if exist "%~dp0runtime\python.exe" set "PYTHON_CMD=%~dp0runtime\python.exe"
+if not "%PYTHON_CMD%"=="" goto :py_ready
 where python >nul 2>nul
 if not errorlevel 1 set "PYTHON_CMD=python"
 if "%PYTHON_CMD%"=="" (
@@ -53,11 +55,12 @@ if "%PYTHON_CMD%"=="" (
     )
 )
 
+:py_ready
 :: Ensure psutil is installed silently
-%PYTHON_CMD% -c "import psutil" >nul 2>nul
+"%PYTHON_CMD%" -c "import psutil" >nul 2>nul
 if errorlevel 1 (
     echo [Zenith Setup] Finalizing hardware probe libraries...
-    %PYTHON_CMD% -m pip install --quiet psutil >nul 2>nul
+    "%PYTHON_CMD%" -m pip install --quiet psutil >nul 2>nul
 )
 
 :: Check if server is already running on port 49152
@@ -70,7 +73,7 @@ if errorlevel 1 (
         )
     )
     :: Start python backend server silently
-    start /b "" %PYTHON_CMD% "src\zenith_server.py"
+    start /b "" "%PYTHON_CMD%" "src\zenith_server.py"
     :: Brief delay for port bind
     powershell -nop -c "Start-Sleep -Milliseconds 400"
 )

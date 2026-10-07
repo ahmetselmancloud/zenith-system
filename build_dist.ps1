@@ -47,6 +47,11 @@ if (Test-Path (Join-Path $ProjectRoot "scripts")) {
     Copy-Item -Path (Join-Path $ProjectRoot "scripts") -Destination $StagingDir -Recurse -Force
 }
 
+# Bundle the portable Python runtime so target PCs need NO installation
+Write-Host ">>> Preparing bundled portable Python runtime..." -ForegroundColor Cyan
+& (Join-Path $ProjectRoot "scripts\prepare_runtime.ps1")
+Copy-Item -Path (Join-Path $ProjectRoot "runtime") -Destination $StagingDir -Recurse -Force
+
 # Copy root files
 $RootFiles = @("Zenith.exe", "start_zenith.bat", "fix_permissions.bat", "install.ps1", "README.md", "LICENSE", "hardware_cache.json")
 foreach ($rf in $RootFiles) {

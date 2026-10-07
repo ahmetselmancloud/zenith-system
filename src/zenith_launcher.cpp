@@ -93,9 +93,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         std::wstring pythonCandidate = L"python";
         bool hasPython = false;
 
-        // Test standard command
+        // Test standard command (bundled runtime wins if present)
+        std::wstring bundled = appDir + L"\\runtime\\python.exe";
         std::wstring testCmd = L"python --version";
-        if (runProcessSafe(testCmd, appDir, CREATE_NO_WINDOW, SW_HIDE, 500)) {
+        if (fileExists(bundled)) {
+            hasPython = true;
+            pythonCandidate = L"\"" + bundled + L"\"";
+        } else if (runProcessSafe(testCmd, appDir, CREATE_NO_WINDOW, SW_HIDE, 500)) {
             hasPython = true;
             pythonCandidate = L"python";
         } else if (runProcessSafe(L"py --version", appDir, CREATE_NO_WINDOW, SW_HIDE, 500)) {
