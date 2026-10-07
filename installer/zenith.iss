@@ -30,4 +30,4 @@ Name: "{autoprograms}\Zenith Mini HUD"; Filename: "{app}\Zenith.exe"; Parameters
 Name: "{autodesktop}\Zenith System"; Filename: "{app}\Zenith.exe"; WorkingDir: "{app}"
 Name: "{autodesktop}\Zenith Mini HUD"; Filename: "{app}\Zenith.exe"; Parameters: "--hud"; WorkingDir: "{app}"
 [Run]
-Filename: "{app}\Zenith.exe"; Description: "Launch Zenith System"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Zenith.exe"; Description: "Launch Zenith System"; Flags: nowait postinstall skipifsilent shellexec

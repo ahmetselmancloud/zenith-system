@@ -21,14 +21,14 @@ Write-Host ">>> Verifying and compiling native C++ probe (zenith_probe.exe)..." 
 $ProbeCpp = Join-Path $ProjectRoot "src\zenith_probe.cpp"
 $ProbeExe = Join-Path $ProjectRoot "bin\zenith_probe.exe"
 if (Get-Command "g++" -ErrorAction SilentlyContinue) {
-    & g++ -O3 -std=c++17 $ProbeCpp -o $ProbeExe -lsetupapi
+    & g++ -O3 -static -std=c++17 $ProbeCpp -o $ProbeExe -lsetupapi
     Write-Host "    [OK] Compiled zenith_probe.exe with g++ -O3" -ForegroundColor Green
 }
 
 Write-Host ">>> Compiling native GUI launcher with embedded icon (Zenith.exe)..." -ForegroundColor Cyan
 if ((Get-Command "windres" -ErrorAction SilentlyContinue) -and (Get-Command "g++" -ErrorAction SilentlyContinue)) {
     & windres src/zenith.rc -O coff -o src/zenith.res
-    & g++ -O3 -mwindows src/zenith_launcher.cpp src/zenith.res -o Zenith.exe -lws2_32
+    & g++ -O3 -static -mwindows src/zenith_launcher.cpp src/zenith.res -o Zenith.exe -lws2_32
     Write-Host "    [OK] Compiled Zenith.exe with embedded icon" -ForegroundColor Green
 }
 
