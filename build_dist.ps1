@@ -53,7 +53,7 @@ Write-Host ">>> Preparing bundled portable Python runtime..." -ForegroundColor C
 Copy-Item -Path (Join-Path $ProjectRoot "runtime") -Destination $StagingDir -Recurse -Force
 
 # Copy root files
-$RootFiles = @("Zenith.exe", "start_zenith.bat", "fix_permissions.bat", "install.ps1", "README.md", "LICENSE", "hardware_cache.json")
+$RootFiles = @("Zenith.exe", "start_zenith.bat", "fix_permissions.bat", "install.ps1", "README.md", "LICENSE")
 foreach ($rf in $RootFiles) {
     $srcPath = Join-Path $ProjectRoot $rf
     if (Test-Path $srcPath) {
