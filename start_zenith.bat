@@ -15,9 +15,9 @@ if errorlevel 1 (
     where py >nul 2>nul
     if errorlevel 1 (
         echo ==========================================================
-        echo [HATA] Python bulunamadi!
-        echo Zenith System icin Python 3.10+ gereklidir.
-        echo Kurulum icin terminalden su komutu calistirabilirsiniz:
+        echo [ERROR] Python runtime not found!
+        echo Zenith System requires Python 3.10 or newer.
+        echo To install automatically, run this command in terminal:
         echo   winget install Python.Python.3.12
         echo ==========================================================
         pause
