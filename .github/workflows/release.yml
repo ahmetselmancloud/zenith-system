@@ -48,8 +48,8 @@ jobs:
 
       - name: Build One-Click Installer (build_setup.ps1)
         run: |
-          echo "C:\msys64\mingw64in" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
-          $env:PATH = "C:\msys64\mingw64in;$env:PATH"
+          echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
           powershell -ExecutionPolicy Bypass -File build_setup.ps1
 
       - name: Create GitHub Release & Upload Assets
