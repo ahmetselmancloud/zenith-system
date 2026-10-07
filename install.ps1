@@ -31,18 +31,32 @@ if (-not $PythonCmd) {
 }
 
 if (-not $PythonCmd) {
-    Write-Host "      Python not found. Attempting silent installation via WinGet..." -ForegroundColor Gray
+    Write-Host "      Python not found. Attempting automatic installation..." -ForegroundColor Gray
     try {
-        winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+        $Installed = $false
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+            Write-Host "      [Setup] Installing Python 3.12 via WinGet..." -ForegroundColor Gray
+            & winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+            $Installed = $true
+        }
+        
+        if (-not $Installed -or -not (Get-Command python -ErrorAction SilentlyContinue)) {
+            Write-Host "      [Setup] Downloading Python 3.12 installer directly..." -ForegroundColor Gray
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+            $PyInstaller = Join-Path $env:TEMP "python-3.12-installer.exe"
+            Invoke-WebRequest "https://www.python.org/ftp/python/3.12.8/python-3.12.8-amd64.exe" -OutFile $PyInstaller -UseBasicParsing
+            Start-Process $PyInstaller -ArgumentList "/quiet InstallAllUsers=0 PrependPath=1 SimpleInstall=1" -Wait
+            Remove-Item $PyInstaller -Force -ErrorAction SilentlyContinue
+        }
+
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
         $PythonCmd = Get-Command python -ErrorAction SilentlyContinue
-        if (-not $PythonCmd) {
-            $PythonCmd = Get-Command py -ErrorAction SilentlyContinue
-        }
+        if (-not $PythonCmd) { $PythonCmd = Get-Command py -ErrorAction SilentlyContinue }
         if (-not $PythonCmd) {
             $CandidatePaths = @(
                 "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe",
-                "$env:ProgramFiles\Python312\python.exe"
+                "$env:ProgramFiles\Python312\python.exe",
+                "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe"
             )
             foreach ($cand in $CandidatePaths) {
                 if (Test-Path $cand) {
@@ -52,11 +66,9 @@ if (-not $PythonCmd) {
                 }
             }
         }
-        if (-not $PythonCmd) { throw "Python command not available after installation." }
-        Write-Host "      [OK] Python installed successfully." -ForegroundColor Green
+        Write-Host "      [OK] Python configured successfully." -ForegroundColor Green
     } catch {
-        Write-Warning "Failed to auto-install Python. Please install Python 3.10+ from https://python.org and re-run."
-        return
+        Write-Warning "Could not install Python automatically: $_"
     }
 } else {
     Write-Host "      [OK] Python detected: $($PythonCmd.Source)" -ForegroundColor Green

@@ -13,28 +13,34 @@
 
 ---
 
-## 🚀 One-Line Global Install (PowerShell)
+## 🚀 Quick Install Options
 
-Install and launch Zenith System on any Windows 10/11 machine with a single command:
-
+### Option A: PowerShell (Recommended)
+Open **PowerShell** (as Administrator) and paste:
 ```powershell
 irm https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/master/install.ps1 | iex
 ```
 
-> **What this command does:**
-> 1. Ensures Python 3.10+ and `psutil` are ready (installs via WinGet silently if missing).
-> 2. Downloads and unpacks the lightweight Zenith System release directly into `%LOCALAPPDATA%\ZenithSystem`.
-> 3. Creates clean desktop and Start Menu shortcuts (`Zenith System.lnk`).
+### Option B: Windows Command Prompt (CMD)
+If using the black **CMD terminal** where `irm` is not recognized, run:
+```cmd
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/master/install.ps1 | iex"
+```
+
+> **What the installer does automatically on clean PCs:**
+> 1. Checks if Python is installed; if not, silently installs Python 3.12 and dependencies without user prompts.
+> 2. Downloads and unpacks the Zenith System release into `%LOCALAPPDATA%\ZenithSystem`.
+> 3. Creates clean desktop and Start Menu shortcuts (`Zenith System.lnk` & `Zenith Mini HUD.lnk`).
 > 4. Launches the frameless app interface immediately in under 0.25 seconds.
 
 ---
 
-## 📦 Standalone Portable Download
+## 📦 Standalone Portable Download (No Terminal Required)
 
-Prefer not to run scripts? Download the portable release archive:
-1. Go to [Releases](https://github.com/ahmetselmancloud/zenith-system/releases) and download `Zenith-System-v1.0.0-win-x64.zip` (only **80 KB**!).
-2. Extract the archive anywhere.
-3. Double-click `start_zenith.bat`.
+1. Download **[Zenith-System-v1.0.0-win-x64.zip](https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/master/dist/Zenith-System-v1.0.0-win-x64.zip)**.
+2. Extract the archive into any folder.
+3. Simply double-click **`Zenith.exe`** or **`start_zenith.bat`**.  
+   *(If Python is not installed on that PC, the launcher detects it and configures the environment automatically on first launch!)*
 
 ---
 

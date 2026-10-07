@@ -89,13 +89,46 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             runProcessSafe(probePath, appDir, CREATE_NO_WINDOW, SW_HIDE, 3000);
         }
 
-        // Start python server in background (with py fallback)
-        std::wstring serverCmd = L"python src\\zenith_server.py";
-        if (!runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW, SW_HIDE)) {
-            serverCmd = L"py src\\zenith_server.py";
-            runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW, SW_HIDE);
+        // Check if Python exists or execute self-healing bootstrap
+        std::wstring pythonCandidate = L"python";
+        bool hasPython = false;
+
+        // Test standard command
+        std::wstring testCmd = L"python --version";
+        if (runProcessSafe(testCmd, appDir, CREATE_NO_WINDOW, SW_HIDE, 500)) {
+            hasPython = true;
+            pythonCandidate = L"python";
+        } else if (runProcessSafe(L"py --version", appDir, CREATE_NO_WINDOW, SW_HIDE, 500)) {
+            hasPython = true;
+            pythonCandidate = L"py";
+        } else {
+            // Check direct local appdata / programfiles paths
+            wchar_t locApp[MAX_PATH];
+            GetEnvironmentVariableW(L"LOCALAPPDATA", locApp, MAX_PATH);
+            std::wstring cand1 = std::wstring(locApp) + L"\\Programs\\Python\\Python312\\python.exe";
+            std::wstring cand2 = std::wstring(locApp) + L"\\Programs\\Python\\Python313\\python.exe";
+            if (fileExists(cand1)) {
+                pythonCandidate = L"\"" + cand1 + L"\"";
+                hasPython = true;
+            } else if (fileExists(cand2)) {
+                pythonCandidate = L"\"" + cand2 + L"\"";
+                hasPython = true;
+            }
         }
-        Sleep(400);
+
+        if (!hasPython) {
+            // Self-heal: Run start_zenith.bat which installs Python silently in background
+            std::wstring batCmd = appDir + L"\\start_zenith.bat";
+            if (fileExists(batCmd)) {
+                ShellExecuteW(NULL, L"runas", batCmd.c_str(), NULL, appDir.c_str(), SW_SHOWNORMAL);
+                return 0;
+            }
+        }
+
+        // Start python server in background
+        std::wstring serverCmd = pythonCandidate + L" src\\zenith_server.py";
+        runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW, SW_HIDE);
+        Sleep(600);
     }
 
     // Locate preferred Chromium browser
