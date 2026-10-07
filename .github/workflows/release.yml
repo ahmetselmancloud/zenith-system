@@ -46,14 +46,22 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File build_dist.ps1
 
+      - name: Build One-Click Installer (build_setup.ps1)
+        run: |
+          echo "C:\msys64\mingw64in" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $env:PATH = "C:\msys64\mingw64in;$env:PATH"
+          powershell -ExecutionPolicy Bypass -File build_setup.ps1
+
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          name: "Zenith System ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.0' }}
+          name: "Zenith System ${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.0' }}"
           draft: false
           prerelease: false
           generate_release_notes: true
           files: |
+            dist/Zenith-Setup-v1.0.0-x64.exe
             dist/Zenith-System-v1.0.0-win-x64.zip
             Zenith.exe
             install.ps1
