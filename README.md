@@ -35,6 +35,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubus
 
 ---
 
+## 💿 Recommended: One-Click Setup (`Zenith-Setup.exe`)
+
+1. Download **[Zenith-Setup-v1.0.0-x64.exe](https://github.com/ahmetselmancloud/zenith-system/releases/latest/download/Zenith-Setup-v1.0.0-x64.exe)** from the latest release.
+2. Double-click it. That's it - no Python, no PowerShell commands, no internet needed after the download.
+   *(Installs to `%LOCALAPPDATA%\ZenithSystem`, adds Desktop + Start Menu shortcuts and an uninstaller. Python and all libraries are bundled.)*
+
+> The installer is unsigned, so Windows SmartScreen may show "Unknown publisher" - click **More info -> Run anyway**.
+> Rebuild it yourself with `build_dist.ps1` followed by `build_setup.ps1`.
+
+---
+
 ## 📦 Standalone Portable Download (No Terminal Required)
 
 1. Download **[Zenith-System-v1.0.0-win-x64.zip](https://raw.githubusercontent.com/ahmetselmancloud/zenith-system/master/dist/Zenith-System-v1.0.0-win-x64.zip)**.
