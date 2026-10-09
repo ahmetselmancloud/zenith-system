@@ -90,6 +90,9 @@ def silent_run(cmd, **kwargs):
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
         if "startupinfo" not in kwargs:
             kwargs["startupinfo"] = get_silent_startupinfo()
+    if kwargs.get("text"):
+        kwargs.setdefault("encoding", "utf-8")
+        kwargs.setdefault("errors", "replace")
     return subprocess.run(cmd, **kwargs)
 
 def silent_check_output(cmd, **kwargs):
@@ -97,6 +100,9 @@ def silent_check_output(cmd, **kwargs):
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
         if "startupinfo" not in kwargs:
             kwargs["startupinfo"] = get_silent_startupinfo()
+    if kwargs.get("text"):
+        kwargs.setdefault("encoding", "utf-8")
+        kwargs.setdefault("errors", "replace")
     return subprocess.check_output(cmd, **kwargs)
 
 def silent_popen(cmd, **kwargs):
@@ -104,6 +110,9 @@ def silent_popen(cmd, **kwargs):
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
         if "startupinfo" not in kwargs:
             kwargs["startupinfo"] = get_silent_startupinfo()
+    if kwargs.get("text"):
+        kwargs.setdefault("encoding", "utf-8")
+        kwargs.setdefault("errors", "replace")
     return subprocess.Popen(cmd, **kwargs)
 
 # Heartbeat & Auto-Shutdown Watchdog
@@ -565,6 +574,48 @@ while time.time() < end_t:
         stress_state["active"] = False
         stress_state["status"] = "completed"
 
+def get_current_tweaks():
+    """Reads current Windows registry values to determine existing tweak states."""
+    state = {
+        "bing": False,
+        "telemetry": False,
+        "copilot": False,
+        "game_mode": True
+    }
+    try:
+        # Check Bing search: BingSearchEnabled == 0 means disabled/tweaked
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Search") as k:
+            val, _ = winreg.QueryValueEx(k, "BingSearchEnabled")
+            state["bing"] = (val == 0)
+    except Exception:
+        pass
+
+    try:
+        # Check Telemetry: NumberOfSIUFInPeriod == 0 means disabled/tweaked
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Siuf\Rules") as k:
+            val, _ = winreg.QueryValueEx(k, "NumberOfSIUFInPeriod")
+            state["telemetry"] = (val == 0)
+    except Exception:
+        pass
+
+    try:
+        # Check Copilot: ShowCopilotButton == 0 or TurnOffWindowsCopilot == 1 means disabled/tweaked
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced") as k:
+            val, _ = winreg.QueryValueEx(k, "ShowCopilotButton")
+            state["copilot"] = (val == 0)
+    except Exception:
+        pass
+
+    try:
+        # Check Game Mode: AutoGameModeEnabled == 1 means enabled
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\GameBar") as k:
+            val, _ = winreg.QueryValueEx(k, "AutoGameModeEnabled")
+            state["game_mode"] = (val == 1)
+    except Exception:
+        pass
+
+    return state
+
 def apply_registry_tweaks(tweaks):
     logs = []
     if tweaks.get("bing", True):
@@ -578,10 +629,25 @@ def apply_registry_tweaks(tweaks):
     if tweaks.get("telemetry", True):
         silent_run(["reg", "add", r"HKCU\Software\Microsoft\Siuf\Rules", "/v", "NumberOfSIUFInPeriod", "/t", "REG_DWORD", "/d", "0", "/f"])
         logs.append("Disabled Windows feedback & telemetry prompts.")
+    else:
+        silent_run(["reg", "delete", r"HKCU\Software\Microsoft\Siuf\Rules", "/v", "NumberOfSIUFInPeriod", "/f"])
+        logs.append("Restored Windows feedback prompts.")
+
+    if tweaks.get("copilot", True):
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "/v", "ShowCopilotButton", "/t", "REG_DWORD", "/d", "0", "/f"])
+        silent_run(["reg", "add", r"HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot", "/v", "TurnOffWindowsCopilot", "/t", "REG_DWORD", "/d", "1", "/f"])
+        logs.append("Disabled Windows Copilot taskbar button and AI integrations.")
+    else:
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "/v", "ShowCopilotButton", "/t", "REG_DWORD", "/d", "1", "/f"])
+        silent_run(["reg", "delete", r"HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot", "/v", "TurnOffWindowsCopilot", "/f"])
+        logs.append("Restored Windows Copilot integrations.")
 
     if tweaks.get("game_mode", True):
         silent_run(["reg", "add", r"HKCU\Software\Microsoft\GameBar", "/v", "AutoGameModeEnabled", "/t", "REG_DWORD", "/d", "1", "/f"])
         logs.append("Enabled Windows Game Mode (Performance Scheduling Priority).")
+    else:
+        silent_run(["reg", "add", r"HKCU\Software\Microsoft\GameBar", "/v", "AutoGameModeEnabled", "/t", "REG_DWORD", "/d", "0", "/f"])
+        logs.append("Disabled Windows Game Mode.")
 
     return logs
 
@@ -865,6 +931,7 @@ def get_active_network_connections(limit=150):
         if _nc_cache["data"] and (now - _nc_cache["time"] < 3.0):
             return _nc_cache["data"]
 
+    conns = []
     try:
         proc_names = {}
         for p in psutil.process_iter(['name']):
@@ -872,21 +939,45 @@ def get_active_network_connections(limit=150):
                 proc_names[p.pid] = p.info['name']
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
-        conns = []
-        for c in psutil.net_connections(kind='inet'):
-            if c.status == 'NONE' and not c.raddr:
-                continue
-            p_name = proc_names.get(c.pid, "System" if c.pid == 4 else "Bilinmiyor")
-            conns.append({
-                "pid": c.pid or 0,
-                "name": p_name,
-                "proto": "TCP" if c.type == socket.SOCK_STREAM else "UDP",
-                "local": f"{c.laddr.ip}:{c.laddr.port}" if c.laddr else "--",
-                "remote": f"{c.raddr.ip}:{c.raddr.port}" if c.raddr else "--",
-                "status": c.status or "CONNECTED"
-            })
-            if len(conns) >= limit:
-                break
+        
+        try:
+            for c in psutil.net_connections(kind='inet'):
+                if c.status == 'NONE' and not c.raddr:
+                    continue
+                p_name = proc_names.get(c.pid, "System" if c.pid == 4 else "Bilinmiyor")
+                conns.append({
+                    "pid": c.pid or 0,
+                    "name": p_name,
+                    "proto": "TCP" if c.type == socket.SOCK_STREAM else "UDP",
+                    "local": f"{c.laddr.ip}:{c.laddr.port}" if c.laddr else "--",
+                    "remote": f"{c.raddr.ip}:{c.raddr.port}" if c.raddr else "--",
+                    "status": c.status or "CONNECTED"
+                })
+                if len(conns) >= limit:
+                    break
+        except (psutil.AccessDenied, PermissionError):
+            # Fallback to parsing netstat -ano when run without Administrator elevation
+            out = silent_check_output(["netstat", "-ano"], text=True, stderr=subprocess.DEVNULL, timeout=4)
+            for line in out.splitlines():
+                parts = line.split()
+                if len(parts) >= 4 and parts[0].upper() in ("TCP", "UDP"):
+                    proto = parts[0].upper()
+                    local = parts[1]
+                    remote = parts[2] if proto == "TCP" else "--"
+                    status = parts[3] if proto == "TCP" else "ACTIVE"
+                    pid = int(parts[4]) if (proto == "TCP" and len(parts) >= 5 and parts[4].isdigit()) else (int(parts[3]) if (proto == "UDP" and parts[3].isdigit()) else 0)
+                    p_name = proc_names.get(pid, "System" if pid == 4 else "Bilinmiyor")
+                    conns.append({
+                        "pid": pid,
+                        "name": p_name,
+                        "proto": proto,
+                        "local": local,
+                        "remote": remote,
+                        "status": status
+                    })
+                    if len(conns) >= limit:
+                        break
+
         res = {"connections": conns, "count": len(conns)}
         with _nc_lock:
             _nc_cache["data"] = res
@@ -941,13 +1032,16 @@ def get_power_plans():
 
     plans = []
     active_guid = None
-    pattern = re.compile(r"GUID:\s+([a-f0-9\-]+)\s+\((.*?)\)(\s+\*)?")
+    # Matches GUID and plan name across all Windows UI languages (English, Turkish, German, French, etc.)
+    # Example: "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Dengeli) *"
+    # Example: "Güç Düzeni GUID'i: 381b4222-f694-41f0-9685-ff5bb260df2e  (Dengeli) *"
+    guid_pattern = re.compile(r"([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s+\((.*?)\)", re.IGNORECASE)
     for line in out.splitlines():
-        m = pattern.search(line)
+        m = guid_pattern.search(line)
         if m:
-            guid = m.group(1)
-            name = m.group(2)
-            is_active = bool(m.group(3))
+            guid = m.group(1).lower()
+            name = m.group(2).strip()
+            is_active = "*" in line
             if is_active:
                 active_guid = guid
             plans.append({"guid": guid, "name": name, "active": is_active})
@@ -1054,7 +1148,7 @@ def trigger_f12_action(action, custom_cmd):
     
     if action == "zenith_hud":
         import webbrowser
-        webbrowser.open(f'http://127.0.0.1:{PORT}')
+        webbrowser.open(f'http://127.0.0.1:{PORT}/hud.html')
     elif action == "fan_boost":
         with laptop_lock:
             cur = laptop_state["fan_profile"]
@@ -1361,6 +1455,8 @@ class ZenithHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(get_wifi_diagnostics())
         elif path == "/api/network/connections":
             self.send_json(get_active_network_connections())
+        elif path == "/api/tweaks":
+            self.send_json(get_current_tweaks())
         elif path == "/api/power/plans":
             self.send_json(get_power_plans())
         elif path == "/api/storage":

@@ -482,6 +482,8 @@ def start_engine_thread():
 # API access helpers
 def get_engine_data():
     with _engine_lock:
+        if not _engine_data["rules"]:
+            load_rules()
         return {
             "enabled": _engine_data["enabled"],
             "active_rules_count": sum(1 for r in _engine_data["rules"] if r.get("enabled")),
@@ -545,3 +547,6 @@ def clear_history_log():
         _engine_data["history"] = []
     save_rules()
     return {"success": True}
+
+# Load rules upon module initialization so endpoints can access them immediately
+load_rules()

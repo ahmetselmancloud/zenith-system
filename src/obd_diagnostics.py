@@ -31,7 +31,8 @@ def query_gpu_pcie():
             "--query-gpu=name,pcie.link.gen.gpucurrent,pcie.link.gen.max,pcie.link.width.current,pcie.link.width.max",
             "--format=csv,noheader,nounits"
         ]
-        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=2, creationflags=CREATE_NO_WINDOW).decode().strip()
+        out_bytes = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=2, creationflags=CREATE_NO_WINDOW)
+        out = out_bytes.decode('utf-8', errors='replace').strip()
         parts = [p.strip() for p in out.split(',')]
         if len(parts) >= 5:
             return {
@@ -54,7 +55,7 @@ def query_whea_logs():
         Select-Object TimeCreated, Id, LevelDisplayName, Message | ConvertTo-Json -Compress
         """
         res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                             capture_output=True, text=True, timeout=5, creationflags=CREATE_NO_WINDOW)
+                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5, creationflags=CREATE_NO_WINDOW)
         raw = res.stdout.strip()
         if raw:
             data = json.loads(raw)
@@ -74,7 +75,7 @@ def query_pnp_problem_devices():
         Select-Object FriendlyName, InstanceId, Status, Class, Problem | ConvertTo-Json -Compress
         """
         res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                             capture_output=True, text=True, timeout=5, creationflags=CREATE_NO_WINDOW)
+                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5, creationflags=CREATE_NO_WINDOW)
         raw = res.stdout.strip()
         if raw:
             data = json.loads(raw)
@@ -96,7 +97,7 @@ def query_recent_disconnect_events():
         Select-Object TimeCreated, Id, Message | ConvertTo-Json -Compress
         """
         res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                             capture_output=True, text=True, timeout=4, creationflags=CREATE_NO_WINDOW)
+                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=4, creationflags=CREATE_NO_WINDOW)
         raw = res.stdout.strip()
         if raw:
             data = json.loads(raw)

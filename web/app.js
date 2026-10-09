@@ -657,7 +657,25 @@ window.openFileLocation = async function(encodedPath) {
 };
 
 // --- TWEAKS ---
-function setupTweaks() {
+async function setupTweaks() {
+  // Sync checkboxes with real Windows registry state
+  try {
+    const res = await fetch('/api/tweaks');
+    if (res.ok) {
+      const state = await res.json();
+      const elTelemetry = document.getElementById('twk-telemetry');
+      const elBing = document.getElementById('twk-bing');
+      const elCopilot = document.getElementById('twk-copilot');
+      const elGameMode = document.getElementById('twk-game-mode');
+      if (elTelemetry && state.telemetry !== undefined) elTelemetry.checked = state.telemetry;
+      if (elBing && state.bing !== undefined) elBing.checked = state.bing;
+      if (elCopilot && state.copilot !== undefined) elCopilot.checked = state.copilot;
+      if (elGameMode && state.game_mode !== undefined) elGameMode.checked = state.game_mode;
+    }
+  } catch (e) {
+    console.warn('Failed to load initial tweaks registry state:', e);
+  }
+
   const applyBtn = document.getElementById('btn-apply-all-tweaks');
   if (applyBtn) {
     applyBtn.addEventListener('click', async () => {
@@ -2880,7 +2898,7 @@ window.runTroubleshootTool = async function(toolId, isLong = false) {
       return;
     }
 
-    if (data.status === 'running') {
+    if (data.status === 'running' || data.async) {
       // Async long-running task (SFC / DISM)
       showTroubleshootBanner({ tool_id: toolId, progress: 0, logs: ['Repair process initiated...'] });
       startTroubleshootPolling(toolId);

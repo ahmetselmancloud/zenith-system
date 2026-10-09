@@ -244,7 +244,13 @@ def execute_fix(tool_id):
     elif tool_id in ["sfc_scannow", "dism_restorehealth"]:
         t = threading.Thread(target=_async_integrity_worker, args=(tool_id,), daemon=True)
         t.start()
-        return {"success": True, "tool_id": tool_id, "async": True, "logs": ["Task initiated in background. Track live output in console."]}
+        return {
+            "success": True,
+            "tool_id": tool_id,
+            "status": "running",
+            "async": True,
+            "logs": ["Task initiated in background. Track live output in console."]
+        }
 
     return {"success": False, "error": f"Unknown repair tool: {tool_id}"}
 

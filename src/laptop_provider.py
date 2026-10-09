@@ -14,6 +14,9 @@ CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 def silent_run(cmd, **kwargs):
     if sys.platform == "win32":
         kwargs.setdefault("creationflags", CREATE_NO_WINDOW)
+    if kwargs.get("text"):
+        kwargs.setdefault("encoding", "utf-8")
+        kwargs.setdefault("errors", "replace")
     return subprocess.run(cmd, **kwargs)
 
 def safe_reg_create_or_open(root, subkey):
@@ -79,8 +82,10 @@ class LaptopProvider:
         epp_map = {"extreme": 0, "cooler_boost": 0, "balanced": 50, "silent": 85, "eco": 100}
         epp = epp_map.get(profile, 50)
         try:
-            silent_run(["powercfg", "/setacvalueindex", "SCHEME_CURRENT", "SUB_PROCESSOR", "PERFEPP", str(epp)], timeout=2)
-            silent_run(["powercfg", "/setdcvalueindex", "SCHEME_CURRENT", "SUB_PROCESSOR", "PERFEPP", str(epp)], timeout=2)
+            # GUID for SUB_PROCESSOR: 54533251-82be-4824-96c1-47b60b740d00
+            # GUID for PERFEPP: 36687f9e-e376-49e4-ac52-7c3712b2dd0d
+            silent_run(["powercfg", "/setacvalueindex", "SCHEME_CURRENT", "54533251-82be-4824-96c1-47b60b740d00", "36687f9e-e376-49e4-ac52-7c3712b2dd0d", str(epp)], timeout=2)
+            silent_run(["powercfg", "/setdcvalueindex", "SCHEME_CURRENT", "54533251-82be-4824-96c1-47b60b740d00", "36687f9e-e376-49e4-ac52-7c3712b2dd0d", str(epp)], timeout=2)
             silent_run(["powercfg", "/setactive", "SCHEME_CURRENT"], timeout=2)
             logs.append(f"OS EPP set to {epp}")
         except Exception as e:
@@ -196,6 +201,16 @@ class LaptopProvider:
                 logs.append("ASUS GPU switch executed.")
             except Exception as e:
                 logs.append(f"ASUS GPU switch error: {e}")
+
+        elif self.vendor == "lenovo":
+            try:
+                # Lenovo Hybrid Mode: 0=Discrete (dGPU), 1=Hybrid (MSHybrid)
+                l_val = 0 if mode == "dgpu" else 1
+                ps_lenovo_gpu = f'Invoke-CimMethod -Namespace "root\\wmi" -ClassName "Lenovo_GpuMode" -MethodName "SetGpuMode" -Arguments @{{Mode={l_val}}} -ErrorAction SilentlyContinue'
+                silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_lenovo_gpu], timeout=2)
+                logs.append(f"Lenovo GpuMode set to {mode} ({l_val}).")
+            except Exception as e:
+                logs.append(f"Lenovo GPU switch error: {e}")
 
         return {"success": True, "vendor": self.vendor, "mode": mode, "logs": logs}
 
