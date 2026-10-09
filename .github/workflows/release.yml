@@ -60,7 +60,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            dist/Zenith-Setup-v1.0.0-x64.exe
-            dist/Zenith-System-v1.0.0-win-x64.zip
+            dist/*.exe
+            dist/*.zip
             Zenith.exe
             install.ps1

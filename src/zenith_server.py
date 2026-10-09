@@ -45,7 +45,7 @@ except ImportError:
 # 100ms Registry Installed Apps Engine, WinGet Package Installer, and Safe CPU Benchmark.
 
 PORT = 49152
-ZENITH_VERSION = "v1.0.0"
+ZENITH_VERSION = "v1.0.1"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB_DIR = os.path.join(BASE_DIR, "web")
 CACHE_FILE = os.path.join(BASE_DIR, "hardware_cache.json")
