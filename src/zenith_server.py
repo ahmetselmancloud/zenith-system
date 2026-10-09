@@ -179,9 +179,70 @@ stress_state = {
     "status": "idle" # "idle", "running", "completed"
 }
 
+def get_system_machine_guid():
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography") as k:
+            return str(winreg.QueryValueEx(k, "MachineGuid")[0] or "").strip()
+    except Exception:
+        return ""
+
+def probe_hardware_python():
+    """Ultra-fast pure Python hardware query (<5ms) that works reliably across all Windows machines."""
+    hw = {}
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
+            cpu_model = str(winreg.QueryValueEx(k, "ProcessorNameString")[0] or "").strip()
+        hw["cpu"] = {
+            "model": cpu_model,
+            "total_cores": psutil.cpu_count(logical=False) or 1,
+            "total_threads": psutil.cpu_count(logical=True) or 1
+        }
+    except Exception:
+        pass
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\BIOS") as k:
+            hw["motherboard"] = {
+                "Manufacturer": str(winreg.QueryValueEx(k, "SystemManufacturer")[0] or "").strip(),
+                "Product": str(winreg.QueryValueEx(k, "SystemProductName")[0] or "").strip()
+            }
+            hw["bios"] = {
+                "Manufacturer": str(winreg.QueryValueEx(k, "BIOSVendor")[0] or "").strip(),
+                "SMBIOSBIOSVersion": str(winreg.QueryValueEx(k, "BIOSVersion")[0] or "").strip(),
+                "ReleaseDate": str(winreg.QueryValueEx(k, "BIOSReleaseDate")[0] or "").strip()
+            }
+    except Exception:
+        pass
+
+    try:
+        mem = psutil.virtual_memory()
+        hw["memory"] = {
+            "total_gb": round(mem.total / (1024**3), 2),
+            "used_gb": round(mem.used / (1024**3), 2),
+            "usage_percent": mem.percent
+        }
+    except Exception:
+        pass
+
+    try:
+        bat = psutil.sensors_battery()
+        if bat:
+            hw["battery"] = {
+                "has_battery": True,
+                "is_charging": bool(bat.power_plugged),
+                "is_discharging": not bool(bat.power_plugged),
+                "remaining_mwh": int(bat.percent)
+            }
+    except Exception:
+        pass
+
+    return hw
+
 def get_hardware_info(force_refresh=False):
     max_cache_age_sec = 7 * 86400  # 7 days expiry
     current_host = os.environ.get("COMPUTERNAME", "").strip().upper()
+    current_guid = get_system_machine_guid()
+
     if not force_refresh and os.path.exists(CACHE_FILE):
         try:
             mtime = os.path.getmtime(CACHE_FILE)
@@ -189,15 +250,33 @@ def get_hardware_info(force_refresh=False):
                 with open(CACHE_FILE, "r", encoding="utf-8") as f:
                     cached_data = json.load(f)
                 cached_host = (cached_data.get("computer_name") or "").strip().upper()
-                if not cached_host or not current_host or cached_host == current_host:
-                    return cached_data
+                cached_guid = (cached_data.get("machine_guid") or "").strip()
+                # STRICT VALIDATION: Cache is ONLY valid if it belongs to this exact machine!
+                if cached_host and current_host and cached_host == current_host:
+                    if not cached_guid or not current_guid or cached_guid == current_guid:
+                        return cached_data
+                # Foreign cache detected from another machine — delete immediately!
+                try:
+                    os.remove(CACHE_FILE)
+                except Exception:
+                    pass
         except Exception:
             pass
 
-    # Run native probe or deep probe script
+    # Instant pure Python base probe for live machine
     data = {}
     if current_host:
         data["computer_name"] = current_host
+    if current_guid:
+        data["machine_guid"] = current_guid
+
+    try:
+        py_hw = probe_hardware_python()
+        data.update(py_hw)
+    except Exception as e:
+        print("[Zenith Server] Python base probe notice:", e)
+
+    # Enrich with PowerShell deep probe if available
     probe_ps1 = os.path.join(BASE_DIR, "src", "probe_deep.ps1")
     if os.path.exists(probe_ps1):
         try:
@@ -206,10 +285,14 @@ def get_hardware_info(force_refresh=False):
                 capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5
             )
             if p.returncode == 0 and p.stdout.strip():
-                data.update(json.loads(p.stdout.strip()))
+                deep_data = json.loads(p.stdout.strip())
+                for k, v in deep_data.items():
+                    if v:
+                        data[k] = v
         except Exception as e:
             print("Deep probe error:", e)
 
+    # Enrich with native C++ probe if available
     if os.path.exists(PROBE_EXE):
         try:
             p2 = silent_run([PROBE_EXE], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3)
@@ -223,6 +306,8 @@ def get_hardware_info(force_refresh=False):
         data["last_scanned"] = time.time()
         if current_host and "computer_name" not in data:
             data["computer_name"] = current_host
+        if current_guid and "machine_guid" not in data:
+            data["machine_guid"] = current_guid
         try:
             with open(CACHE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
@@ -230,12 +315,6 @@ def get_hardware_info(force_refresh=False):
             pass
         return data
 
-    if os.path.exists(CACHE_FILE):
-        try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
     return {"error": "Probe not available"}
 
 _gpu_cache = {"data": {"available": False}, "time": 0}

@@ -3,14 +3,14 @@
   "f12_action": "fan_boost",
   "custom_cmd": "",
   "fan_profile": "balanced",
-  "rgb_color": "#ef4444",
+  "rgb_color": "#00f0ff",
   "rgb_effect": "static",
   "rgb_brightness": 100,
   "rgb_speed": 5,
-  "gpu_mode": "dgpu",
-  "battery_limit": 100,
-  "f12_press_count": 1,
+  "gpu_mode": "mshybrid",
+  "battery_limit": 80,
+  "f12_press_count": 0,
   "hook_active": true,
-  "last_hotkey_time": 1791277252.222412,
-  "last_hotkey_action": "fan_boost"
+  "last_hotkey_time": 0,
+  "last_hotkey_action": ""
 }

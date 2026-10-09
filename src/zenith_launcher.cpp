@@ -132,7 +132,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // Start python server in background
         std::wstring serverCmd = pythonCandidate + L" src\\zenith_server.py";
         runProcessSafe(serverCmd, appDir, CREATE_NO_WINDOW, SW_HIDE);
-        Sleep(600);
+        
+        // Wait up to 3.5 seconds for backend to start listening on port 49152
+        for (int i = 0; i < 35; i++) {
+            if (isPortListening(49152)) break;
+            Sleep(100);
+        }
     }
 
     // Locate preferred Chromium browser

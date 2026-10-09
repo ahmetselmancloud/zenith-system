@@ -166,7 +166,7 @@
                 </svg>
                 <div class="gauge-value">
                   <span class="big-num" id="cpu-percent">0%</span>
-                  <span class="label">20 Cores</span>
+                  <span class="label" id="cpu-cores-label">-- Cores</span>
                 </div>
               </div>
             </div>
@@ -188,19 +188,19 @@
                   <circle class="meter gpu-meter" cx="50" cy="50" r="42" style="stroke: #8b5cf6;"></circle>
                 </svg>
                 <div class="gauge-value">
-                  <span class="big-num" id="gpu-percent">1%</span>
-                  <span class="label" id="gpu-power-val">15.8 W</span>
+                  <span class="big-num" id="gpu-percent">--%</span>
+                  <span class="label" id="gpu-power-val">-- W</span>
                 </div>
               </div>
             </div>
             <div class="card-footer-stats">
               <div class="stat-col">
                 <span class="stat-label">VRAM Used</span>
-                <span class="stat-val purple" id="gpu-vram-text">2.2 / 12 GB</span>
+                <span class="stat-val purple" id="gpu-vram-text">-- / -- GB</span>
               </div>
               <div class="stat-col">
                 <span class="stat-label">Temperature</span>
-                <span class="stat-val" id="gpu-temp-text">56 °C</span>
+                <span class="stat-val" id="gpu-temp-text">-- °C</span>
               </div>
             </div>
           </div>
@@ -219,18 +219,18 @@
                 </svg>
                 <div class="gauge-value">
                   <span class="big-num" id="ram-percent">0%</span>
-                  <span class="label" id="ram-used-text">0 / 32 GB</span>
+                  <span class="label" id="ram-used-text">-- / -- GB</span>
                 </div>
               </div>
             </div>
             <div class="card-footer-stats">
               <div class="stat-col">
                 <span class="stat-label">Used</span>
-                <span class="stat-val" id="ram-used-gb">0 GB</span>
+                <span class="stat-val" id="ram-used-gb">-- GB</span>
               </div>
               <div class="stat-col">
                 <span class="stat-label">Available</span>
-                <span class="stat-val" id="ram-free-gb">0 GB</span>
+                <span class="stat-val" id="ram-free-gb">-- GB</span>
               </div>
             </div>
           </div>
@@ -248,19 +248,19 @@
                   <circle class="meter bat-meter" cx="50" cy="50" r="42"></circle>
                 </svg>
                 <div class="gauge-value">
-                  <span class="big-num" id="bat-charge-percent">95%</span>
-                  <span class="label" id="bat-voltage-text">16.48 V</span>
+                  <span class="big-num" id="bat-charge-percent">--%</span>
+                  <span class="label" id="bat-voltage-text">-- V</span>
                 </div>
               </div>
             </div>
             <div class="card-footer-stats">
               <div class="stat-col">
                 <span class="stat-label">Health</span>
-                <span class="stat-val green" id="bat-health-val">80.97%</span>
+                <span class="stat-val green" id="bat-health-val">--%</span>
               </div>
               <div class="stat-col">
                 <span class="stat-label">Design Cap.</span>
-                <span class="stat-val" id="bat-design-val">87.4 Wh</span>
+                <span class="stat-val" id="bat-design-val">-- Wh</span>
               </div>
             </div>
           </div>
@@ -307,7 +307,7 @@
             </div>
             <div class="hardware-spec-row">
               <span class="spec-name">Device Model</span>
-              <span class="spec-value" id="npu-model-name">Intel(R) AI Boost</span>
+              <span class="spec-value" id="npu-model-name">--</span>
             </div>
             <div class="hardware-spec-row">
               <span class="spec-name">Device Class</span>
@@ -1228,7 +1228,7 @@
                 <label class="text-dim text-sm mb-1" style="display: block;">Assigned Action:</label>
                 <select id="f12-action-select" class="cyber-select">
                   <option value="zenith_hud">🚀 Toggle Zenith Cyber HUD / Mini Monitor</option>
-                  <option value="fan_boost">❄️ Toggle Fan Mode (Silent ⟷ Cooler Boost)</option>
+                  <option value="fan_boost" id="f12-fan-opt">❄️ Toggle Fan Mode (Silent ⟷ Max Performance)</option>
                   <option value="mic_mute">🎙️ Toggle Global Microphone Mute</option>
                   <option value="winkey_lock">🎮 Toggle Windows Key Lock (Gaming Mode)</option>
                   <option value="snip">📸 Launch Screen Snipping Tool</option>
@@ -1263,8 +1263,8 @@
               <div class="profile-card" data-profile="extreme">
                 <div class="profile-icon">🚀</div>
                 <div class="profile-info">
-                  <strong>Cooler Boost Turbo</strong>
-                  <span>EPP 0% • Max Clocks • Max Airflow</span>
+                  <strong id="thermal-extreme-title">Max Performance Turbo</strong>
+                  <span id="thermal-extreme-sub">EPP 0% • Max Clocks • Max Airflow</span>
                 </div>
               </div>
 
@@ -1469,7 +1469,7 @@
             <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Eylem Parametresi:</label>
             <select id="new-rule-action-val" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 4px; color: #fff;">
               <option value="turbo">Fan: Turbo (High Performance)</option>
-              <option value="cooler_boost">Fan: Cooler Boost (Maksimum %100)</option>
+              <option value="cooler_boost">Fan: Turbo / Max Boost (%100)</option>
               <option value="silent">Fan: Silent (Low Noise)</option>
               <option value="auto">Fan: Otomatik (Dengeli)</option>
             </select>

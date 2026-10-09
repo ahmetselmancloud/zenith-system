@@ -90,15 +90,7 @@ async function loadHardwareIdentity(forceRefresh = false) {
     hardwareData = await res.json();
     renderHardwareStatic(hardwareData);
   } catch (err) {
-    console.warn('Hardware fetch error, trying direct cache fallback:', err);
-    try {
-      const fbRes = await fetch('/hardware_cache.json');
-      if (fbRes.ok) {
-        hardwareData = await fbRes.json();
-        renderHardwareStatic(hardwareData);
-        return;
-      }
-    } catch (_) {}
+    console.warn('Hardware fetch error:', err);
     const chip = document.getElementById('cpu-chip-val');
     if (chip && (chip.textContent === '--' || !chip.textContent)) {
       chip.textContent = 'Hardware Ready';
@@ -114,6 +106,10 @@ function renderHardwareStatic(data) {
       .replace(/AMD\s*Ryzen\s*/i, 'Ryzen ')
       .replace(/Processor/i, '')
       .trim();
+    const coresLbl = document.getElementById('cpu-cores-label');
+    if (coresLbl && data.cpu.total_cores) {
+      coresLbl.textContent = `${data.cpu.total_cores} Cores`;
+    }
     const cTag = document.getElementById('cpu-temp-tag');
     if (cTag) {
       if (data.cpu.p_cores && data.cpu.e_cores) {
@@ -2485,13 +2481,21 @@ function renderLaptopStudioState(cfg) {
   if (halBadge) {
     const hw = cfg.hardware_info;
     if (hw) {
-      const vendorName = (hw.vendor || 'generic').toUpperCase();
-      const modelName = hw.model || 'PC';
-      halBadge.textContent = `💻 HAL: ${vendorName} ${modelName} (Hardware Control Active)`;
+      const brand = hw.vendor_brand || `${(hw.vendor || 'PC').toUpperCase()} ${hw.model || ''}`;
+      halBadge.textContent = `💻 HAL: ${brand} (Hardware Control Active)`;
       halBadge.className = 'stat-badge green';
-      halBadge.title = `Provider: ${vendorName} | Model: ${modelName} | Fan, RGB, Battery & MUX directly linked`;
+      halBadge.title = `Provider: ${hw.vendor} | Model: ${hw.model} | Active Fan, Battery & MUX Control`;
+
+      const extTitle = document.getElementById('thermal-extreme-title');
+      if (extTitle && hw.fan_boost_name) {
+        extTitle.textContent = hw.fan_boost_name.replace(/^[^\w\s]+/, '').trim();
+      }
+      const f12Opt = document.getElementById('f12-fan-opt');
+      if (f12Opt && hw.fan_boost_name) {
+        f12Opt.textContent = `❄️ Toggle Fan Mode (Silent ⟷ ${hw.fan_boost_name.replace(/^[^\w\s]+/, '').trim()})`;
+      }
     } else {
-      halBadge.textContent = '💻 HAL: Auto Detected';
+      halBadge.textContent = '💻 HAL: Universal PC Controller';
     }
   }
 
@@ -2527,8 +2531,11 @@ function renderLaptopStudioState(cfg) {
   });
   const profBadge = document.getElementById('active-profile-badge');
   if (profBadge) {
+    const extName = cfg.hardware_info?.fan_boost_name || '🚀 Turbo Boost';
     const names = {
-      extreme: '🚀 Cooler Boost Turbo',
+      extreme: extName,
+      turbo: extName,
+      cooler_boost: extName,
       balanced: '⚖️ Balanced Mode',
       silent: '🤫 Silent Stealth',
       eco: '🔋 Super Eco'

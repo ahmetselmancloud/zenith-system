@@ -61,6 +61,9 @@ foreach ($rf in $RootFiles) {
     }
 }
 
+# Ensure no machine-specific caches leak into release zip
+Get-ChildItem -Path $StagingDir -Recurse -Include "*cache*.json" | Remove-Item -Force -ErrorAction SilentlyContinue
+
 Write-Host ">>> Compressing into $ZipFile..." -ForegroundColor Cyan
 Compress-Archive -Path "$StagingDir\*" -DestinationPath $ZipFile -Force
 Remove-Item -Path $StagingDir -Recurse -Force
