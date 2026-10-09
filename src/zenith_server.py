@@ -172,17 +172,23 @@ stress_state = {
 
 def get_hardware_info(force_refresh=False):
     max_cache_age_sec = 7 * 86400  # 7 days expiry
+    current_host = os.environ.get("COMPUTERNAME", "").strip().upper()
     if not force_refresh and os.path.exists(CACHE_FILE):
         try:
             mtime = os.path.getmtime(CACHE_FILE)
             if (time.time() - mtime) < max_cache_age_sec:
                 with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    cached_data = json.load(f)
+                cached_host = (cached_data.get("computer_name") or "").strip().upper()
+                if not cached_host or not current_host or cached_host == current_host:
+                    return cached_data
         except Exception:
             pass
 
     # Run native probe or deep probe script
     data = {}
+    if current_host:
+        data["computer_name"] = current_host
     probe_ps1 = os.path.join(BASE_DIR, "src", "probe_deep.ps1")
     if os.path.exists(probe_ps1):
         try:
@@ -191,7 +197,7 @@ def get_hardware_info(force_refresh=False):
                 capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5
             )
             if p.returncode == 0 and p.stdout.strip():
-                data = json.loads(p.stdout.strip())
+                data.update(json.loads(p.stdout.strip()))
         except Exception as e:
             print("Deep probe error:", e)
 
@@ -206,6 +212,8 @@ def get_hardware_info(force_refresh=False):
 
     if data:
         data["last_scanned"] = time.time()
+        if current_host and "computer_name" not in data:
+            data["computer_name"] = current_host
         try:
             with open(CACHE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)

@@ -228,7 +228,7 @@
       <div class="hud-chip cyan">
         <span class="hud-chip-label">CPU</span>
         <span class="hud-chip-num" id="hud-cpu-val">--%</span>
-        <span class="hud-chip-sub" id="hud-cpu-sub">20 Cores</span>
+        <span class="hud-chip-sub" id="hud-cpu-sub">CPU</span>
         <div class="micro-bar">
           <div class="micro-bar-fill" id="hud-cpu-bar" style="width: 0%;"></div>
         </div>
@@ -238,7 +238,7 @@
       <div class="hud-chip purple">
         <span class="hud-chip-label">GPU</span>
         <span class="hud-chip-num" id="hud-gpu-val">--°C</span>
-        <span class="hud-chip-sub" id="hud-gpu-sub">RTX 5070 Ti</span>
+        <span class="hud-chip-sub" id="hud-gpu-sub">GPU</span>
         <div class="micro-bar">
           <div class="micro-bar-fill" id="hud-gpu-bar" style="width: 0%; background: var(--purple);"></div>
         </div>
@@ -277,6 +277,9 @@
         const cpuPct = Math.round(data.cpu_percent || 0);
         document.getElementById('hud-cpu-val').textContent = `${cpuPct}%`;
         document.getElementById('hud-cpu-bar').style.width = `${Math.min(100, cpuPct)}%`;
+        if (data.cores && data.cores.length > 0) {
+          document.getElementById('hud-cpu-sub').textContent = `${data.cores.length} Threads`;
+        }
 
         // GPU
         if (data.gpu && data.gpu.available) {
@@ -284,9 +287,9 @@
           document.getElementById('hud-gpu-sub').textContent = `${data.gpu.usage_percent}% Load`;
           document.getElementById('hud-gpu-bar').style.width = `${Math.min(100, data.gpu.usage_percent)}%`;
         } else {
-          document.getElementById('hud-gpu-val').textContent = '42°C';
-          document.getElementById('hud-gpu-sub').textContent = 'RTX 5070 Ti';
-          document.getElementById('hud-gpu-bar').style.width = '35%';
+          document.getElementById('hud-gpu-val').textContent = '--';
+          document.getElementById('hud-gpu-sub').textContent = 'Standby / iGPU';
+          document.getElementById('hud-gpu-bar').style.width = '0%';
         }
 
         // RAM

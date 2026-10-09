@@ -120,15 +120,15 @@
         <div class="header-right">
           <div class="quick-chip" id="cpu-chip">
             <span class="chip-label">CPU</span>
-            <span class="chip-val" id="cpu-chip-val">Core Ultra 7</span>
+            <span class="chip-val" id="cpu-chip-val">--</span>
           </div>
           <div class="quick-chip" id="gpu-chip">
             <span class="chip-label">GPU</span>
-            <span class="chip-val" id="gpu-chip-val">RTX 5070 Ti</span>
+            <span class="chip-val" id="gpu-chip-val">--</span>
           </div>
           <div class="quick-chip highlight" id="bat-chip">
-            <span class="chip-label">HEALTH</span>
-            <span class="chip-val" id="bat-chip-val">81% Battery</span>
+            <span class="chip-label">POWER</span>
+            <span class="chip-val" id="bat-chip-val">--</span>
           </div>
           <button class="btn btn-secondary" id="btn-copy-report" style="padding: 6px 12px; font-size: 0.8rem;">
             📋 Copy Specs
@@ -374,8 +374,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line></svg>
             </div>
             <div>
-              <h3 id="hw-hero-title">MSI Gaming Notebook MS-15M3</h3>
-              <p class="subtitle" id="hw-hero-sub">Intel Core Ultra 7 255HX • NVIDIA RTX 5070 Ti • 32 GB DDR5-6400 • Windows 11 Pro</p>
+              <h3 id="hw-hero-title">System Hardware Architecture</h3>
+              <p class="subtitle" id="hw-hero-sub">Scanning host hardware components...</p>
             </div>
           </div>
           <div class="hw-hero-right">
@@ -389,7 +389,7 @@
           <div class="card glass-card">
             <div class="card-header">
               <span class="card-title">Motherboard & BIOS Firmware</span>
-              <span class="tag-pill cyan">UEFI Insyde/AMI</span>
+              <span class="tag-pill cyan">UEFI / BIOS</span>
             </div>
             <div class="spec-table" id="hw-mb-table">
               <!-- Injected by JS -->
@@ -400,7 +400,7 @@
           <div class="card glass-card">
             <div class="card-header">
               <span class="card-title">Operating System & Kernel</span>
-              <span class="tag-pill blue">Windows 11 x64</span>
+              <span class="tag-pill blue">Host OS</span>
             </div>
             <div class="spec-table" id="hw-os-table">
               <!-- Injected by JS -->
@@ -411,7 +411,7 @@
           <div class="card glass-card">
             <div class="card-header">
               <span class="card-title">Processor Topology & Silicon</span>
-              <span class="tag-pill purple">20 Cores / 36MB L2</span>
+              <span class="tag-pill purple">CPU Topology</span>
             </div>
             <div class="spec-table" id="hw-cpu-table">
               <!-- Injected by JS -->
@@ -422,7 +422,7 @@
           <div class="card glass-card">
             <div class="card-header">
               <span class="card-title">Physical Memory (DDR5 SODIMM)</span>
-              <span class="tag-pill green">6400 MT/s Dual Channel</span>
+              <span class="tag-pill green">System RAM</span>
             </div>
             <div class="spec-table" id="hw-ram-table">
               <!-- Injected by JS -->
@@ -433,7 +433,7 @@
           <div class="card glass-card">
             <div class="card-header">
               <span class="card-title">Graphics Subsystem & Driver</span>
-              <span class="tag-pill purple">RTX 5070 Ti 144Hz</span>
+              <span class="tag-pill purple">GPU Engine</span>
             </div>
             <div class="spec-table" id="hw-gpu-table">
               <!-- Injected by JS -->
@@ -1299,7 +1299,7 @@
                 <span class="strip-val" id="fan-cpu-temp" style="font-weight: 700;">-- %</span>
               </div>
               <div class="strip-item" style="text-align: center;">
-                <span class="strip-lbl" style="font-size: 0.72rem; color: var(--text-dim); display: block;">RTX 5070 Ti Temp</span>
+                <span class="strip-lbl" id="fan-gpu-temp-label" style="font-size: 0.72rem; color: var(--text-dim); display: block;">GPU Temp</span>
                 <span class="strip-val purple" id="fan-gpu-temp" style="font-weight: 700;">-- °C</span>
               </div>
               <div class="strip-item" style="text-align: center;">
@@ -1315,7 +1315,7 @@
               <span class="card-title">🌈 RGB Lighting Studio</span>
               <span class="tag-pill purple">Win11 Dynamic Lighting</span>
             </div>
-            <p class="text-dim text-sm mb-3">Controls laptop keyboard backlighting via Windows 11 LampArray & MSI Mystic Light bridge.</p>
+            <p class="text-dim text-sm mb-3">Controls laptop keyboard backlighting via Windows 11 Dynamic Lighting & OEM bridges.</p>
 
             <label class="text-dim text-sm mb-2" style="display: block;">Color Presets:</label>
             <div class="rgb-palette-grid mb-3" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -1368,7 +1368,7 @@
                 </button>
                 <button class="gpu-mode-btn" data-gpu="dgpu">
                   <strong>⚡ dGPU Only</strong>
-                  <span>RTX 5070 Ti Direct</span>
+                  <span id="dgpu-mode-sub">Discrete GPU Direct</span>
                 </button>
                 <button class="gpu-mode-btn" data-gpu="eco">
                   <strong>🍃 Eco iGPU</strong>
